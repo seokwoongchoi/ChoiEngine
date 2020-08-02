@@ -3,8 +3,11 @@
 #include "Core/Engine.h"
 #include "PreviewRenderer.h"
 #include "Resources/Mesh.h"
+#include "Editor.h"
 
-ActorEditor::ActorEditor(ID3D11Device* device):
+
+ActorEditor::ActorEditor(ID3D11Device* device, class Engine* engine, class Editor* editor):
+	engine(engine),editor(editor),
 	device(device),
 	backBuffer(nullptr), rtv(nullptr),srv(nullptr), previewRender(nullptr), depthBackBuffer(nullptr),
 	bActive(false),
@@ -17,7 +20,9 @@ ActorEditor::ActorEditor(ID3D11Device* device):
     bBlend(false),
     bCompiled(false),
     bHasEffect(false),
-	dsv(nullptr), meshType(ReadMeshType::StaticMesh), currentBone(nullptr), modelName(L""), actorIndex(0), size(800,600)
+	bMove(false),
+	dsv(nullptr), meshType(ReadMeshType::Default), currentBone(nullptr), modelName(L""), actorIndex(0), size(800,600),
+	currentClipNum(0), mode(EditMode::Render), camSpeed(0.8f), gizmoMode(GizmoMode::Default)
 {
 	previewRender = new PreviewRenderer(device);
 	uint width = D3D::Width();
@@ -85,25 +90,65 @@ ActorEditor::ActorEditor(ID3D11Device* device):
 
 
 	}
-	
-}
 
+	for (uint i = 0; i < 3; i++)
+	{
+		buttonTextures[i] = new Texture();
+
+	}
+	buttonTextures[0] ->Load(device,L"playButton.png");
+	buttonTextures[1]->Load(device, L"pauseButton.png");
+	buttonTextures[2]->Load(device, L"stopButton.png");
+
+
+	windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove| ImGuiWindowFlags_NoScrollbar;
+
+	viewport.TopLeftX = 0;
+	viewport.TopLeftY = 0;
+	
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+
+	{
+		D3DXMatrixIdentity(&gizmoWorld);
+		D3DXMatrixIdentity(&identity);
+		gizmoSnap = Vector3(0.0001f, 0.0001f, 0.0001f);
+
+		D3DXMatrixIdentity(&gizmoDelta);
+	}
+
+
+	
+
+}
 
 ActorEditor::~ActorEditor()
 {
-	
+	switch (meshType)
+	{
+
+	case ReadMeshType::StaticMesh:
+		editor->staticActorCount--;
+		break;
+	case ReadMeshType::SkeletalMesh:
+		editor->skeletalActorCount--;
+		break;
+	}
 }
-
-
 
 void ActorEditor::Render(ID3D11DeviceContext* context)
 {
-
-	if (!bModelLoaded) return;
+	context->ClearState();
+	if (!bModelLoaded|| !bEditing) return;
 	
-		previewRender->Update(Vector2(size.x,size.y));
+		previewRender->Update(Vector2(size.x,size.y), camSpeed);
+		if (meshType == ReadMeshType::SkeletalMesh)
+		{
+			previewRender->AnimationUpdate(context);
+		}
 
-		context->ClearRenderTargetView(rtv, Color(0.0f, 0.0f, 0.0f, 1.0f));
+		
+		context->ClearRenderTargetView(rtv, Color(0.5f, 0.6f, 0.3f, 1.0f));
 		context->ClearDepthStencilView(dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 		context->OMSetRenderTargets(1, &rtv, dsv);
 
@@ -123,41 +168,68 @@ void ActorEditor::SetDragDropPayload(const string & data)
 	}
 }
 
-void ActorEditor::ImageButton(class Engine* engine)
+const Matrix & ActorEditor::PreviewWorld()
 {
+	return previewRender->previewDesc.W;
+}
+
+void ActorEditor::BarrierModelUse()
+{
+	bCompiled = false;
+	bMove = false;
+	bModelLoaded = false;
+}
+
+bool ActorEditor::ImageButton()
+{
+	
 	if (ImGui::ImageButton(srv, ImVec2(80, 80)))
 	{
+		
 		bEditing = true;
+	}
+	ImGui::SameLine();
+	if (ImGui::IsItemHovered())
+	{
+		return true;
 	}
 
 	SetDragDropPayload(String::ToString(modelName));
 
 	Editor();
 	ShowHierarchy();
-	
-	if (EditingMode())
+	EditingMode();
+	if (bCompiled)
 	{
-		engine->Load(actorIndex, modelName,meshType);
+	
+		engine->Load(actorIndex, modelName, meshType);
+		bCompiled = false;
+		bMove = true;
+		
+		
+		
 	}
+
+	return false;
 	
 }
 
-bool ActorEditor::EditingMode()
+void ActorEditor::EditingMode()
 {
-	if (!bEditing ) return false;
+	if (!bEditing ) return ;
 
-	bool isCompiles = false;
+	
 
 	ImGui::Begin("EditingMode", &bEditing);
 	{
 		if (ImGui::Button("Aniamtor", ImVec2(80, 30)) /*&& model&&model->ClipCount() > 0*/)
 		{
-			//mode = EditMode::Animator;
+			mode = EditMode::Animator;
 		}
 		ImGui::SameLine(100);
 		if (ImGui::Button("Render", ImVec2(80, 30)))
 		{
-			//mode = EditMode::Render;
+			mode = EditMode::Render;
 
 
 		}
@@ -167,70 +239,384 @@ bool ActorEditor::EditingMode()
 		if (ImGui::Button("Compile", ImVec2(80, 30)))
 		{
 			Compile();
-
-			isCompiles= true;
-
 		}
-
+	
 	}
 	ImGui::End();
 
-	return isCompiles;
+	
 }
 
 void ActorEditor::Compile()
 {
-	previewRender->SaveMeshFile(modelName,meshType);
-	bCompiled = true;
+	previewRender->SaveMaterialFile(modelName);
+	Thread::Get()->AddTask([&]() {
+		previewRender->SaveMeshFile(modelName, meshType);
+	
+		bCompiled = true;
+	});
+
 }
 
 void ActorEditor::Editor()
 {
 	if (!bEditing) return;
 
-	ImGui::SetWindowSize(ImVec2(900, 600), ImGuiCond_Always);
+
 	ImGui::SetNextWindowSizeConstraints
 	(
 		ImVec2(800, 600),
 		ImVec2(1280, 720)
 	);
-	ImGuiWindowFlags windowFlags = 0;//ImGuiWindowFlags_NoResize |ImGuiWindowFlags_NoMove;
-	//ImGuiWindowFlags_MenuBar|
-
-	
-
 
 
 	ImGui::Begin("Editor", &bEditing, windowFlags);
 	{
+		ImGui::SliderFloat("CamSpeed", reinterpret_cast<float*>(&camSpeed), 0.1f, 5.0f);
+		ImVec2 size = ImGui::GetWindowSize();
 	
-		size = ImGui::GetWindowSize();
-		const string& str = string("SizeX : ") + to_string(size.x) + "/" + string("SizeY : ") + to_string(size.y);
-		ImGui::Text(str.c_str());
 	
 		ShowFrame(size);
 		
-		ShowComponents(size);
-		ShowMaterial(size);
+		if (mode == EditMode::Animator)
+		{
+			ShowAnimList(size);
+
+		}
+		else if (mode == EditMode::Render)
+		{
+			ShowComponents(size);
+			ShowMaterial(size);
+		}
 	}
 	ImGui::End();
 }
 
 void ActorEditor::ShowFrame(const ImVec2 & size)
 {
-	ImGui::BeginChild("##Frame", ImVec2(size.x*0.5f, 0), true, ImGuiWindowFlags_NoScrollbar);
+	ImGui::BeginChild("##Frame", ImVec2(size.x*0.5f, 0), true, windowFlags);
 	{
 		
-	//	ImGuiViewport* viewPort= ImGui::GetWindowViewport();
-		//viewPort->Size = ImVec2(1280, 720);
-		//ImGui::SetNextWindowViewport(viewPort->ID);
 		ImGui::Image
 		(
 			srv, ImVec2(size.x*0.5f, size.y)
 		);
-	
+		this->size = ImVec2(size.x*0.5f, size.y);
+		
+		ImGizmo();
 	}
 	ImGui::EndChild();
+}
+
+void ActorEditor::ImGizmo()
+{
+	
+	if (!bEditing) return;
+
+	editor->IsPushed = false;
+
+	static ImGuizmo::OPERATION operation(ImGuizmo::TRANSLATE);
+	//static ImGuizmo::MODE mode(ImGuizmo::WORLD);
+	static ImGuizmo::MODE mode(ImGuizmo::LOCAL);
+	if (ImGui::IsKeyPressed('T'))//w
+		operation = ImGuizmo::TRANSLATE;
+	if (ImGui::IsKeyPressed('Y'))//e
+		operation = ImGuizmo::ROTATE;
+	if (ImGui::IsKeyPressed('U'))//r
+		operation = ImGuizmo::SCALE;
+	
+	ImGuizmo::SetDrawlist();
+	ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, size.x, size.y);
+	
+	switch (gizmoMode)
+	{
+	case GizmoMode::Default:
+		break;
+	case GizmoMode::SkeletalBone:
+		SkeletalGizmo(mode, operation);
+		break;
+	case GizmoMode::StaticBone:
+		StaticGizmo(mode, operation);
+		break;
+	case GizmoMode::Collider:
+		ColliderGizmo(mode, operation, colliderIndex);
+		break;
+	case GizmoMode::Effect:
+		break;
+	}
+	
+	
+	
+}
+
+bool ActorEditor::PreviewGizmoSet(ImGuizmo::MODE mode, ImGuizmo::OPERATION operation)
+{
+	ImGuizmo::Manipulate(previewRender->view, previewRender->proj, operation, mode, gizmoWorld, gizmoDelta, &gizmoSnap[0]);
+
+	bool isMove = false;
+	if (gizmoDelta != identity)
+	{
+		isMove = true;
+	}
+	Vector3 ScaleLenth = Vector3(gizmoDelta._11 - 1.0f, gizmoDelta._22 - 1.0f, gizmoDelta._33 - 1.0f);
+	float scaleL = D3DXVec3Length(&ScaleLenth);
+	if (Math::Abs(scaleL) > 0.5f)
+	{
+		isMove = false;
+	}
+	return isMove;
+}
+
+void ActorEditor::SkeletalGizmo(ImGuizmo::MODE mode, ImGuizmo::OPERATION operation)
+{
+
+	if (!currentBone) return;
+	{
+		
+
+		const auto& index = currentBone->index;
+		Matrix skinnedMatrix = previewRender->GetSkinnedMatrix(index);
+
+		
+		D3DXMatrixTranspose(&previewWorld, &previewRender->previewDesc.W);
+		gizmoWorld = skinnedMatrix * previewWorld;
+	
+		bool isMove = PreviewGizmoSet(mode, operation);
+
+		if (isMove&&previewRender->bPause&&currentBone->BoneIndex() > 0)
+		{
+			auto& bones = previewRender->bones;
+			Matrix local = bones[index]->Transform();
+			Matrix invLocal;
+			D3DXMatrixInverse(&invLocal, nullptr, &local);
+
+			//Matrix animMatrix = previewRender->GetCurrentFrameAnimMatrix(index);
+			//Matrix invAnim;
+			//D3DXMatrixInverse(&invAnim, nullptr, &animMatrix);
+			
+			Matrix parent = invLocal * skinnedMatrix * previewWorld;
+			Matrix parentInv;
+			D3DXMatrixInverse(&parentInv, nullptr, &parent);
+
+			Matrix newLocal = gizmoWorld * parentInv;
+			previewRender->bones[index]->transform = newLocal;
+
+
+			//Matrix newAnim = gizmoWorld * parentInv;
+			//previewRender->SetCurrentFrameData(index, newAnim);
+			previewRender->UpdateCurrFameAnimTransformSRV();
+
+
+		}
+
+	}
+
+}
+
+void ActorEditor::StaticGizmo(ImGuizmo::MODE mode, ImGuizmo::OPERATION operation)
+{
+   if (!currentBone) return;
+	{
+
+
+		const auto& index = currentBone->index;
+	
+		Matrix BoneMatrix = currentBone->Transform();
+
+		D3DXMatrixTranspose(&previewWorld, &previewRender->previewDesc.W);
+		gizmoWorld = BoneMatrix * previewWorld;
+
+		bool isMove = PreviewGizmoSet(mode, operation);
+
+		if (isMove&&previewRender->bPause&&currentBone->BoneIndex() > 0)
+		{
+			Matrix invWorld;
+			D3DXMatrixInverse(&invWorld, nullptr, &previewWorld);
+		
+			Matrix newLocal = gizmoWorld * invWorld;
+			previewRender->bones[index]->transform = newLocal;
+			previewRender->CreateModelTransformSRV();
+
+
+		}
+
+	}
+}
+
+void ActorEditor::ColliderGizmo(ImGuizmo::MODE mode, ImGuizmo::OPERATION operation,const uint& colliderIndex)
+{
+
+
+	//D3DXMatrixTranspose(&previewWorld, &previewRender->previewDesc.W);
+	gizmoWorld = previewRender->boxWorld;
+
+	bool isMove = PreviewGizmoSet(mode, operation);
+
+	if (isMove)
+	{
+		previewRender->boxWorld = gizmoWorld;
+	}
+
+
+}
+
+void ActorEditor::ShowTransfomrs()
+{
+	if (bModelLoaded)
+		if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			Matrix world;
+			D3DXMatrixTranspose(&world, &previewRender->previewDesc.W);
+
+			Quaternion rotation;
+			Vector3 pos, scale;
+			D3DXMatrixDecompose(&scale, &rotation, &pos, &world);
+
+			const auto show_float = [](const char* id, const char* label, float* value)
+			{
+				ImGui::PushItemWidth(100.0f);
+				ImGui::PushID(id);
+				ImGui::InputFloat(label, value, 1.0f, 1.0f, "%.3f", ImGuiInputTextFlags_CharsDecimal);
+				ImGui::PopID();
+				ImGui::PopItemWidth();
+			};
+			if (currentBone)
+			{
+				if (currentBone->BoneIndex() > 0)
+				{
+					auto local = currentBone->transform;
+					Vector3 position = Vector3(local._41, local._42, local._43);
+				
+					ImGui::TextUnformatted("BoneTranslation");
+					show_float("##pos_x", "X", &position.x);
+					show_float("##pos_y", "Y", &position.y);
+					show_float("##pos_z", "Z", &position.z);
+					float length=D3DXVec3Length(&(position - Vector3(local._41, local._42, local._43)));
+					if (Math::Abs(length)>0.0f)
+					{
+						Matrix S, R, T;
+						Vector3 position1, scale;
+						Quaternion q;
+						D3DXMatrixDecompose(&scale, &q, &position1, &local);
+						D3DXMatrixScaling(&S, scale.x, scale.y, scale.z);
+						D3DXMatrixRotationQuaternion(&R, &q);
+						D3DXMatrixTranslation(&T, position.x, position.y, position.z);
+						previewRender->bones[currentBone->index]->transform = S * R*T;
+						switch (meshType)
+						{
+						case ReadMeshType::StaticMesh:
+							previewRender->CreateModelTransformSRV();
+							break;
+						case ReadMeshType::SkeletalMesh:
+							previewRender->UpdateCurrFameAnimTransformSRV();
+							//previewRender->CreateAnimTransformSRV();
+							break;
+					
+						}
+						
+					}
+					
+				}
+
+
+
+			}
+
+			ImGui::TextUnformatted("Rotation");
+			show_float("##rot_x", "X", &rotation.x);
+			show_float("##rot_y", "Y", &rotation.y);
+			show_float("##rot_z", "Z", &rotation.z);
+			ImGui::TextUnformatted("Scale");
+			show_float("##scl_x", "X", &scale.x);
+			show_float("##scl_y", "Y", &scale.y);
+			show_float("##scl_z", "Z", &scale.z);
+
+			Matrix S, R, T;
+			D3DXMatrixScaling(&S, scale.x, scale.y, scale.z);
+			D3DXMatrixTranslation(&T, pos.x, pos.y, pos.z);
+			D3DXMatrixRotationQuaternion(&R, &rotation);
+			Matrix W = S * R*T;
+			D3DXMatrixTranspose(&previewRender->previewDesc.W, &W);
+		}
+}
+
+void ActorEditor::ShowAnimList(const ImVec2 & size)
+{
+	if (clipList.empty()) return;
+
+	ImGui::SameLine();
+	ImGui::BeginChild("##ClipList", ImVec2(size.x*0.5f - 70.0f, 0), true, windowFlags);
+	{
+
+
+		if (ImGui::CollapsingHeader("ClipList", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			wstring clipName = L"N/A";
+			ImGui::Columns(1, "my", false);
+			ImGui::Separator();
+			{
+				for (uint i = 0; i < clipList.size(); i++)
+				{
+					string name =String::ToString( clipList[i]);
+					const char* label = name.c_str();
+					bool bSelected = clipName == clipList[i];
+					if (ImGui::Selectable(label, bSelected, 0, ImGui::CalcTextSize(label)))
+					{
+						clipName = clipList[i];
+						currentClipNum = i;
+						previewRender->tweenDesc.Next.Clip = i;
+
+
+					}
+					ImGui::NextColumn();
+
+				}
+				ImGui::Columns(1);
+				ImGui::Separator();
+				//ImGui::ListBoxFooter();
+			}
+		}
+		if (ImGui::CollapsingHeader("Frame", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ShowAnimFrame(size);
+		}
+
+	}
+
+	ImGui::EndChild();
+}
+
+void ActorEditor::ShowAnimFrame(const ImVec2 & size)
+{
+	const auto& clip = previewRender->clips[currentClipNum];
+	
+	uint frame = previewRender->tweenDesc.Curr.CurrFrame;
+	ImGui::SliderInt("Frame", (int*)&frame, 0, clip->FrameCount() - 1);
+	previewRender->tweenDesc.Curr.CurrFrame = frame;
+	if (ImGui::ImageButton(buttonTextures[0]->SRV(), ImVec2(20.0f, 20.0f)))//play
+	{
+		previewRender->bPause = false;
+		
+	}
+	ImGui::SameLine();
+	if (ImGui::ImageButton(buttonTextures[1]->SRV(), ImVec2(20.0f, 20.0f)))//pause
+	{
+		previewRender->bPause = true;
+	}
+	ImGui::SameLine();
+	if (ImGui::ImageButton(buttonTextures[2]->SRV(), ImVec2(20.0f, 20.0f)))//stop
+	{
+
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Update AllFrame", ImVec2(80.0f, 30.0f)))
+	{
+		Thread::Get()->AddTask([&]()
+		{	
+			previewRender->CreateAnimTransformSRV();
+		});
+	}
+	
 }
 
 void ActorEditor::ShowComponents(const ImVec2 & size)
@@ -267,12 +653,13 @@ void ActorEditor::ShowComponents(const ImVec2 & size)
 						{
 							if (ImGui::IsItemClicked())
 							{
-								/*componentName = componentList[i];
+								componentName = componentList[i];
 								if (componentName == "Collider")
 								{
-									gizmoType = GizmoType::Box;
+									colliderIndex = 0;
+									gizmoMode = GizmoMode::Collider;
 								}
-								else if (componentName == "BoneCollider0")
+							/*	else if (componentName == "BoneCollider0")
 								{
 									gizmoType = GizmoType::Box1;
 								}
@@ -291,8 +678,8 @@ void ActorEditor::ShowComponents(const ImVec2 & size)
 								else if (componentName == "ActorCamera")
 								{
 									gizmoType = GizmoType::ActorCamera;
-								}
-								*/
+								}*/
+								
 							}
 						/*	if (IsBindedTree&&componentList[i] == "ActorAi")
 							{
@@ -327,78 +714,7 @@ void ActorEditor::ShowComponents(const ImVec2 & size)
 
 			}
 
-
-			//if (bModelLoaded)
-			//	if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
-			//	{
-
-			//		auto previewTransform = previewRender->PreviewTransform();
-			//		Quaternion rotation;
-			//		previewTransform->Rotation(&rotation);
-
-			//		Vector3 scale;
-			//		previewTransform->Scale(&scale);
-
-
-			//		const auto show_float = [](const char* id, const char* label, float* value)
-			//		{
-			//			ImGui::PushItemWidth(100.0f);
-			//			ImGui::PushID(id);
-			//			ImGui::InputFloat(label, value, 1.0f, 1.0f, "%.3f", ImGuiInputTextFlags_CharsDecimal);
-			//			ImGui::PopID();
-			//			ImGui::PopItemWidth();
-			//		};
-			//		if (currentBone)
-			//		{
-			//			if (currentBone->BoneIndex() > 0)
-			//			{
-			//				auto local = model->BoneByIndex(currentBone->BoneIndex())->Transform();
-			//				Vector3 position = Vector3(local._41, local._42, local._43);
-			//				//previewTransform->Position(&position);
-
-			//				ImGui::TextUnformatted("BoneTranslation");
-			//				//ImGui::SameLine(70.0f); 
-			//				show_float("##pos_x", "X", &position.x);
-			//				//ImGui::SameLine();    
-			//				show_float("##pos_y", "Y", &position.y);
-			//				//ImGui::SameLine();     
-			//				show_float("##pos_z", "Z", &position.z);
-			//				/*Matrix S, R, T;
-			//				Vector3 position1, scale;
-			//				Quaternion q;
-			//				D3DXMatrixDecompose(&scale, &q, &position1, &local);
-			//				D3DXMatrixScaling(&S, scale.x, scale.y, scale.z);
-			//				D3DXMatrixRotationQuaternion(&R, &q);
-			//				D3DXMatrixTranslation(&T, position.x, position.y, position.z);
-			//				model->ChangeBone(S*T*R, currentBone->BoneIndex());*/
-			//			}
-
-
-
-			//		}
-
-			//		ImGui::TextUnformatted("Rotation");
-			//		//ImGui::SameLine(70.0f); 
-			//		show_float("##rot_x", "X", &rotation.x);
-			//		//ImGui::SameLine();     
-			//		show_float("##rot_y", "Y", &rotation.y);
-			//		//ImGui::SameLine();     
-			//		show_float("##rot_z", "Z", &rotation.z);
-
-			//		ImGui::TextUnformatted("Scale");
-			//		//ImGui::SameLine(70.0f); 
-			//		show_float("##scl_x", "X", &scale.x);
-			//		//ImGui::SameLine();     
-			//		show_float("##scl_y", "Y", &scale.y);
-			//		//ImGui::SameLine();      
-			//		show_float("##scl_z", "Z", &scale.z);
-
-
-			//		//previewTransform->Position(position);
-			//		previewTransform->Rotation(rotation);
-			//		previewTransform->Scale(scale);
-
-			//	}
+			ShowTransfomrs();
 
 		}
 	}
@@ -452,186 +768,285 @@ void ActorEditor::ShowComponentListPopUp(const string & componentName)
 {
 }
 
+void ActorEditor::ClipFinder(const wstring & file)
+{
+	wstring filePath = L"../_Models/SkeletalMeshes/" + file + L"/";
+	vector<wstring> files;
+
+	wstring filter = L"*.clip";
+	Path::GetFiles(&files, filePath, filter, false);
+
+
+	for (uint i = 0; i < files.size(); i++)
+	{
+		auto fileName = Path::GetFileName(files[i]);
+		wstring noExfileName = Path::GetFileNameWithoutExtension(files[i]);
+		clipList.emplace_back(noExfileName);
+	}
+}
+
 void ActorEditor::LoadSkeletalMesh(const wstring & file)
 {
-	bCompiled = false;
+	if (bModelLoaded) return;
+
+	BarrierModelUse();
+	
+
+	
 	modelName = Path::GetFileNameWithoutExtension(file);
 
-	previewRender->ReadMaterial(modelName);
-	meshType = ReadMeshType::SkeletaMesh;
-	previewRender->ReadMesh(modelName, meshType);
-	previewRender->CreateSahders("../_Shaders/SkeletalMesh.hlsl");
+	
+	
+	meshType = ReadMeshType::SkeletalMesh;
 
 	
-	bModelLoaded = true;
-	
-	
-	auto remove = remove_if(componentList.begin(), componentList.end(), [](const string& mesh)
+	size_t index = modelName.find_last_of('_');
+	if (index == string::npos)
 	{
-		return mesh == "StaticMesh";
-	});
-	if(remove!=componentList.end())
-	componentList.erase(remove);
-
+		previewRender->ReadMaterial(modelName);
+		previewRender->ReadMesh(file, meshType);
+	}
+	else if (modelName.substr(index + 1, 4) == L"Edit")
+	{
+		modelName = modelName.substr(0, index);
+		previewRender->ReadEditedMaterial(modelName);
+		previewRender->ReadEditedMesh(file, meshType);
+	}
+	ClipFinder(modelName);
+	for (auto& clip : clipList)
+	{
+		previewRender->ReadClip(modelName + L"/" + clip);
+	}
+	previewRender->CreateSahders("../_Shaders/PreviewSkeletalModel.hlsl");
+	
 	componentList.emplace_back("SkeletalMesh");
+	componentList.emplace_back("Collider");
+	actorIndex = editor->skeletalActorCount++;
+
+	bModelLoaded = true;
+
+
 }
 
 void ActorEditor::LoadStaticMesh(const wstring & file)
 {
+	if (bModelLoaded) return;
+
+	BarrierModelUse();
+
 	
-	bCompiled = false;
 	modelName = Path::GetFileNameWithoutExtension(file);
 	
-	previewRender->ReadMaterial(modelName);
+
 	meshType = ReadMeshType::StaticMesh;
-	previewRender->ReadMesh(modelName, meshType);
-	previewRender->CreateSahders("../_Shaders/StaticMesh.hlsl");
+
+	
+	size_t index = modelName.find_last_of('_');
+
+	if (index==string::npos)
+	{
+		previewRender->ReadMaterial(modelName);
+		previewRender->ReadMesh(file, meshType);
+	}
+	else if (modelName.substr(index + 1, 4) == L"Edit")
+    {
+		modelName = modelName.substr(0, index);
+    	previewRender->ReadEditedMaterial(modelName);
+    	previewRender->ReadEditedMesh(file, meshType);
+    }
+  
+    	
+	previewRender->CreateSahders("../_Shaders/PreviewStaticModel.hlsl");
+	
+
+	componentList.emplace_back("StaticMesh");
+	componentList.emplace_back("Collider");
+	actorIndex = editor->staticActorCount++;
+
 
 	bModelLoaded = true;
 	
-	auto remove = remove_if(componentList.begin(), componentList.end(), [](const string& mesh)
-	{
-		return mesh == "SkeletalMesh";
-	});
-	if (remove != componentList.end())
-		componentList.erase(remove);
-	componentList.emplace_back("StaticMesh");
 }
 
-void ActorEditor::LoadMaterial(function<void(wstring, uint, Material*)> f, uint num, shared_ptr<class Material> material)
+void ActorEditor::LoadMaterial(function<void(wstring, uint, shared_ptr<class Material>)> f, uint num, shared_ptr<class Material> material)
 {
+	HWND hWnd = NULL;
+
+	f = bind(&ActorEditor::SetMaterial, this, placeholders::_1, placeholders::_2, placeholders::_3);
+	auto path = L"../_Textures/" + modelName;
+	Path::OpenFileDialog(L"", Path::EveryFilter, path, num, material, f, hWnd);
 }
 
 void ActorEditor::SetMaterial(wstring & file, uint textureType, shared_ptr<class Material> material)
 {
+	switch (textureType)
+	{
+	case 0:
+	{
+		material->DiffuseMap(file);
+	}
+	break;
+	case 1:
+	{
+		material->NormalMap(file);
+	}
+	break;
+	case 2:
+	{
+		material->RoughnessMap(file);
+	}
+	break;
+	case 3:
+	{
+		material->MetallicMap(file);
+	}
+	break;
+	}
 }
 
 void ActorEditor::ShowMaterial(const ImVec2 & size)
 {
-	const auto ShowTextureSlot = [&](shared_ptr<class Material> material, uint num)//, TextureType type
+	
+	
+	
+	
+	shared_ptr<class Material> material = nullptr;
+	const auto ShowTextureSlot = [&](Texture& texture, const char* name,uint MaterialType)
 	{
+		ImGui::Text(name);
+		ImGui::SameLine(70.0f);
+		function<void(wstring, uint, shared_ptr<class Material>)> f;
+
+		if(ImGui::ImageButton
+		(
+			texture ? texture.SRV() : nullptr,
+			ImVec2(80, 80)
+
+		))
+		{
+			LoadMaterial(f, MaterialType, material);
+		}
 		
-
-		auto& texture1 = material->DiffuseMap();
-		ImGui::Text(String::ToString(material->Name()).c_str());
-		ImGui::SameLine(70.0f);
-
-		function<void(wstring, uint, Material*)> f;
-
-		if (ImGui::ImageButton
-		(
-			texture1.SRV() ? texture1.SRV() : nullptr,
-			ImVec2(80, 80)
-
-		))
-		{
-			LoadMaterial(f, num, material);
-		}
-		ImGui::Text("Color");
-		ImGui::SameLine(70.0f);
-		Color Diffuse = material->Diffuse();
-		ImGui::ColorEdit4(String::ToString(material->Name()).c_str(), Diffuse);
-		material->Diffuse(Diffuse);
-
-
-	};
-
-	const auto ShowTextureSlotRoughness = [&](shared_ptr<class Material> material, uint num)//, TextureType type
-	{
-		auto& texture1 = material->RoughnessMap();
-		ImGui::Text(String::ToString(material->Name()).c_str());
-		ImGui::SameLine(70.0f);
-
-		function<void(wstring, uint, Material*)> f;
-
-		if (ImGui::ImageButton
-		(
-			texture1.SRV()? texture1.SRV():nullptr,
-			ImVec2(80, 80)
-
-		))
-		{
-			LoadMaterial(f, num, material);
-		}
-		ImGui::Text("Color");
-		ImGui::SameLine(70.0f);
-		float roughness = material->Roughness();
-		ImGui::SliderFloat(String::ToString(material->Name()).c_str(), &roughness, 0.0f, 20.0f);
-
-		material->Roughness(roughness);
-		//DragDrop(material, type);
-
+		
 	};
 
 	ImGui::SameLine();
 	ImGui::BeginChild("##Edit", ImVec2(size.x*0.25f + 30.0f, 0), true);
 	{
-
-		if (ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen))
+		auto& count = previewRender->meshCount;
+		auto& meshes = previewRender->meshes;
+		for (uint i=0;i< count;i++)
 		{
-
-
-			
-			   auto& count = previewRender->meshCount;
-
-			   auto& mesh = previewRender->meshes;
-				if (ImGui::CollapsingHeader("Diffuse", ImGuiTreeNodeFlags_OpenOnDoubleClick))
+			if (previewRender->blendCount>0&&i == previewRender->blendMeshIndex) continue;
+			auto& mesh = meshes[i];
+			if (mesh)
+			{
+				string& meshName = mesh->name;
+				material = mesh->material;
+				if (material&&ImGui::CollapsingHeader(meshName.c_str(), ImGuiTreeNodeFlags_OpenOnDoubleClick))
 				{
+					string& materialName = "MaterialName:" + String::ToString(material->Name());
+					ImGui::Text(materialName.c_str());
 
-					for (uint i = 0; i < count; i++)
-					{
-						//Albedo
-						ShowTextureSlot(mesh[i]->material, 0);
-						ImGui::Separator();
+					string& boneIndex = "BoneIndex:" + to_string(mesh->boneDesc.boneIndex);
+					ImGui::Text(boneIndex.c_str());
+					string& vertexCount = "VertexCount:" + to_string(mesh->vertexCount);
+					ImGui::Text(vertexCount.c_str());
+					string& startVertexIndex = "StartVertexIndex:" + to_string(mesh->startVertexIndex);
+					ImGui::Text(startVertexIndex.c_str());
 
-					}
-					if (bBlend)
-					{
-						//count = model->forwardMeshesCount();
-						//mesh = model->forwardMeshsData();
-						//for (uint i = 0; i < count; i++)
-						//{
-						//	//Albedo
-						//	ShowTextureSlot(mesh[i], 0);
-						//	ImGui::Separator();
+					//Albedo
+					ShowTextureSlot(material->DiffuseMap(), "Albedo", 0);
+					string& fileName = String::ToString(material->DiffuseFile());
+					ImGui::Text(fileName.c_str());
 
-						//}
+					ImGui::Text("Color");
+					ImGui::SameLine(70.0f);
+					Color diffuse = material->Diffuse();
+					ImGui::ColorEdit4("##ColorAlbedo", diffuse);
+					material->Diffuse(diffuse);
+					ImGui::Separator();
 
-					}
+					//Normal
+					ShowTextureSlot(material->NormalMap(), "Normal", 1);
+					string& normalName = String::ToString(material->NormalFile());
+					ImGui::Text(fileName.c_str());
+					ImGui::Separator();
+
+					//Roughness
+					ShowTextureSlot(material->RoughnessMap(), "Roughness", 2);
+					string& roughnessName = String::ToString(material->RoughnessFile());
+					ImGui::Text(fileName.c_str());
+
+					ImGui::Text("Factor");
+					ImGui::SameLine(70.0f);
+					float roughness = material->Roughness();
+					ImGui::SliderFloat("##Roughness", &roughness, 0.0f, 1.0f);
+					material->Roughness(roughness);
+					ImGui::Separator();
+
+					//Metallic
+					ShowTextureSlot(material->MetallicMap(), "Metallic", 3);
+					string& metaillcName = String::ToString(material->MetallicFile());
+					ImGui::Text(fileName.c_str());
+
+					ImGui::Text("Factor");
+					ImGui::SameLine(70.0f);
+					float metallic = material->Metallic();
+					ImGui::SliderFloat("##Metallic", &metallic, 0.0f, 1.0f);
+					material->Metallic(metallic);
 				}
-				if (ImGui::CollapsingHeader("Roughness", ImGuiTreeNodeFlags_OpenOnDoubleClick))
-				{
+				ImGui::Separator();
+			}
+		
+		}
+		for (auto& mesh : previewRender->blendMeshes)
+		{
+    		string& meshName = mesh->name;
+			material = mesh->material;
+			if (material&&ImGui::CollapsingHeader(meshName.c_str(), ImGuiTreeNodeFlags_OpenOnDoubleClick))
+			{
+				string& boneIndex = "BoneIndex:" + to_string(mesh->boneDesc.boneIndex);
+				ImGui::Text(boneIndex.c_str());
+				string& vertexCount = "VertexCount:" + to_string(mesh->vertexCount);
+				ImGui::Text(vertexCount.c_str());
+				string& startVertexIndex = "StartVertexIndex:" + to_string(mesh->startVertexIndex);
+				ImGui::Text(startVertexIndex.c_str());
 
-					for (uint i = 0; i < count; i++)
-					{
+				//Albedo
+				ShowTextureSlot(material->DiffuseMap(), "Albedo", 0);
+				ImGui::Text("Color");
+				ImGui::SameLine(70.0f);
+				Color diffuse = material->Diffuse();
+				ImGui::ColorEdit4("##ColorAlbedo", diffuse);
+				material->Diffuse(diffuse);
+				ImGui::Separator();
 
+				//Normal
+				ShowTextureSlot(material->NormalMap(), "Normal", 1);
 
-						ShowTextureSlotRoughness(mesh[i]->material, 1);
-						ImGui::Separator();
+				ImGui::Separator();
 
+				//Roughness
+				ShowTextureSlot(material->RoughnessMap(), "Roughness", 2);
+				ImGui::Text("Factor");
+				ImGui::SameLine(70.0f);
+				float roughness = material->Roughness();
+				ImGui::SliderFloat("##Roughness", &roughness, 0.0f, 1.0f);
+				material->Roughness(roughness);
+				ImGui::Separator();
 
-
-					}
-					if (bBlend)
-					{
-						/*count = model->forwardMeshesCount();
-						mesh = model->forwardMeshsData();
-						for (uint i = 0; i < count; i++)
-						{
-
-							ShowTextureSlotRoughness(mesh[i], i);
-							ImGui::Separator();
-
-						}*/
-
-					}
-				}
-
-
-			
-
+				//Metallic
+				ShowTextureSlot(material->MetallicMap(), "Metallic", 3);
+				ImGui::Text("Factor");
+				ImGui::SameLine(70.0f);
+				float metallic = material->Metallic();
+				ImGui::SliderFloat("##Metallic", &metallic, 0.0f, 1.0f);
+				material->Metallic(metallic);
+			}
 			ImGui::Separator();
 		}
+		
 	}
 	ImGui::EndChild();
 }
@@ -641,48 +1056,48 @@ void ActorEditor::ShowHierarchy()
 	if (!bEditing) return;
 
 
-	ImGui::Begin("Hierarchy", &bEditing, ImGuiWindowFlags_HorizontalScrollbar);
+	ImGui::Begin("Hierarchy", &bEditing, ImGuiWindowFlags_HorizontalScrollbar| ImGuiWindowFlags_NoMove);
 	{
-		auto& bone = previewRender->bones;
-		uint& count = previewRender->boneCount;
-		switch (meshType)
+	//	if (previewRender->bLoaded)
 		{
-		case ReadMeshType::StaticMesh:
-		{
+			const auto& bone = previewRender->bones;
+			const uint& count = bone.size();
 
-
-			for (uint i = 0; i < count; i++)
+			
+			switch (meshType)
 			{
-				ShowBone(bone[i]);
-			}
-		}
-		break;
-		case ReadMeshType::SkeletaMesh:
-		{
-			shared_ptr<class ModelBone> root = nullptr;
-
-
-			for (uint i = 0; i < count; i++)
+			case ReadMeshType::StaticMesh:
 			{
-
-				if (bone[i]->ChildsData())
+				for (uint i = 0; i < count; i++)
 				{
-					root = bone[i];
-					break;
+				   ShowStaticBones(bone[i]);
 				}
-
 			}
-			ShowChild(root);
-
-
+			break;
+			case ReadMeshType::SkeletalMesh:
+			{
+				shared_ptr<class ModelBone> root = nullptr;
+				for (uint i = 0; i < count; i++)
+				{
+					if (bone[i]->ChildsData())
+					{
+						root = bone[i];
+						break;
+					}
+				}
+				if(root!=nullptr)
+				ShowSkeletalBones(root);
+        	}
+			break;
+			}
 		}
-		break;
-
-		}
+		
+		
+		
 
 		if (currentBone&&ImGui::IsWindowHovered() && ImGui::IsAnyItemHovered())
 		{
-
+			
 			if (ImGui::GetIO().MouseDown[1])
 				ImGui::OpenPopup("Hierarchy Popup");
 		}
@@ -692,7 +1107,7 @@ void ActorEditor::ShowHierarchy()
 	ImGui::End();
 }
 
-void ActorEditor::ShowBone(shared_ptr<class ModelBone> bone)
+void ActorEditor::ShowStaticBones(shared_ptr<class ModelBone> bone)
 {
 
 	{
@@ -707,26 +1122,33 @@ void ActorEditor::ShowBone(shared_ptr<class ModelBone> bone)
 
 		if (ImGui::TreeNodeEx(bone->Name().c_str(), flags))
 		{
+			/*string& boneIndex = "BoneIndex :" + to_string(bone->index);
+			ImGui::Text(boneIndex.c_str());
+			string& parentBoneIndex = "ParentBoneIndex :" + to_string(bone->parentIndex);
+			ImGui::Text(parentBoneIndex.c_str());*/
 			if (ImGui::IsItemClicked())
 			{
 				currentBone = bone;
-				/*if (currentBone)
+				if (currentBone)
 				{
-					gizmoType = GizmoType::Bone;
-				}*/
+					gizmoMode = GizmoMode::StaticBone;
+				}
 				temp = bone->Name();
-
+			
+				
 			}
 			ImGui::TreePop();
 
 		}
+		
+		
 		ImGui::PopItemWidth();
 	}
 
 
 }
 
-void ActorEditor::ShowChild(shared_ptr<class ModelBone> bone)
+void ActorEditor::ShowSkeletalBones(shared_ptr<class ModelBone> bone)
 {
 	auto child = bone->ChildsData();
 	ImGuiTreeNodeFlags  flags = !child ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_OpenOnDoubleClick : ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnDoubleClick;
@@ -738,24 +1160,28 @@ void ActorEditor::ShowChild(shared_ptr<class ModelBone> bone)
 	ImGui::PushItemWidth(1.0f);
 	if (ImGui::TreeNodeEx(bone->Name().c_str(), flags))
 	{
+		
 		if (ImGui::IsItemClicked())
 		{
 			currentBone = bone;
-			/*if (currentBone)
+			if (currentBone)
 			{
-				gizmoType = GizmoType::Bone;
-			}*/
+				gizmoMode = GizmoMode::SkeletalBone;
+			}
 			temp = bone->Name();
-
+		
+		
 		}
 		uint count = bone->GetChilds().size();
 		for (uint i = 0; i < count; i++)
 		{
-			ShowChild(child[i]);
+			ShowSkeletalBones(child[i]);
 
 		}
 		ImGui::TreePop();
 	}
+	
+	
 	ImGui::PopItemWidth();
 }
 
@@ -767,6 +1193,24 @@ void ActorEditor::ShowHierarcyPopup()
 		if (ImGui::MenuItem("Delete"))
 		{
 			previewRender->DeleteMesh(currentBone->index);
+			
+			/*auto& bones = previewRender->bones;
+			for_each(bones.begin(), bones.end(), [&](shared_ptr<class ModelBone>bone)
+			{
+				if (bone)
+				{
+					size_t index = bone->Name().find(".");
+					if (index != string::npos)
+					{
+						if(bone->Name().substr(0,index)=="Circle")
+						previewRender->DeleteMesh(bone->index);
+					}
+				}
+				
+			});*/
+
+			
+		
 		}
 
 		ImGui::Separator();
@@ -776,9 +1220,9 @@ void ActorEditor::ShowHierarcyPopup()
 
 			if (ImGui::MenuItem("Create"))
 			{
-
+				CreateAttachMesh();
 			}
-			//	CreateWeaponMesh();
+			//	
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("BlendMesh"))
@@ -816,4 +1260,27 @@ void ActorEditor::ShowHierarcyPopup()
 
 void ActorEditor::BlendMesh()
 {
+	if (!currentBone) return;
+
+	previewRender->BlendMesh(currentBone->index);
+
+}
+
+void ActorEditor::CreateAttachMesh()
+{
+	HWND hWnd = NULL;
+	function<void(wstring)> f = bind(&ActorEditor::LoadAttachMesh, this, placeholders::_1);
+	Path::OpenFileDialog(L"", Path::EveryFilter, L"../_Models/", f, hWnd);
+}
+
+void ActorEditor::LoadAttachMesh(const wstring & file)
+{
+	BarrierModelUse();
+
+	const auto& NoExtensionName = Path::GetFileNameWithoutExtension(file);
+
+	previewRender->ReadMaterial(NoExtensionName);
+	previewRender->ReadAttachMesh(file, meshType,currentBone->index);
+	//previewRender->CreateSahders("../_Shaders/PreviewSkeletalModel.hlsl");
+	bModelLoaded = true;
 }

@@ -3,13 +3,10 @@
 
 
 Mesh::Mesh()
-	:material(nullptr),bone(nullptr),nullBuffer(nullptr), vertexCount(0), startVertexIndex(0), name(""),
-	startIndex(0), indexCount(0), materialName(""), minPos(Vector3(0, 0, 0)), maxPos(Vector3(0, 0, 0)), boneIndex(0), boneDesc{},
-	 boneBuffer(nullptr)
-{
-
-
-}
+	:material(nullptr),nullBuffer(nullptr), vertexCount(0), startVertexIndex(0), name(""),
+	startIndex(0), indexCount(0), materialName(""), boneDesc{},
+	 boneBuffer(nullptr), bHasMaterial(false)
+{}
 
 
 Mesh::~Mesh()
@@ -20,7 +17,7 @@ Mesh::~Mesh()
 	SafeRelease(boneBuffer);
 }
 
-void Mesh::CreateBuffer(ID3D11Device* device)
+void Mesh::CreateBuffer(ID3D11Device* device,const uint& actorIndex)
 {
 	SafeRelease(boneBuffer);
 	
@@ -33,6 +30,8 @@ void Mesh::CreateBuffer(ID3D11Device* device)
 	bufferDesc.ByteWidth = sizeof(BoneDesc);
 	Check(device->CreateBuffer(&bufferDesc, NULL, &boneBuffer));
 	
+	boneDesc.actorIndex = actorIndex;
+	int a = 0;
 }
 
 
@@ -40,25 +39,21 @@ void Mesh::ApplyPipeline(ID3D11DeviceContext * context)
 {
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
 	context->Map(boneBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-		
-	memcpy(MappedResource.pData, &boneIndex, sizeof(boneIndex));
-	
+
+	memcpy(MappedResource.pData, &boneDesc, sizeof(boneDesc));
 	context->Unmap(boneBuffer, 0);
 	context->VSSetConstantBuffers(2, 1, &boneBuffer);
 
 	//Render Material
-	
+	if(bHasMaterial)
 	material->ApplyMaterial(context);
-
-
-	
 }
 
 void Mesh::ApplyPipelineNoMaterial(ID3D11DeviceContext * context)
 {
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
 	context->Map(boneBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-	memcpy(MappedResource.pData, &boneIndex, sizeof(int));
+	memcpy(MappedResource.pData, &boneDesc, sizeof(boneDesc));
 	context->Unmap(boneBuffer, 0);
 	context->VSSetConstantBuffers(2, 1, &boneBuffer);
 }
@@ -67,34 +62,31 @@ void Mesh::ApplyPipelineReflectionMaterial(ID3D11DeviceContext * context)
 {
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
 	context->Map(boneBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-
-	
-	memcpy(MappedResource.pData, &boneIndex, sizeof(boneIndex));
-
-
+	memcpy(MappedResource.pData, &boneDesc, sizeof(boneDesc));
 	context->Unmap(boneBuffer, 0);
 	context->VSSetConstantBuffers(2, 1, &boneBuffer);
 
 	//Render Material
-
+	if (bHasMaterial)
 	material->ApplyRefeltionMaterial(context);
-
 }
 
 void Mesh::ClearPipeline(ID3D11DeviceContext * context)
 {
-	
 	context->VSSetConstantBuffers(2, 1, &nullBuffer);
-	
 }
 
 void Mesh::ClearPipelineMaterial(ID3D11DeviceContext * context)
 {
+	if (bHasMaterial)
 	material->ClearMaterial(context);
+	context->VSSetConstantBuffers(2, 1, &nullBuffer);
 }
 
 void Mesh::ClearPipelineReflection(ID3D11DeviceContext * context)
 {
+	if (bHasMaterial)
 	material->ClearReflectionMaterial(context);
+	context->VSSetConstantBuffers(2, 1, &nullBuffer);
 }
 

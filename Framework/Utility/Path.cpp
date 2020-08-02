@@ -62,7 +62,7 @@ wstring Path::GetExtension(wstring path)
 	String::Replace(&path, L"\\", L"/");
 	size_t index = path.find_last_of('.');
 
-	return path.substr(index + 1, path.length());;
+	return path.substr(index + 1, path.length());
 }
 
 string Path::GetFileName(string path)
@@ -174,7 +174,7 @@ void Path::OpenFileDialog(wstring file, const WCHAR* filter, wstring folder, uin
 		}
 	}
 }
-void Path::OpenFileDialog(wstring file, const WCHAR* filter, wstring folder, uint num, Material* material, function<void(wstring, uint,Material*)> func, HWND hwnd)
+void Path::OpenFileDialog(wstring file, const WCHAR * filter, wstring folder, uint num, shared_ptr<class Material> material, function<void(wstring, uint, shared_ptr<class Material>)> func, HWND hwnd)
 {
 	WCHAR name[255];
 	wcscpy_s(name, file.c_str());
@@ -201,12 +201,13 @@ void Path::OpenFileDialog(wstring file, const WCHAR* filter, wstring folder, uin
 			String::Replace(&loadName, L"\\", L"/");
 
 
-			func(loadName, num,material);
+			func(loadName, num, material);
 			loadName.clear();
 			loadName.shrink_to_fit();
 		}
 	}
 }
+
 
 void Path::SaveFileDialog(wstring file, const WCHAR* filter, wstring folder, function<void(wstring)> func, HWND hwnd)
 {

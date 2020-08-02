@@ -6,15 +6,23 @@ vector<TextureDesc> Textures::descs;
 
 
 
-void Texture::Load(ID3D11Device* device, wstring file, D3DX11_IMAGE_LOAD_INFO * loadInfo)
+void Texture::Load(ID3D11Device* device, wstring file, D3DX11_IMAGE_LOAD_INFO * loadInfo, bool IsInclude)
 {
 	this->file = file;
 	bool b = Path::IsRelativePath(file);
+	wstring temp = L"../../_Textures/";
+	if (IsInclude)
+	{
+		temp = L"../_Textures/";
+	}
 	if (b == true)
-		this->file = L"../../_Textures/" + file;
+		this->file = temp + file;
+
+
 
 	Textures::Load(device,this, loadInfo);
-	String::Replace(&this->file, L"../../_Textures", L"");
+	
+	String::Replace(&this->file, temp, L"");
 }
 
 void Textures::Create()

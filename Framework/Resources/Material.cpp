@@ -3,10 +3,10 @@
 
 Material::Material(ID3D11Device* device)
 	:device(device), name(L""), arrSRV{}, srvArray{}, colorDesc{}, colorBuffer(nullptr), nullBuffer(nullptr), textures(nullptr)
-	
+	, diffuseFile(L""), normalFile(L""),roughnessFile(L""), metallicFile(L"")
 {
-	SafeRelease(colorBuffer);
-	SafeDeleteArray(textures);
+    SafeRelease(colorBuffer);
+    SafeDeleteArray(textures);
 
 	textures = new Texture[MAX_MODEL_TEXTURE];
 

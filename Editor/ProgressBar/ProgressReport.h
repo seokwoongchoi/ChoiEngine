@@ -67,7 +67,7 @@ public:
 	{
 		auto& report = reports[progressID];
 
-		report.jobCount = jobCount;
+		report.jobCount += jobCount;
 		report.bLoading = true; //loadΩ√¿€
 	}
 	void SetIsLoading(const int& progressID, const bool& bLoading)

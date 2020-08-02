@@ -84,8 +84,8 @@ Material UnpackGBuffer(int2 location)
     
     Out.normal =  normalize(Out.normal * 2.0 - 1.0);
     
-    Out.metallic = baseColorSpecInt.w;
-    Out.roughness = normal.w;
+    Out.roughness = Out.Factors.x;
+    Out.metallic = Out.Factors.y;
     return Out;
 }
 

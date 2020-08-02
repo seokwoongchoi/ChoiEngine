@@ -393,7 +393,7 @@ void Island11::Refraction(ID3D11DeviceContext* context,ID3D11ShaderResourceView*
 {
 	
 	
-	context->ResolveSubresource(refraction_color_resource, 0, texture, 0, DXGI_FORMAT_R8G8B8A8_UNORM);
+	context->ResolveSubresource(refraction_color_resource, 0, texture, 0, DXGI_FORMAT_R10G10B10A2_UNORM);
 
     context->RSSetViewports(1, &main_Viewport);
 	context->OMSetRenderTargets(1, &refraction_depth_resourceRTV, nullptr);
@@ -1072,7 +1072,7 @@ void Island11::ReCreateBuffers()
 	tex_desc.Height = (UINT)(BackBufferHeight*refraction_buffer_size_multiplier);
 	tex_desc.MipLevels = (UINT)max(1, log(max((float)tex_desc.Width, (float)tex_desc.Height)) / (float)log(2.0f));
 	tex_desc.ArraySize = 1;
-	tex_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	tex_desc.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
 	tex_desc.SampleDesc.Count = 1;
 	tex_desc.SampleDesc.Quality = 0;
 	tex_desc.Usage = D3D11_USAGE_DEFAULT;
@@ -1080,7 +1080,7 @@ void Island11::ReCreateBuffers()
 	tex_desc.CPUAccessFlags = 0;
 	tex_desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
 
-	textureSRV_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureSRV_desc.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
 	textureSRV_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	textureSRV_desc.Texture2D.MipLevels = tex_desc.MipLevels;
 	textureSRV_desc.Texture2D.MostDetailedMip = 0;

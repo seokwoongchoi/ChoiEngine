@@ -166,6 +166,7 @@ copy /Y "$(SolutionDir)Debug\Framework.pdb" "$(SolutionDir)Editor\</Command>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="EventSystems\ActorAi.cpp" />
     <ClCompile Include="Core\D3D11\D3D.cpp" />
     <ClCompile Include="Environment\Island11.cpp" />
     <ClCompile Include="Environment\Sky\Cloud.cpp" />
@@ -208,6 +209,8 @@ copy /Y "$(SolutionDir)Debug\Framework.pdb" "$(SolutionDir)Editor\</Command>
     <ClCompile Include="Viewer\Viewport.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Resources\TextureTransforms.h" />
+    <ClInclude Include="EventSystems\ActorAi.h" />
     <ClInclude Include="Core\D3D11\D3D.h" />
     <ClInclude Include="Core\D3D11\D3D11_Helper.h" />
     <ClInclude Include="Environment\Island11.h" />

@@ -17,6 +17,8 @@
     <ClInclude Include="ImGui\ImGuizmo.h" />
     <ClInclude Include="ProgressBar\ProgressBar.h" />
     <ClInclude Include="ProgressBar\ProgressReport.h" />
+    <ClInclude Include="Debug\DebugLine.h" />
+    <ClInclude Include="Debug\DebugBox.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -31,5 +33,7 @@
     <ClCompile Include="ActorEditor\PreviewRenderer.cpp" />
     <ClCompile Include="ImGui\ImGuizmo.cpp" />
     <ClCompile Include="ProgressBar\ProgressBar.cpp" />
+    <ClCompile Include="Debug\DebugLine.cpp" />
+    <ClCompile Include="Debug\DebugBox.cpp" />
   </ItemGroup>
 </Project>

@@ -22,24 +22,44 @@ public:
 	void Ambient(const Color& color) {  }
 	Color Diffuse() { return colorDesc.Diffuse; }
 	void Diffuse(const Color& color) { colorDesc.Diffuse = color; }
-	Color Specular() { return colorDesc.Specular; }
-	void Specular(const Color& color) { colorDesc.Specular = color; }
+
 	float Roughness() { return  colorDesc.Diffuse.a; }
 	void Roughness(const float val) { colorDesc.Diffuse.a = val; }
 	float Metallic() { return colorDesc.Specular.a; }
 	void Metallic(float val) {  colorDesc.Specular.a = val; }
 public:
-	void DiffuseMap(wstring file) {  textures[0].Load(device,file); }
-	void NormalMap(wstring file) {  textures[1].Load(device,file); }
-	void SpecularMap(wstring file) { }
-	void RoughnessMap(wstring file) {  textures[2].Load(device,file); }
-	void MatallicMap(wstring file) {  textures[3].Load(device,file); }
+	void DiffuseMap(wstring& file,bool isInclude=false) 
+	{ 
+		diffuseFile = Path::GetFileName(file);
+		textures[0].Load(device,file, nullptr, isInclude);
+	}
+	void NormalMap(wstring& file, bool isInclude = false)
+	{
+		normalFile = Path::GetFileName(file);
+		textures[1].Load(device,file, nullptr, isInclude); 
+	}
+
+	void RoughnessMap(wstring& file, bool isInclude = false)
+	{
+		roughnessFile = Path::GetFileName(file);
+		textures[2].Load(device,file, nullptr, isInclude); 
+	}
+	void MetallicMap(wstring& file, bool isInclude = false) 
+	{
+		metallicFile = Path::GetFileName(file);
+		textures[3].Load(device,file,nullptr, isInclude); 
+	}
 	
 
-	Texture DiffuseMap() const { return  textures[0]; }
-	Texture NormalMap() const { return  textures[1]; }
-	Texture RoughnessMap() const { return textures[2]; }
-	Texture MatallicMap()const { return textures[3]; }
+	Texture& DiffuseMap() const { return  textures[0]; }
+	Texture& NormalMap() const { return  textures[1]; }
+	Texture& RoughnessMap() const { return textures[2]; }
+	Texture& MetallicMap()const { return textures[3]; }
+	
+	wstring& DiffuseFile()  { return  diffuseFile; }
+	wstring& NormalFile()  { return normalFile; }
+	wstring& RoughnessFile()  { return roughnessFile; }
+	wstring& MetallicFile() { return metallicFile; }
 private:
 	wstring name;
 private:
@@ -48,6 +68,10 @@ private:
 	ID3D11ShaderResourceView* arrSRV[5];
 	ID3D11ShaderResourceView* srvArray[2];
 
+	wstring diffuseFile;
+	wstring normalFile;
+	wstring roughnessFile;
+	wstring metallicFile;
 
 private:
 	struct ColorDesc

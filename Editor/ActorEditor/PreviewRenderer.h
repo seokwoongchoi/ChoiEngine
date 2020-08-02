@@ -3,45 +3,64 @@
 
 class PreviewRenderer
 {
-	friend class ActorEditor;
+		friend class ActorEditor;
 public:
 	PreviewRenderer(ID3D11Device* device);
 		
 	~PreviewRenderer();
 public:
-	void Update(const Vector2& size);
+	void AnimationUpdate(ID3D11DeviceContext* context);
+	void Update(const Vector2& size, const float& camSpeed);
 	void Render(ID3D11DeviceContext* context);
+	void DebugRender(ID3D11DeviceContext* context);
 public:
 	void SaveMeshFile(const wstring& name, const ReadMeshType& meshType);
+	void SaveMaterialFile(const wstring& name);
 public:
 	void CreateSahders(const string& file);
-	void ReadMesh(const wstring& name, const ReadMeshType& meshType);
+	void ReadMesh(const wstring& file, const ReadMeshType& meshType);
+	void ReadEditedMesh(const wstring& file, const ReadMeshType& meshType);
 	void ReadMaterial(const wstring& name);
+	void ReadEditedMaterial(const wstring& name);
 	void ReadClip(const wstring& name);
+
+	void ReadAttachMesh(const wstring& path, const ReadMeshType& meshType, const uint& parentBoneIndex);
+	
 public:
 
 	void DeleteMesh(const uint& index);
 	void BlendMesh(const uint& index);
 
 private:
-	void BindingBone(const ReadMeshType& meshType);
+	
 	void BindingStaticMesh();
-	void BindingSkeletaMesh();
+	void BindingSkeletalMesh();
+	void BindingMaterialBone();
 
 private:
-	shared_ptr<class ProgressBar> progress;
-private:
+	ReadMeshType  meshType;
 	ID3D11Device * device;
+	shared_ptr<class ProgressBar> progress;
 private:
 	shared_ptr<Texture> preintegratedFG;
 	ID3D11ShaderResourceView* skyIRSRV;
 private:
+	
 	ID3D11Buffer* vertexBuffer;
 	ID3D11Buffer* indexBuffer;
 	class InputLayout* inputLayout;
 private:
 	ID3D11VertexShader* VS;
 	ID3D11PixelShader* PS;
+public:
+	
+	uint boxCount;
+	Matrix boxWorld;
+	void GetBoxSize(const Vector3& min,const Vector3& max);
+	Vector3 boxMin;
+	Vector3 boxMax;
+	
+	Vector3  dest[8], temp[8];
 private:
 	uint stride;
 	uint slot;
@@ -52,7 +71,11 @@ private://RasterizerState
 	ID3D11SamplerState   * sampLinear;
 	ID3D11BlendState*  AdditiveBlendState;
 protected://Meshs
+	vector<shared_ptr<class ModelBone>> attachBones;
+	vector<shared_ptr<class Mesh>> attachMeshes;
+	vector<shared_ptr<class ModelClip>> clips;
 	vector<shared_ptr<class Mesh>> meshes;
+	vector<shared_ptr<class Mesh>> blendMeshes;
 	uint blendMeshIndex;
 	vector<shared_ptr<class ModelBone>> bones;
 	vector<shared_ptr<class Material>>materials;
@@ -66,13 +89,14 @@ protected://Meshs
 private:
 	Vector3 targetPosition;
 	float distance;
-	Vector2 R;
+	Vector2 rotation;
 	Matrix view;
 	Matrix proj;
 	Vector3 viewRight;
 	Vector3 viewUp;
 private://Cbuffer
 	void CreateConstantBuffers();
+	void CreateAnimConstantBuffers();
 	struct PreviewDesc
 	{
 		Matrix W;
@@ -89,13 +113,96 @@ private://Cbuffer
 		float pad;
 	}eyeDesc;
 	ID3D11Buffer* eyeBuffer;
+protected:
+	void UpdateCurrFameAnimTransformSRV();
+	
 private:
 	void CreateModelTransformSRV();
 	void CreateAnimTransformSRV();
+	
+	
 	ID3D11Texture2D* texture;
 	ID3D11ShaderResourceView* srv;
 	ID3D11ShaderResourceView* nullSRV;
 	bool bLoaded;
-	bool bLoadingStart;
+	
+protected:
+	bool bPause;
+	struct KeyframeDesc
+	{
+		int Clip = 0;
+		uint CurrFrame = 0;
+		uint NextFrame = 0;
+		float Time = 0.0f;
+		float RunningTime = 0.0f;
+		Vector3 pad=Vector3(0,0,0);
+	};
+
+	struct TweenDesc
+	{
+		float TakeTime = 0.2f;
+		float TweenTime = 0.0f; 
+		float ChangeTime = 0.0f;
+		float pad;
+
+		KeyframeDesc Curr;
+		KeyframeDesc Next;
+
+		TweenDesc()
+		{
+			Curr.Clip = 0;
+			Next.Clip = -1;
+		}
+	}tweenDesc;
+	
+
+
+	ID3D11Buffer* tweenBuffer;
+	
+	const Matrix& GetSkinnedMatrix(const uint& index);
+
+	
+private:
+	struct BoneTransform
+	{
+		Matrix** Transform;
+		BoneTransform()
+		{}
+
+		void CreateTransforms(const uint& keyframe, const uint& boneCount)
+		{
+			this->keyframe = keyframe;
+			Transform = new Matrix*[keyframe];
+
+			for (UINT i = 0; i < keyframe; i++)
+				Transform[i] = new Matrix[boneCount];
+		}
+		~BoneTransform()
+		{
+
+			for (UINT i = 0; i < keyframe; i++)
+				SafeDeleteArray(Transform[i]);
+
+			SafeDeleteArray(Transform);
+		}
+		uint keyframe;
+	};
+	uint nuArmedBoneCount;
+	BoneTransform* skinTransforms ;
+	Matrix* saveParentMatrix;
+	uint maxkeyframe ;
+	uint unArmedBoneCount;
+
+	Matrix skinnedTransform;
+	Matrix invGlobal;
+	Matrix parent;
+	Matrix S, R, T;
+	Matrix animation;
+
+	UINT pageSize;
+	void* p;
 };
+
+
+
 

@@ -10,9 +10,14 @@
 #include "PostEffects/SSLR.h"
 #include "PostEffects/SSAO.h"
 #include "EventSystems/Renderer.h"
+#include "EventSystems/ColliderSystem.h"
+#include "EventSystems/Animator.h"
 #include "Utility/QuadTree.h"
+
+
 Editor::Editor()
-	:bStart(false), flags(0)
+	:bStart(false), flags(0), IsPushed(false), pushedActorIndex(-1), pushedMeshType(ReadMeshType::Default),
+	staticActorCount(0),skeletalActorCount(0), bShowCollider(false)
 {
     engine= new Engine();
 
@@ -46,6 +51,10 @@ Editor::Editor()
 		buttonTextures[2]->Load(engine->device, L"stopButton.png");
 	}
 	tree = new QuadTree();
+
+	DebugLine::Get()->Initiallize(engine->device);
+	
+	D3DXMatrixIdentity(&identity);
 }
 
 Editor::~Editor()
@@ -69,6 +78,8 @@ void Editor::Resize(const uint & width, const uint & height)
 
 void Editor::Update()
 {
+	
+
 	if (!ImGui::IsAnyWindowHovered() && !ImGui::IsAnyItemHovered())
 	{
 		Keyboard::Get()->Update();
@@ -79,7 +90,93 @@ void Editor::Update()
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImGui::SetNextWindowSize(ImVec2(static_cast<float>(D3D::Width()), static_cast<float>(D3D::Height())));
 
+	ImGui::SetNextWindowBgAlpha(0.0f);
+
+	ImGui::Begin
+	(
+		"TextWindow", NULL,
+		ImGuiWindowFlags_NoTitleBar |
+		ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoScrollbar |
+		ImGuiWindowFlags_NoScrollWithMouse |
+		ImGuiWindowFlags_NoCollapse |
+		ImGuiWindowFlags_NoSavedSettings |
+		ImGuiWindowFlags_NoInputs |
+		ImGuiWindowFlags_NoFocusOnAppearing |
+		ImGuiWindowFlags_NoBringToFrontOnFocus |
+		ImGuiWindowFlags_NoDocking |
+		ImGuiWindowFlags_NoNavFocus
+	);
+
+	if (IsPushed)
+	{
+		static ImGuizmo::OPERATION operation(ImGuizmo::TRANSLATE);
+		//static ImGuizmo::MODE mode(ImGuizmo::WORLD);
+		static ImGuizmo::MODE mode(ImGuizmo::LOCAL);
+		if (ImGui::IsKeyPressed('T'))//w
+			operation = ImGuizmo::TRANSLATE;
+		if (ImGui::IsKeyPressed('Y'))//e
+			operation = ImGuizmo::ROTATE;
+		if (ImGui::IsKeyPressed('U'))//r
+			operation = ImGuizmo::SCALE;
+		
+		switch (pushedMeshType)
+		{
+		case ReadMeshType::StaticMesh:
+		{
+		
+			Matrix gizmo = engine->collider->GetInstMatrix(pushedActorIndex);
+			Matrix gizmoDelta;
+			D3DXMatrixIdentity(&gizmoDelta);
+		
+			const	ImGuiIO& io = ImGui::GetIO();
+			ImGuizmo::SetDrawlist();
+			ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+			ImGuizmo::Manipulate(GlobalData::GetView(), GlobalData::GetProj(), operation, mode,
+				gizmo, gizmoDelta, nullptr);
+
+			bool isMove = false;
+			if (gizmoDelta != identity)
+			{
+				isMove = true;
+			}
+			Vector3 ScaleLenth = Vector3(gizmoDelta._11 - 1.0f, gizmoDelta._22 - 1.0f, gizmoDelta._33 - 1.0f);
+			float scaleL = D3DXVec3Length(&ScaleLenth);
+			if (Math::Abs(scaleL) > 0.5f)
+			{
+				isMove = false;
+			}
+			if (isMove)
+			{
+				engine->collider->SetInstMatrix(pushedActorIndex,gizmo);
+			}
+			
+		}
+		break;
+		case ReadMeshType::SkeletalMesh:
+		{
+			/*auto& renderer = engine->skeletalRenderer[pushedActorIndex];
+			Matrix temp;
+			D3DXMatrixTranspose(&temp, &renderer.RenderWorld());
+			const	ImGuiIO& io = ImGui::GetIO();
+			ImGuizmo::SetDrawlist();
+			ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+			ImGuizmo::Manipulate(GlobalData::GetView(), GlobalData::GetProj(), operation, mode,
+				temp, nullptr, nullptr);
+			renderer.RenderWorld(temp);*/
+		}
+		break;
+	
+		}
+		
+		
+	}
+	
+	ImGui::End();
 	if (!bStart&&tree->Intersection(pos))
 	{
 		AddTrasform(pos);
@@ -91,16 +188,10 @@ void Editor::Update()
 	
 }
 
-
 void Editor::Render()
 {
-
-
-	
-
 	engine->Begin();
 	engine->Render();
-	
 	
 	MenuBar();
 	ToolBar();
@@ -114,13 +205,13 @@ void Editor::Render()
 	
 	PostEffects();
 	ActorAsset();
+
+	if(bShowCollider)
+	DebugRender();
+	
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
-
-	
 	engine->Present();
-	
 	
 }
 
@@ -167,25 +258,46 @@ void Editor::PostEffects()
 	ImGui::End();
 }
 
-
-
 void Editor::ActorAsset()
 {
 	if (bStart)return;
 
 	ImGui::Begin("Assets", 0, flags);
 	{
-
-		for (auto& actor : actors)
+		static bool isEditActor = false;
+		static vector< shared_ptr<ActorEditor>>::iterator saveIter;
+		vector< shared_ptr<ActorEditor>>::iterator find = find_if(actors.begin(), actors.end(), [](shared_ptr<ActorEditor>actor)
 		{
-			actor->ImageButton(engine);
-			
+			return actor->ImageButton();
+		});
 		
-			ImGui::SameLine();
+		if (find != actors.end())
+		{
+			isEditActor = true;
+			if (ImGui::GetIO().MouseDown[1])
+				ImGui::OpenPopup("actorPopUp");
+
+			saveIter = find;
+
 		}
+		else
+		{
+			isEditActor = false;
+		}
+		if (ImGui::BeginPopup("actorPopUp"))
+		{
+			if (ImGui::MenuItem("Copy")) {}
+			if (ImGui::MenuItem("Delete"))
+			{
+				actors.erase(saveIter);
+			}
+			ImGui::EndPopup();
+		}
+		ImGui::SameLine();
+		
 		if (ImGui::IsWindowHovered())
 		{
-			if (ImGui::GetIO().MouseDown[1])
+			if (!isEditActor&&ImGui::GetIO().MouseDown[1])
 				ImGui::OpenPopup("Popup");
 		}
 		if (ImGui::BeginPopup("Popup"))
@@ -193,16 +305,16 @@ void Editor::ActorAsset()
 			if (ImGui::MenuItem("Copy")) {}
 			if (ImGui::MenuItem("Delete"))
 			{
-				//DeleteActor();
+				
 			}
 
 			ImGui::Separator();
 
 			if (ImGui::MenuItem("Add Actor"))
 			{
-				ActorEditor* actor = new ActorEditor(engine->device);
+				auto& actor = make_shared<ActorEditor>(engine->device,engine,this);
 				
-				actor->ActorIndex(actors.size());
+				
      			actors.emplace_back(actor);
 
 			}
@@ -258,7 +370,7 @@ void Editor::MenuBar()
 
 void Editor::ToolBar()
 {
-	ImGui::Begin("ToolBar",0, flags);
+	ImGui::Begin("ToolBar",0,flags);
 	{
 		if (ImGui::ImageButton(buttonTextures[0]->SRV(), ImVec2(20.0f, 20.0f)))//play
 		{
@@ -280,6 +392,8 @@ void Editor::ToolBar()
 			bStart = false;
 			Time::Get()->Stop();
 		}
+		
+		ImGui::Checkbox("Show ColliderBox", &bShowCollider);
 		const string& str = string("Frame Rate : ") + to_string(ImGui::GetIO().Framerate);
 		ImGui::Text(str.c_str());
 
@@ -298,21 +412,95 @@ void Editor::AddTrasform(const Vector3 & pos)
 	if (bStart) return;
 
 	auto darggedActor = std::find_if(actors.begin(), actors.end(),
-		[](ActorEditor* actor) {return actor->IsDragged() == true; });
+		[](shared_ptr<ActorEditor> actor) {return actor->IsDragged() == true; });
 	if (darggedActor != actors.end())
 	{
 		auto actor = *darggedActor;
-		if (actor->IsComiled() == false) return;
+		if (actor->IsMove() == false) return;
 		if (Mouse::Get()->Up(0))
 		{
-			engine->PusInstance(actor->ActorIndex(),pos,Vector3(0.01f,0.01f,0.01f));
+			Matrix previewWorld;
+			D3DXMatrixTranspose(&previewWorld, &actor->PreviewWorld());
+			previewWorld._41 = pos.x;
+			previewWorld._42 = pos.y;
+			previewWorld._43 = pos.z;
+
+			pushedActorIndex = actor->ActorIndex();
+			pushedMeshType = actor->MeshType();
+			engine->PusInstance(pushedActorIndex, previewWorld, pushedMeshType);
+
+		//	uint boxCallIndex = actor->BoxCallIndex();
+		//	DebugLine::Get()->SetInstPointer(engine->collider->GetInstMatrixPointer(pushedActorIndex), boxCallIndex,0);
+		//	DebugLine::Get()->DrawCount(boxCallIndex);
+
 			actor->IsDragged(false);
+			IsPushed = true;
 		}
 
 	}
 
 }
 
+void Editor::DebugRender()
+{
+	uint renderedStaticActorCount = engine->collider->ActorCount();
+	uint renderedSkeletalActorCount = engine->animator->ActorCount();
+
+	Color color = Color(1, 0, 0, 1);
+	for (uint i = 0; i < renderedStaticActorCount; i++)
+	{
+		uint darCount = engine->collider->DrawCount(i);
+		for (uint d = 0; d < darCount; d++)
+		{
+			Vector3* dest = engine->collider->GetBoxMinMax(i, d);
+			//Front
+			DebugLine::Get()->RenderLine(dest[0], dest[1], color);
+			DebugLine::Get()->RenderLine(dest[1], dest[3], color);
+			DebugLine::Get()->RenderLine(dest[3], dest[2], color);
+			DebugLine::Get()->RenderLine(dest[2], dest[0], color);
+
+			//Backward
+			DebugLine::Get()->RenderLine(dest[4], dest[5], color);
+			DebugLine::Get()->RenderLine(dest[5], dest[7], color);
+			DebugLine::Get()->RenderLine(dest[7], dest[6], color);
+			DebugLine::Get()->RenderLine(dest[6], dest[4], color);
+
+			//Side
+			DebugLine::Get()->RenderLine(dest[0], dest[4], color);
+			DebugLine::Get()->RenderLine(dest[1], dest[5], color);
+			DebugLine::Get()->RenderLine(dest[2], dest[6], color);
+			DebugLine::Get()->RenderLine(dest[3], dest[7], color);
+		}
+	}
+
+	for (uint i = 0; i < renderedSkeletalActorCount; i++)
+	{
+		uint darCount = engine->animator->DrawCount(i);
+		for (uint d = 0; d < darCount; d++)
+		{
+			Vector3* dest = engine->animator->GetBoxMinMax(i, d);
+			//Front
+			DebugLine::Get()->RenderLine(dest[0], dest[1], color);
+			DebugLine::Get()->RenderLine(dest[1], dest[3], color);
+			DebugLine::Get()->RenderLine(dest[3], dest[2], color);
+			DebugLine::Get()->RenderLine(dest[2], dest[0], color);
+
+			//Backward
+			DebugLine::Get()->RenderLine(dest[4], dest[5], color);
+			DebugLine::Get()->RenderLine(dest[5], dest[7], color);
+			DebugLine::Get()->RenderLine(dest[7], dest[6], color);
+			DebugLine::Get()->RenderLine(dest[6], dest[4], color);
+
+			//Side
+			DebugLine::Get()->RenderLine(dest[0], dest[4], color);
+			DebugLine::Get()->RenderLine(dest[1], dest[5], color);
+			DebugLine::Get()->RenderLine(dest[2], dest[6], color);
+			DebugLine::Get()->RenderLine(dest[3], dest[7], color);
+		}
+	}
+	DebugLine::Get()->Render(engine->immediateContext);
+
+}
 
 void Editor::ApplyStyle()
 {

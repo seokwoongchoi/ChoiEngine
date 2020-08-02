@@ -519,9 +519,9 @@ struct PS_GBUFFER_OUT
 PS_GBUFFER_OUT PackGBuffer(float3 BaseColor,  float3 Normal, float metallic, float roughness, float terrainMask = 1)
 {
     PS_GBUFFER_OUT Out;
-    Out.ColorSpecInt = float4(BaseColor.rgb, metallic);
-    Out.Specular = float4(0.0,0.0,0.0, terrainMask);
-    Out.Normal = float4(normalize(Normal.rgb+0.5+0.5), roughness);
+    Out.ColorSpecInt = float4(BaseColor.rgb, 0.0);
+    Out.Specular = float4(roughness, metallic, 0.0, terrainMask);
+    Out.Normal = float4(normalize(Normal.rgb+0.5+0.5), 0.0);
     return Out;
 }
 PS_GBUFFER_OUT HeightFieldPatchPacking(PSIn_Diffuse input)

@@ -1,13 +1,14 @@
 #pragma once
 #define MAX_ACTOR_COUNT 10
-#define MAX_THREAD_COUNT 5
+#define MAX_THREAD_COUNT 6
 
 class Engine final
 {
-
 #ifdef EDITORMODE
 	friend class Editor;
+
 #endif
+
 
 public:
 	Engine();
@@ -15,8 +16,10 @@ public:
 	Engine(const Engine&) = delete;
 	Engine& operator=(const Engine&) = delete;
 
+
+	
 	void Load(const uint& index, const wstring& modelName, const ReadMeshType& meshTyp);
-	void PusInstance(const uint & index, const Vector3& pos, const Vector3& scale);
+	void PusInstance(const uint & index, const  Matrix& world, const ReadMeshType& meshType);
 public:
 
 	void Resize(uint width, uint height);
@@ -39,7 +42,10 @@ protected:
 	shared_ptr<Texture> preintegratedFG;
 	ID3D11ShaderResourceView* skyIRSRV;
 protected:
-	class Renderer* renderer;
+	class Animator* animator;
+	class ColliderSystem* collider;
+	class Renderer* staticRenderer;
+	class Renderer* skeletalRenderer;
 private:
 	class Camera* mainCamera;
 	Matrix VP;
@@ -80,7 +86,8 @@ private:
 
 	float ClearColor[4];
 private:
-	uint actorCount;
+	uint staticActorCount;
+	uint skeletalActorCount;
 
 //private:
 //	struct CB_FOG

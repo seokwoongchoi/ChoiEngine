@@ -156,21 +156,21 @@ void GBufferData::CreateViews()
 
 	// Texture formats
 	static const DXGI_FORMAT depthStencilTextureFormat = DXGI_FORMAT_R24G8_TYPELESS;
-	static const DXGI_FORMAT basicColorTextureFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-	static const DXGI_FORMAT normalTextureFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-	static const DXGI_FORMAT specPowTextureFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+	static const DXGI_FORMAT basicColorTextureFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
+	static const DXGI_FORMAT normalTextureFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
+	static const DXGI_FORMAT specPowTextureFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
 
 	// Render view formats
 	static const DXGI_FORMAT depthStencilRenderViewFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	static const DXGI_FORMAT basicColorRenderViewFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-	static const DXGI_FORMAT normalRenderViewFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-	static const DXGI_FORMAT specPowRenderViewFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+	static const DXGI_FORMAT basicColorRenderViewFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
+	static const DXGI_FORMAT normalRenderViewFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
+	static const DXGI_FORMAT specPowRenderViewFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
 
 	// Resource view formats
 	static const DXGI_FORMAT depthStencilResourceViewFormat = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-	static const DXGI_FORMAT basicColorResourceViewFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-	static const DXGI_FORMAT normalResourceViewFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-	static const DXGI_FORMAT specPowResourceViewFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+	static const DXGI_FORMAT basicColorResourceViewFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
+	static const DXGI_FORMAT normalResourceViewFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
+	static const DXGI_FORMAT specPowResourceViewFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
 
 	// Allocate the depth stencil target
 	D3D11_TEXTURE2D_DESC dtd = {

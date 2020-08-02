@@ -1,8 +1,9 @@
 #pragma once
 enum class ReadMeshType:uint
 {
+	Default,
 	StaticMesh,
-	SkeletaMesh,
+	SkeletalMesh,
 };
 
 struct GlobalViewData

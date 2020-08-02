@@ -13,14 +13,11 @@ cbuffer CB_View : register(b1)
 cbuffer CB_Bone : register(b2)
 {
     uint BoneIndex : packoffset(c0.x);
-   
+    uint actorIndex : packoffset(c0.y);
+    uint clipIndex : packoffset(c0.z);
+    uint prevDrawCount : packoffset(c0.w);
 };
 
-cbuffer CB_ModelInstance : register(b3)
-{
-    matrix InstTransforms[MAX_MODEL_INSTANCE] : packoffset(c0);
-   
-};
 
 cbuffer CB_Material : register(b0)
 {
@@ -43,10 +40,10 @@ struct VertexModelOutput
     float2 Uv : Uv0;
     float3 Normal : Normal0;
     float3 Tangent : Tangent0;
-    
+   
    // float4 Cull : SV_CullDistance0;
 };
-
+Texture2D<float4> InstTransforms : register(t0);
 ///////////////////////////////////////////////////////////////////////////////
 
 
@@ -87,9 +84,9 @@ struct PS_GBUFFER_OUT
 PS_GBUFFER_OUT PackGBuffer(float3 BaseColor, float3 Normal, float metallic, float roughness, float terrainMask = 1)
 {
     PS_GBUFFER_OUT Out;
-    Out.ColorSpecInt = float4(BaseColor.rgb, metallic);
-    Out.Specular = float4(0.0,0.0,0.0, terrainMask);
-    Out.Normal = float4(Normal.rgb*0.5+0.5 ,roughness);
+    Out.ColorSpecInt = float4(BaseColor.rgb, 0.0);
+    Out.Specular = float4(roughness, metallic, 0.0, terrainMask);
+    Out.Normal = float4(Normal.rgb*0.5+0.5 ,0.0);
     return Out;
 }
 

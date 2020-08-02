@@ -3,9 +3,8 @@
 class Mesh
 {
 public:
-	friend class Renderer; 
+	friend class Renderer;
 	
-
 #ifdef EDITORMODE
 	friend class PreviewRenderer;
 	friend class ActorEditor;
@@ -14,7 +13,7 @@ public:
 	Mesh();
 	~Mesh();
 
-	void CreateBuffer(ID3D11Device* device);
+	void CreateBuffer(ID3D11Device* device, const uint& actorIndex);
 	void ApplyPipeline(ID3D11DeviceContext* context);
 	void ApplyPipelineNoMaterial(ID3D11DeviceContext* context);
 	void ApplyPipelineReflectionMaterial(ID3D11DeviceContext* context);
@@ -25,7 +24,7 @@ public:
 protected:
 	string name;
 	shared_ptr<class Material> material;
-	
+	bool bHasMaterial;
 protected:
 	
 
@@ -36,16 +35,17 @@ protected:
 protected:
 	string materialName;
 	
-	Vector3 minPos;
-	Vector3 maxPos;
+	
 
 protected:
-	shared_ptr<class ModelBone> bone;
-	uint boneIndex;
+//	shared_ptr<class ModelBone> bone;
+	
 	struct BoneDesc
 	{
-		int Index = -1;
-		Vector3 lightDirection = Vector3(1, -1, 1);
+		int boneIndex = -1;
+		uint actorIndex = 0;
+		uint clipIndex = 0;
+		uint pad = 0;
 	} boneDesc;
 	ID3D11Buffer* boneBuffer;
 	ID3D11Buffer* nullBuffer;
@@ -54,7 +54,8 @@ protected:
 class ModelBone
 {
 public:
-	friend class Renderer;
+	friend class ColliderSystem;
+	friend class Animator;
 #ifdef EDITORMODE
 	friend class PreviewRenderer;
 	friend class ActorEditor;
@@ -117,13 +118,14 @@ struct ModelKeyframe
 class ModelClip
 {
 public:
-	friend class Renderer;
+	friend class Animator;
+	
 #ifdef EDITORMODE
 	friend class PreviewRenderer;
 	friend class ActorEditor;
 #endif
 
-private:
+public:
 	ModelClip() :name(L""), duration(0.0f), frameRate(0.0f), frameCount(0)
 	{}
 	~ModelClip() = default;
@@ -131,9 +133,9 @@ private:
 public:
 	float Duration() { return duration; }
 	inline float FrameRate() { return frameRate; }
-	inline UINT FrameCount() { return frameCount; }
+	inline const uint& FrameCount() { return frameCount; }
 
-	ModelKeyframe* Keyframe(const wstring& name)
+	inline shared_ptr<ModelKeyframe> Keyframe(const wstring& name)
 	{
 		if (keyframeMap.count(name) < 1)
 			return nullptr;
@@ -149,6 +151,8 @@ private:
 	float frameRate;
 	UINT frameCount;
 
-	unordered_map<wstring, ModelKeyframe *> keyframeMap;
+	unordered_map<wstring, shared_ptr<ModelKeyframe>> keyframeMap;
+
+	
 
 };

@@ -20,6 +20,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ActorEditor\ActorEditor.h" />
+    <ClInclude Include="Debug\DebugBox.h" />
+    <ClInclude Include="Debug\DebugLine.h" />
     <ClInclude Include="Editor.h" />
     <ClInclude Include="ImGui\ImGuizmo.h" />
     <ClInclude Include="ImGui\imgui_impl_dx11.h" />
@@ -38,6 +40,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ActorEditor\ActorEditor.cpp" />
+    <ClCompile Include="Debug\DebugBox.cpp" />
+    <ClCompile Include="Debug\DebugLine.cpp" />
     <ClCompile Include="Editor.cpp" />
     <ClCompile Include="ImGui\ImGuizmo.cpp" />
     <ClCompile Include="ImGui\imgui_impl_dx11.cpp" />

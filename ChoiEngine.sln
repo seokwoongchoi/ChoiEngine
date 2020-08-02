@@ -9,7 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shader", "Shader", "{BCEB0D
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ComputeShaders", "ComputeShaders", "{936820A1-ED2B-4224-97D3-9016FF170720}"
 	ProjectSection(SolutionItems) = preProject
-		_Shaders\ComputeShaders\30_Collider.fx = _Shaders\ComputeShaders\30_Collider.fx
+		_Shaders\ComputeShaders\ColliderCS.hlsl = _Shaders\ComputeShaders\ColliderCS.hlsl
 		_Shaders\ComputeShaders\CollisonCS.fx = _Shaders\ComputeShaders\CollisonCS.fx
 		_Shaders\ComputeShaders\Matrix.hlsl = _Shaders\ComputeShaders\Matrix.hlsl
 		_Shaders\ComputeShaders\UpdateHeightCS.fx = _Shaders\ComputeShaders\UpdateHeightCS.fx
@@ -74,7 +74,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Model", "Model", "{9F50F7E7-70A2-4142-BEFA-C76F1C402C61}"
 	ProjectSection(SolutionItems) = preProject
 		_Shaders\Header.hlsl = _Shaders\Header.hlsl
-		_Shaders\PreviewModel.hlsl = _Shaders\PreviewModel.hlsl
+		_Shaders\PreviewHeader.hlsl = _Shaders\PreviewHeader.hlsl
+		_Shaders\PreviewSkeletalModel.hlsl = _Shaders\PreviewSkeletalModel.hlsl
+		_Shaders\PreviewStaticModel.hlsl = _Shaders\PreviewStaticModel.hlsl
 		_Shaders\SkeletalMesh.hlsl = _Shaders\SkeletalMesh.hlsl
 		_Shaders\StaticMesh.hlsl = _Shaders\StaticMesh.hlsl
 	EndProjectSection
@@ -87,25 +89,41 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PBR", "PBR", "{6A27378A-5BD
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utillity", "Utillity", "{EC3615B1-14F3-4AB7-A732-B8F26101836C}"
 	ProjectSection(SolutionItems) = preProject
+		_Shaders\000_Matrix.hlsl = _Shaders\000_Matrix.hlsl
 		_Shaders\DebugLine.hlsl = _Shaders\DebugLine.hlsl
+		_Shaders\PreviewDebug.hlsl = _Shaders\PreviewDebug.hlsl
 	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0662B614-4C61-420D-A031-245F7CA673D1}.Debug|x64.ActiveCfg = Debug|x64
+		{0662B614-4C61-420D-A031-245F7CA673D1}.Debug|x64.Build.0 = Debug|x64
 		{0662B614-4C61-420D-A031-245F7CA673D1}.Debug|x86.ActiveCfg = Debug|Win32
 		{0662B614-4C61-420D-A031-245F7CA673D1}.Debug|x86.Build.0 = Debug|Win32
+		{0662B614-4C61-420D-A031-245F7CA673D1}.Release|x64.ActiveCfg = Release|x64
+		{0662B614-4C61-420D-A031-245F7CA673D1}.Release|x64.Build.0 = Release|x64
 		{0662B614-4C61-420D-A031-245F7CA673D1}.Release|x86.ActiveCfg = Release|Win32
 		{0662B614-4C61-420D-A031-245F7CA673D1}.Release|x86.Build.0 = Release|Win32
+		{5221BF51-2735-4650-81E9-FFDA12FA0654}.Debug|x64.ActiveCfg = Debug|x64
+		{5221BF51-2735-4650-81E9-FFDA12FA0654}.Debug|x64.Build.0 = Debug|x64
 		{5221BF51-2735-4650-81E9-FFDA12FA0654}.Debug|x86.ActiveCfg = Debug|Win32
 		{5221BF51-2735-4650-81E9-FFDA12FA0654}.Debug|x86.Build.0 = Debug|Win32
+		{5221BF51-2735-4650-81E9-FFDA12FA0654}.Release|x64.ActiveCfg = Release|x64
+		{5221BF51-2735-4650-81E9-FFDA12FA0654}.Release|x64.Build.0 = Release|x64
 		{5221BF51-2735-4650-81E9-FFDA12FA0654}.Release|x86.ActiveCfg = Release|Win32
 		{5221BF51-2735-4650-81E9-FFDA12FA0654}.Release|x86.Build.0 = Release|Win32
+		{8FA2D9FF-6789-4CA4-A296-AC1DCA0CA0B8}.Debug|x64.ActiveCfg = Debug|x64
+		{8FA2D9FF-6789-4CA4-A296-AC1DCA0CA0B8}.Debug|x64.Build.0 = Debug|x64
 		{8FA2D9FF-6789-4CA4-A296-AC1DCA0CA0B8}.Debug|x86.ActiveCfg = Debug|Win32
 		{8FA2D9FF-6789-4CA4-A296-AC1DCA0CA0B8}.Debug|x86.Build.0 = Debug|Win32
+		{8FA2D9FF-6789-4CA4-A296-AC1DCA0CA0B8}.Release|x64.ActiveCfg = Release|x64
+		{8FA2D9FF-6789-4CA4-A296-AC1DCA0CA0B8}.Release|x64.Build.0 = Release|x64
 		{8FA2D9FF-6789-4CA4-A296-AC1DCA0CA0B8}.Release|x86.ActiveCfg = Release|Win32
 		{8FA2D9FF-6789-4CA4-A296-AC1DCA0CA0B8}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection

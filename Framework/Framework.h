@@ -48,7 +48,7 @@ using namespace std;
 #pragma comment(lib, "directxtex.lib")
 
 #define Check(hr) { assert(SUCCEEDED(hr)); }
-#define Super __super
+
 
 #define SafeRelease(p){ if(p){ (p)->Release(); (p) = NULL; } }
 #define SafeDelete(p){ if(p){ delete (p); (p) = NULL; } }

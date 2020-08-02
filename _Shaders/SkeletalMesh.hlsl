@@ -1,5 +1,5 @@
 #include "Header.hlsl"
-Texture2DArray<float4> AnimBoneTransforms : register(t0);
+Texture2DArray<float4> AnimBoneTransforms : register(t1);
 struct VertexSkeletal
 {
     float4 Position : Position0;
@@ -16,25 +16,25 @@ struct VertexSkeletal
 ///////////////////////////////////////////////////////////////////////////////
 struct Keyframe
 {
-    int Clip 
+    int Clip;
     uint CurrFrame;
     uint NextFrame;
     float Time;
-   
+    float4 pad1;
 };
 
 struct TweenFrame
 {
-    float TweenTime : packoffset(c0.x);
-    float TakeTime : packoffset(c0.y);
+    float TakeTime ;
+    float TweenTime;
     float2 Padding;
 
-    Keyframe Curr : packoffset(c1);
-    Keyframe Next : packoffset(c2);
+    Keyframe Curr ;
+    Keyframe Next ;
 
    
 };
-cbuffer CB_AnimationFrame : register(b4)
+cbuffer CB_AnimationFrame : register(b3)
 {
     TweenFrame Tweenframes[MAX_MODEL_INSTANCE];
 
@@ -114,7 +114,12 @@ void SetAnimationWorld(float4 BlendIndices, float4 BlendWeights, uint InstID)
         transform += mul(boneWeights[i], Anim);
     }
      
-    World = mul(transform, InstTransforms[instId]);
+    float4 inst1 = InstTransforms[int2(InstID * 4 + 0, actorIndex)];
+    float4 inst2 = InstTransforms[int2(InstID * 4 + 1, actorIndex)];
+    float4 inst3 = InstTransforms[int2(InstID * 4 + 2, actorIndex)];
+    float4 inst4 = InstTransforms[int2(InstID * 4 + 3, actorIndex)];
+    
+    World = mul(transform, matrix(inst1, inst2, inst3, inst4));
 }
 
 struct VertexPosBlendInst
