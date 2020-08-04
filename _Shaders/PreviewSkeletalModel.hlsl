@@ -38,7 +38,7 @@ struct TweenFrame
 cbuffer CB_AnimationFrame : register(b3)
 {
     TweenFrame Tweenframes;
-    matrix previewTransforms[100];
+    
 
 };
 

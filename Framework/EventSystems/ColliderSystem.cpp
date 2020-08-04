@@ -4,10 +4,12 @@
 #include "Resources/TextureTransforms.h"
 #include "Core/D3D11/D3D11_Helper.h"
 #include "Renderer.h"
+#include "Viewer/Frustum.h"
 ColliderSystem::ColliderSystem(ID3D11Device * device, const string& path, const string& entryPoint)
 	:device(device),  texture(nullptr), srv(nullptr), actorCount(0), boneTexture(nullptr), ColliderCS(nullptr),
-	InstBuffer(nullptr), InstBufferSRV(nullptr), instTexture(nullptr)
+	InstBuffer(nullptr), InstBufferSRV(nullptr), instTexture(nullptr), frustum(nullptr),drawBuffer(nullptr)
 {
+	frustum = new Frustum();
 	instTexture= new InstTransform();
 	CreateInstTransformSRV();
 	
@@ -42,13 +44,85 @@ ColliderSystem::ColliderSystem(ID3D11Device * device, const string& path, const 
 	
 	SafeRelease(ShaderBlob);
 
-	///////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////
+	D3D11_BUFFER_DESC bufferDesc;
+	ZeroMemory(&bufferDesc, sizeof(D3D11_BUFFER_DESC));
+	bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	bufferDesc.ByteWidth = sizeof(Vector4);
+	Check(device->CreateBuffer(&bufferDesc, NULL, &drawBuffer));
+}
+
+void ColliderSystem::SortInstMatrix(const uint & actorIndex, const uint & drawIndex)
+{
+	Matrix temp = instTexture->instTransforms[actorIndex][drawIndex];
+	uint count = renderers[actorIndex]->drawCount>0? renderers[actorIndex]->drawCount - 1:0;
+	for(uint i= drawIndex;i< count;i++)
+	instTexture->instTransforms[actorIndex][i] = instTexture->instTransforms[actorIndex][i+1];
+
+	instTexture->instTransforms[actorIndex][count] = temp;
+
+	ID3D11DeviceContext* context = nullptr;
+	device->GetImmediateContext(&context);
+
+	CreateInstTransformSRV();
+}
+
+const int& ColliderSystem::FrustumCulling(const uint& index)
+{
+	frustum->Update();
+	const Vector3& min = renderers[index]->boxMin;
+	const Vector3& max = renderers[index]->boxMax;
+	temp[0] = Vector3(min.x, min.y, max.z);
+	temp[1] = Vector3(max.x, min.y, max.z);
+	temp[2] = Vector3(min.x, max.y, max.z);
+	temp[3] = Vector3(max);
+	temp[4] = Vector3(min);
+	temp[5] = Vector3(max.x, min.y, min.z);
+	temp[6] = Vector3(min.x, max.y, min.z);
+	temp[7] = Vector3(max.x, max.y, min.z);
+
+	uint count = renderers[index]->drawCount+ culledCount[index];
+	for (uint i = 0; i < count; i++)
+	{
+		for (uint b = 0; b < 8; b++)
+		{
+			D3DXVec3TransformCoord(&dest[b], &temp[b], &instTexture->instTransforms[index][i]);
+		}
+
+		bool inFrustum = frustum->ContainCube((dest[4] + dest[3])*0.5f, (dest[3].x - dest[4].x)*0.5f);
+		if (inFrustum == false)
+		{
+			if (i >= renderers[index]->drawCount) continue;
+
+			culledCount[index]++;
+			
+			SortInstMatrix(index,i);
+			renderers[index]->drawCount--;
+			cout << "culled" << endl;
+			return i;
+		}
+		else
+		{
+			if(i>= renderers[index]->drawCount)
+			{
+				renderers[index]->drawCount++;
+				culledCount[index]--;
+				cout << "InFrustum" << endl;
+				return -2;
+			}
+		}
+		
+	}
+	return -1;
 }
 
 Vector3 * ColliderSystem::GetBoxMinMax(const uint & actorIndex, const uint & drawCount)
 {
-	Vector3  temp[8];
+	
 	Vector3& min = renderers[actorIndex]->boxMin;
 	Vector3& max = renderers[actorIndex]->boxMax;
 	temp[0] = Vector3(min.x, min.y, max.z);
@@ -91,8 +165,7 @@ void ColliderSystem::CreateModelTransformSRV()
 {
 	if (actorCount == 0) return;
 
-	if(boneTexture==nullptr)
-		boneTexture = new BoneTransform();
+	
 
 	SafeRelease(texture);
 	SafeRelease(srv);
@@ -246,23 +319,6 @@ void ColliderSystem::BindingBone()
 	CreateModelTransformSRV();
 }
 
-void ColliderSystem::PushDrawCount(const uint & index, const Matrix & world)
-{
-	instTexture->instTransforms[index][renderers[index]->drawCount] = world;
-	
-	
-	CreateInstTransformSRV();
-	renderers[index]->drawCount++;
-	/*ID3D11DeviceContext * context;
-	device->GetImmediateContext(&context);
-
-
-	D3D11_MAPPED_SUBRESOURCE MappedResource;
-	context->Map(InstBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-	memcpy(MappedResource.pData, instTexture->instTransforms, sizeof(Matrix)*MAX_ACTOR_COUNT*MAX_MODEL_INSTANCE);
-	context->Unmap(InstBuffer, 0);*/
-}
-
 void ColliderSystem::ClearTextureTransforms()
 {
 	SafeDelete(instTexture);
@@ -278,7 +334,9 @@ void ColliderSystem::BindPipeline(ID3D11DeviceContext * context)
 
 void ColliderSystem::ReadBone(BinaryReader * r)
 {
-	
+	if (boneTexture == nullptr)
+		boneTexture = new BoneTransform();
+
 	uint tempBoneCount = r->UInt();
 
 	for (UINT i = 0; i < tempBoneCount; i++)
@@ -296,3 +354,29 @@ void ColliderSystem::ReadBone(BinaryReader * r)
 
 }
 
+void ColliderSystem::RegisterRenderer(Renderer * renderer, const uint & index)
+{
+	if (renderers[index])
+	{
+		return;
+	}
+	renderers[index] = renderer;
+}
+
+void ColliderSystem::PushDrawCount(const uint & index, const Matrix & world)
+{
+	instTexture->instTransforms[index][renderers[index]->drawCount] = world;
+	
+	
+
+	CreateInstTransformSRV();
+	renderers[index]->drawCount++;
+	/*ID3D11DeviceContext * context;
+	device->GetImmediateContext(&context);
+
+
+	D3D11_MAPPED_SUBRESOURCE MappedResource;
+	context->Map(InstBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+	memcpy(MappedResource.pData, instTexture->instTransforms, sizeof(Matrix)*MAX_ACTOR_COUNT*MAX_MODEL_INSTANCE);
+	context->Unmap(InstBuffer, 0);*/
+}

@@ -204,10 +204,12 @@ void Engine::Update()
 	deferredContext[1]->VSSetConstantBuffers(1, 1, &mainViewBuffer);
 
 	for (uint i = 0; i < skeletalActorCount; i++)
-	{
-		animator->Update(i);
-	}
+	animator->Update(i);
 	
+	for (uint i = 0; i < staticActorCount; i++)
+	{
+		collider->FrustumCulling(i);
+	}
 
 	
 }
@@ -348,16 +350,13 @@ void Engine::Render()
 				 ID3D11ShaderResourceView* arrSRV[3] = { ssao->GetSSAOSRV(),*preintegratedFG ,skyIRSRV };
 				 immediateContext->PSSetShaderResources(5, 3, arrSRV);
 				 Lighting.DoLighting(immediateContext);
-				
-				 
 				 if (bShowCascadedDebug)
-					 Lighting.DoDebugCascadedShadows(immediateContext);
-				
+					Lighting.DoDebugCascadedShadows(immediateContext);
 			 }
 			 immediateContext->SetPredication(predicate, true);
 			 immediateContext->End(predicate);
 			
-		
+			
 
 			 
 		 }	

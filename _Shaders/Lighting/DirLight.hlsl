@@ -238,13 +238,15 @@ float4 DirLightPS( VS_OUTPUT In) : SV_TARGET
  
     float shadow = CascadedShadow(position);
     float lightFactor = LightFactor(DirToLight.y);
+    float3 finalColor = 0;
     [branch]
     if (mat.TerrainMask==0)
     {
-        return float4(mat.diffuseColor.rgb * ao * shadow * lightFactor, 1.0f);
+        finalColor = mat.diffuseColor.rgb * ao * shadow * lightFactor;
+        return float4(finalColor, 1.0f);
     }
       
-    float3 finalColor = CalcDirectional(position, mat) * ao * shadow * lightFactor;
+    finalColor = CalcDirectional(position, mat) * ao * shadow * lightFactor;
    
     
     

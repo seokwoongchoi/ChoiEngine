@@ -95,6 +95,7 @@ void DebugLine::Render(ID3D11DeviceContext* context)
 	}
 	context->Unmap(DebugVertexBuffer, 0);
 
+	
 	context->IASetInputLayout(*debugInputLayout);
 	uint debugSlot = 0;
 	uint debugOffset = 0;
@@ -115,6 +116,7 @@ DebugLine::DebugLine()
 	: drawCount(0), DebugVS(nullptr), DebugPS(nullptr), debugInputLayout(nullptr), debugBuffer(nullptr), DebugVertexBuffer(nullptr)
 
 {
+
 }
 
 DebugLine::~DebugLine()
@@ -203,6 +205,8 @@ void DebugLine::Initiallize(ID3D11Device * device)
 	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	desc.ByteWidth = sizeof(Matrix);
 	Check(device->CreateBuffer(&desc, NULL, &debugBuffer));
+
+
 
 }
 

@@ -12,6 +12,9 @@ public:
 	void AnimationUpdate(ID3D11DeviceContext* context);
 	void Update(const Vector2& size, const float& camSpeed);
 	void Render(ID3D11DeviceContext* context);
+
+private:
+	void BoxRender(ID3D11DeviceContext * context,const Matrix& matrix, const Vector3& min, const Vector3& max, const Color& color);
 	void DebugRender(ID3D11DeviceContext* context);
 public:
 	void SaveMeshFile(const wstring& name, const ReadMeshType& meshType);
@@ -54,7 +57,7 @@ private:
 	ID3D11PixelShader* PS;
 public:
 	
-	uint boxCount;
+	
 	Matrix boxWorld;
 	void GetBoxSize(const Vector3& min,const Vector3& max);
 	Vector3 boxMin;
@@ -201,6 +204,21 @@ private:
 
 	UINT pageSize;
 	void* p;
+protected:
+	struct ColliderBoxData
+	{
+		Matrix matrix;
+		Matrix  R, T;
+		Vector3 scale, position;
+		Quaternion q;
+		Matrix ColliderBoxWorld;
+		Matrix result;
+		uint Index;
+
+	};
+	uint boxCount;
+
+	ColliderBoxData colliderBoxData[3];
 };
 
 

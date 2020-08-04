@@ -22,7 +22,9 @@ ActorEditor::ActorEditor(ID3D11Device* device, class Engine* engine, class Edito
     bHasEffect(false),
 	bMove(false),
 	dsv(nullptr), meshType(ReadMeshType::Default), currentBone(nullptr), modelName(L""), actorIndex(0), size(800,600),
-	currentClipNum(0), mode(EditMode::Render), camSpeed(0.8f), gizmoMode(GizmoMode::Default)
+	currentClipNum(0), mode(EditMode::Render), camSpeed(0.8f),
+	gizmoMode(GizmoMode::Default), boxIndex(-1), colliderIndex{},
+	gizmoColliderIndex(0)
 {
 	previewRender = new PreviewRenderer(device);
 	uint width = D3D::Width();
@@ -339,7 +341,16 @@ void ActorEditor::ImGizmo()
 		StaticGizmo(mode, operation);
 		break;
 	case GizmoMode::Collider:
-		ColliderGizmo(mode, operation, colliderIndex);
+	{
+	;
+		if(boxIndex<0)
+		ColliderGizmo(mode, operation, -1);
+		else
+		{
+			ColliderGizmo(mode, operation, gizmoColliderIndex);
+		}
+	}
+		
 		break;
 	case GizmoMode::Effect:
 		break;
@@ -443,18 +454,28 @@ void ActorEditor::StaticGizmo(ImGuizmo::MODE mode, ImGuizmo::OPERATION operation
 	}
 }
 
-void ActorEditor::ColliderGizmo(ImGuizmo::MODE mode, ImGuizmo::OPERATION operation,const uint& colliderIndex)
+void ActorEditor::ColliderGizmo(ImGuizmo::MODE mode, ImGuizmo::OPERATION operation, const int& colliderIndex)
 {
 
 
-	//D3DXMatrixTranspose(&previewWorld, &previewRender->previewDesc.W);
+	if(colliderIndex<0)
 	gizmoWorld = previewRender->boxWorld;
+	else
+	{
+		gizmoWorld = previewRender->colliderBoxData[colliderIndex].ColliderBoxWorld;
+	}
 
 	bool isMove = PreviewGizmoSet(mode, operation);
 
 	if (isMove)
 	{
-		previewRender->boxWorld = gizmoWorld;
+		if (colliderIndex < 0)
+			previewRender->boxWorld = gizmoWorld;
+		else
+		{
+			previewRender->colliderBoxData[colliderIndex].ColliderBoxWorld=	gizmoWorld;
+		}
+		
 	}
 
 
@@ -656,18 +677,19 @@ void ActorEditor::ShowComponents(const ImVec2 & size)
 								componentName = componentList[i];
 								if (componentName == "Collider")
 								{
-									colliderIndex = 0;
 									gizmoMode = GizmoMode::Collider;
 								}
-							/*	else if (componentName == "BoneCollider0")
+								for (uint i = 0; i < MAX_ACTOR_BONECOLLIDER; i++)
 								{
-									gizmoType = GizmoType::Box1;
+									if (componentName == "BoneCollider"+to_string(i))
+									{
+										gizmoColliderIndex = i;
+										gizmoMode = GizmoMode::Collider;
+									}
 								}
-								else if (componentName == "BoneCollider1")
-								{
-									gizmoType = GizmoType::Box2;
-								}
-								else if (componentName == "Effect0")
+								
+								
+								/*else if (componentName == "Effect0")
 								{
 									gizmoType = GizmoType::Effect1;
 								}
@@ -812,11 +834,13 @@ void ActorEditor::LoadSkeletalMesh(const wstring & file)
 		previewRender->ReadEditedMaterial(modelName);
 		previewRender->ReadEditedMesh(file, meshType);
 	}
+
 	ClipFinder(modelName);
 	for (auto& clip : clipList)
 	{
 		previewRender->ReadClip(modelName + L"/" + clip);
 	}
+	previewRender->CreateAnimTransformSRV();
 	previewRender->CreateSahders("../_Shaders/PreviewSkeletalModel.hlsl");
 	
 	componentList.emplace_back("SkeletalMesh");
@@ -1235,10 +1259,9 @@ void ActorEditor::ShowHierarcyPopup()
 		{
 			if (ImGui::MenuItem(" Collider"))
 			{
-
+				CreateBox();
 			}
-			//CreateBox();
-
+		
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Create Effect"))
@@ -1256,6 +1279,21 @@ void ActorEditor::ShowHierarcyPopup()
 
 		ImGui::EndPopup();
 	}
+}
+
+void ActorEditor::CreateBox()
+{
+	boxIndex++;
+	if (!currentBone || boxIndex > MAX_ACTOR_BONECOLLIDER - 1) return;
+
+
+	colliderIndex[boxIndex] = currentBone->BoneIndex();
+	previewRender->boxCount = boxIndex + 1;
+	previewRender->colliderBoxData[boxIndex].Index= colliderIndex[boxIndex];
+
+
+
+	componentList.emplace_back("BoneCollider" + to_string(boxIndex));
 }
 
 void ActorEditor::BlendMesh()

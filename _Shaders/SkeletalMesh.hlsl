@@ -20,23 +20,24 @@ struct Keyframe
     uint CurrFrame;
     uint NextFrame;
     float Time;
-    float4 pad1;
+    
 };
 
 struct TweenFrame
 {
-    float TakeTime ;
+    float TakeTime;
     float TweenTime;
-    float2 Padding;
-
-    Keyframe Curr ;
-    Keyframe Next ;
+    float Padding1;
+    uint padding2;
+    
+    Keyframe Curr;
+    Keyframe Next;
 
    
 };
 cbuffer CB_AnimationFrame : register(b3)
 {
-    TweenFrame Tweenframes[MAX_MODEL_INSTANCE];
+    TweenFrame Tweenframes[MAX_MODEL_INSTANCE] : packoffset(c0);
 
 };
 
@@ -100,7 +101,7 @@ void SetAnimationWorld(float4 BlendIndices, float4 BlendWeights, uint InstID)
   
     float4 boneIndices = BoneIndeces(BlendIndices);
     float4 boneWeights = BoneWeights(BlendWeights);
-    uint instId = InstID;
+    uint instId =prevDrawCount+ InstID;
        
     [unroll(4)]
     for (int i = 0; i < 4; i++)

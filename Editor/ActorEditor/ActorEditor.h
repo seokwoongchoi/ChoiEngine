@@ -1,5 +1,5 @@
 #pragma once
-
+#define MAX_ACTOR_BONECOLLIDER 3
 enum class EditMode :uint
 {
 	Animator,
@@ -62,8 +62,9 @@ private:
 	bool PreviewGizmoSet(ImGuizmo::MODE mode, ImGuizmo::OPERATION operation);
 	void SkeletalGizmo(ImGuizmo::MODE mode, ImGuizmo::OPERATION operation);
 	void StaticGizmo(ImGuizmo::MODE mode, ImGuizmo::OPERATION operation);
-	void ColliderGizmo(ImGuizmo::MODE mode, ImGuizmo::OPERATION operation, const uint& colliderIndex);
-	uint colliderIndex;
+	void ColliderGizmo(ImGuizmo::MODE mode, ImGuizmo::OPERATION operation,const int& colliderIndex);
+	
+	uint gizmoColliderIndex;
 private:
 	void ShowTransfomrs();
 private:
@@ -82,6 +83,8 @@ private:
 	void ShowStaticBones(shared_ptr<class ModelBone> bone);
 	void ShowSkeletalBones(shared_ptr<class ModelBone> bone);
 	void ShowHierarcyPopup();
+private:
+	void CreateBox();
 private:
 	void BlendMesh();
 	void CreateAttachMesh();
@@ -110,6 +113,8 @@ private:
 	ID3D11DepthStencilView* dsv;
 	D3D11_VIEWPORT viewport;
 private:
+	int boxIndex;
+	uint colliderIndex[MAX_ACTOR_BONECOLLIDER];
 	bool bActive;
 	bool bEditing;
 	bool bFirst;

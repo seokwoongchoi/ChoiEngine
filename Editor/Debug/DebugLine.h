@@ -65,4 +65,5 @@ private:
 
 
 	ID3D11Buffer* debugBuffer;
+
 };

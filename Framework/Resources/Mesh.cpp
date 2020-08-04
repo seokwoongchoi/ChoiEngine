@@ -31,15 +31,15 @@ void Mesh::CreateBuffer(ID3D11Device* device,const uint& actorIndex)
 	Check(device->CreateBuffer(&bufferDesc, NULL, &boneBuffer));
 	
 	boneDesc.actorIndex = actorIndex;
-	int a = 0;
+	
 }
 
 
-void Mesh::ApplyPipeline(ID3D11DeviceContext * context)
+void Mesh::ApplyPipeline(ID3D11DeviceContext * context,const uint& prevDrawCount)
 {
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
 	context->Map(boneBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-
+	boneDesc.prevDrawCount = prevDrawCount;
 	memcpy(MappedResource.pData, &boneDesc, sizeof(boneDesc));
 	context->Unmap(boneBuffer, 0);
 	context->VSSetConstantBuffers(2, 1, &boneBuffer);
@@ -49,19 +49,21 @@ void Mesh::ApplyPipeline(ID3D11DeviceContext * context)
 	material->ApplyMaterial(context);
 }
 
-void Mesh::ApplyPipelineNoMaterial(ID3D11DeviceContext * context)
+void Mesh::ApplyPipelineNoMaterial(ID3D11DeviceContext * context, const uint& prevDrawCount)
 {
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
 	context->Map(boneBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+	boneDesc.prevDrawCount = prevDrawCount;
 	memcpy(MappedResource.pData, &boneDesc, sizeof(boneDesc));
 	context->Unmap(boneBuffer, 0);
 	context->VSSetConstantBuffers(2, 1, &boneBuffer);
 }
 
-void Mesh::ApplyPipelineReflectionMaterial(ID3D11DeviceContext * context)
+void Mesh::ApplyPipelineReflectionMaterial(ID3D11DeviceContext * context, const uint& prevDrawCount)
 {
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
 	context->Map(boneBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+	boneDesc.prevDrawCount = prevDrawCount;
 	memcpy(MappedResource.pData, &boneDesc, sizeof(boneDesc));
 	context->Unmap(boneBuffer, 0);
 	context->VSSetConstantBuffers(2, 1, &boneBuffer);

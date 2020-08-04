@@ -53,6 +53,9 @@ PreviewRenderer::PreviewRenderer(ID3D11Device * device)
 		-std::numeric_limits<float>::infinity(),
 		-std::numeric_limits<float>::infinity()
 	);
+
+	for (uint i = 0; i < 3; i++)
+		D3DXMatrixIdentity(&colliderBoxData[i].ColliderBoxWorld);
 }
 
 
@@ -419,7 +422,8 @@ void PreviewRenderer::ReadMesh(const wstring & file, const ReadMeshType & meshTy
 		}
 		break;
 		case ReadMeshType::SkeletalMesh:
-		{	CreateAnimTransformSRV();
+		{	
+			
 			BindingSkeletalMesh();
 		}
 		break;
@@ -583,7 +587,7 @@ void PreviewRenderer::ReadEditedMesh(const wstring & file, const ReadMeshType & 
 		break;
 		case ReadMeshType::SkeletalMesh:
 		{	
-			CreateAnimTransformSRV();
+			
 	        stride = sizeof(VertexTextureNormalTangentBlend);
 	        skeletalVertices.assign(totalCount, VertexTextureNormalTangentBlend());
 	          
@@ -822,7 +826,7 @@ void PreviewRenderer::ReadClip(const wstring & name)
 
 	const auto& clip = make_shared< ModelClip>();
 
-	clip->name = String::ToWString(r->String());
+	clip->name = r->String();
 	clip->duration = r->Float();
 	clip->frameRate = r->Float();
 	clip->frameCount = r->UInt();
@@ -831,7 +835,7 @@ void PreviewRenderer::ReadClip(const wstring & name)
 	for (UINT i = 0; i < keyframesCount; i++)
 	{
 		const auto& keyframe = make_shared< ModelKeyframe>();
-		keyframe->BoneName = String::ToWString(r->String());
+		keyframe->BoneName = r->String();
 
 		UINT size = r->UInt();
 		if (size > 0)
@@ -850,6 +854,8 @@ void PreviewRenderer::ReadClip(const wstring & name)
 	SafeDelete(r);
 
 	clips.push_back(clip);
+
+	
 }
 
 void PreviewRenderer::ReadAttachMesh(const wstring & path, const ReadMeshType & meshType,const uint& parentBoneIndex)
@@ -1425,7 +1431,7 @@ void PreviewRenderer::Render(ID3D11DeviceContext * context)
 	{
 		if (blendCount > 0 && i == blendMeshIndex)continue;
 		auto& m = meshes[i];
-		m->ApplyPipeline(context);
+		m->ApplyPipeline(context,0);
 		context->DrawIndexed(m->indexCount, m->startIndex, m->startVertexIndex);
 		m->ClearPipelineMaterial(context);
 
@@ -1438,7 +1444,7 @@ void PreviewRenderer::Render(ID3D11DeviceContext * context)
 	context->OMSetBlendState(AdditiveBlendState, prevBlendFactor, prevSampleMask);
 	for (auto& blendMesh : blendMeshes)
 	{
-		blendMesh->ApplyPipeline(context);
+		blendMesh->ApplyPipeline(context,0);
 		context->DrawIndexed(blendMesh->indexCount, blendMesh->startIndex, blendMesh->startVertexIndex);
 		blendMesh->ClearPipelineMaterial(context);
 	}
@@ -1452,41 +1458,76 @@ void PreviewRenderer::Render(ID3D11DeviceContext * context)
 	
 }
 
+void PreviewRenderer::BoxRender(ID3D11DeviceContext * context,const Matrix & matrix, const Vector3 & min, const Vector3 & max, const Color & color)
+{
+	
+	    dest[0] = Vector3(min.x, min.y, max.z);
+	    dest[1] = Vector3(max.x, min.y, max.z);
+	    dest[2] = Vector3(min.x, max.y, max.z);
+	    dest[3] = Vector3(max);
+	    dest[4] = Vector3(min);
+	    dest[5] = Vector3(max.x, min.y, min.z);
+	    dest[6] = Vector3(min.x, max.y, min.z);
+	    dest[7] = Vector3(max.x, max.y, min.z);
+
+		//Front
+		DebugLine::Get()->RenderLine(dest[0], dest[1], color);
+		DebugLine::Get()->RenderLine(dest[1], dest[3], color);
+		DebugLine::Get()->RenderLine(dest[3], dest[2], color);
+		DebugLine::Get()->RenderLine(dest[2], dest[0], color);
+
+		//Backward
+		DebugLine::Get()->RenderLine(dest[4], dest[5], color);
+		DebugLine::Get()->RenderLine(dest[5], dest[7], color);
+		DebugLine::Get()->RenderLine(dest[7], dest[6], color);
+		DebugLine::Get()->RenderLine(dest[6], dest[4], color);
+
+		//Side
+		DebugLine::Get()->RenderLine(dest[0], dest[4], color);
+		DebugLine::Get()->RenderLine(dest[1], dest[5], color);
+		DebugLine::Get()->RenderLine(dest[2], dest[6], color);
+		DebugLine::Get()->RenderLine(dest[3], dest[7], color);
+
+
+		Matrix VP;
+		D3DXMatrixTranspose(&VP, &previewDesc.VP);
+		DebugLine::Get()->PreviewRender(context, matrix*VP);
+}
+
 void PreviewRenderer::DebugRender(ID3D11DeviceContext * context)
 {
-	dest[0] = Vector3(boxMin.x, boxMin.y, boxMax.z);
-	dest[1] = Vector3(boxMax.x, boxMin.y, boxMax.z);
-	dest[2] = Vector3(boxMin.x, boxMax.y, boxMax.z);
-	dest[3] = Vector3(boxMax);
-	dest[4] = Vector3(boxMin);
-	dest[5] = Vector3(boxMax.x, boxMin.y, boxMin.z);
-	dest[6] = Vector3(boxMin.x, boxMax.y, boxMin.z);
-	dest[7] = Vector3(boxMax.x, boxMax.y, boxMin.z);
-	
+	BoxRender(context, boxWorld, boxMin, boxMax, Color(0, 1, 0, 1));
 
-	Color color = Color(0, 1, 0, 1);
-	//Front
-	DebugLine::Get()->RenderLine(dest[0], dest[1], color);
-	DebugLine::Get()->RenderLine(dest[1], dest[3], color);
-	DebugLine::Get()->RenderLine(dest[3], dest[2], color);
-	DebugLine::Get()->RenderLine(dest[2], dest[0], color);
 
-	//Backward
-	DebugLine::Get()->RenderLine(dest[4], dest[5], color);
-	DebugLine::Get()->RenderLine(dest[5], dest[7], color);
-	DebugLine::Get()->RenderLine(dest[7], dest[6], color);
-	DebugLine::Get()->RenderLine(dest[6], dest[4], color);
+	Matrix W;
+	D3DXMatrixTranspose(&W, &previewDesc.W);
+	if (boxCount > 0)
+		for (uint i = 0; i < boxCount; i++)
+		{
+			
+			const Matrix& currFarameMatrix = skinTransforms[tweenDesc.Curr.Clip].Transform[tweenDesc.Curr.CurrFrame][colliderBoxData[i].Index];
+			if (unArmedBoneCount > colliderBoxData[i].Index)
+			{
+				colliderBoxData[i].matrix = bones[colliderBoxData[i].Index]->Transform()*currFarameMatrix* W;
+			}
+			else
+			{
+				colliderBoxData[i].matrix = currFarameMatrix * W;
+			}
+		
+			D3DXMatrixDecompose(&colliderBoxData[i].scale, &colliderBoxData[i].q,
+				&colliderBoxData[i].position, &colliderBoxData[i].matrix);
+			D3DXMatrixRotationQuaternion(&colliderBoxData[i].R, &colliderBoxData[i].q);
+			D3DXMatrixTranslation(&colliderBoxData[i].T, colliderBoxData[i].position.x,
+				colliderBoxData[i].position.y, colliderBoxData[i].position.z);
 
-	//Side
-	DebugLine::Get()->RenderLine(dest[0], dest[4], color);
-	DebugLine::Get()->RenderLine(dest[1], dest[5], color);
-	DebugLine::Get()->RenderLine(dest[2], dest[6], color);
-	DebugLine::Get()->RenderLine(dest[3], dest[7], color);
-	
+			const Vector3& boneBoxMin = Vector3(-0.5f, -0.5f, -0.5f);
+			const Vector3& boneBoxMax = Vector3(0.5f, 0.5f, 0.5f);
 
-	Matrix VP;
-	D3DXMatrixTranspose(&VP, &previewDesc.VP);
-	DebugLine::Get()->PreviewRender(context,boxWorld*VP );
+			colliderBoxData[i].result = colliderBoxData[i].ColliderBoxWorld* colliderBoxData[i].R * colliderBoxData[i].T;
+			BoxRender(context,colliderBoxData[i].result, boneBoxMin, boneBoxMax, Color(0, 1, 0, 1));
+		}
+
 }
 
 void PreviewRenderer::CreateSahders(const string& file)
@@ -1795,7 +1836,7 @@ void PreviewRenderer::UpdateCurrFameAnimTransformSRV()
 
 
 
-		const auto& frame = clips[tweenDesc.Curr.Clip]->Keyframe(String::ToWString(bones[b]->Name()));
+		const auto& frame = clips[tweenDesc.Curr.Clip]->Keyframe(bones[b]->Name());
 
 		if (frame != NULL)
 		{
@@ -2014,8 +2055,8 @@ void PreviewRenderer::CreateAnimTransformSRV()
 						parent = saveParentMatrix[parentIndex];
 
 
-
-					const auto& frame = clips[i]->Keyframe(String::ToWString(bones[b]->Name()));
+				
+					const auto& frame = clips[i]->Keyframe(bones[b]->Name());
 
 					if (frame != NULL)
 					{

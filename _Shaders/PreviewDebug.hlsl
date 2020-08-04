@@ -32,7 +32,7 @@ VertexOutput DebugVS(VertexColor input)
 
 float4 DebugPS(VertexOutput In) : SV_Target
 {
-   // return float4(1, 0, 0, 1);
+    // return float4(1, 0, 0, 1);
     return float4(In.Color.rgb, 1.0);
 
 }

@@ -7,26 +7,12 @@
 void Renderer::Initiallize(ID3D11Device* device,const uint & ID)
 {
 	this->device = device;
-	
-
-	
+		
 	this->ID = ID;
 
 	offset = 0;
 	slot = 0;
-	
 	CreateStates();
-
-	//
-
-	//for (uint i = 0; i < MAX_MODEL_INSTANCE; i++)
-	//{
-	//	D3DXMatrixIdentity(&modelDesc.instTransform[i]);
-	//	
-	//}
-	//
-
-	
 }
 
 
@@ -46,7 +32,7 @@ void Renderer::Depth_PreRender(ID3D11DeviceContext* context)
 	for (uint i = 0; i < meshCount; i++)
 	{
 		auto& m = mesh[i];
-		m.ApplyPipelineNoMaterial(context);
+		m.ApplyPipelineNoMaterial(context, prevDrawCount);
 		context->DrawIndexedInstanced(m.indexCount, drawCount, m.startIndex, m.startVertexIndex, 0);
 		m.ClearPipeline(context);
 	}
@@ -77,7 +63,7 @@ void Renderer::Reflection_PreRender(ID3D11DeviceContext * context)
 	for (uint i = 0; i < meshCount; i++)
 	{
 		auto& m = mesh[i];
-		m.ApplyPipelineReflectionMaterial(context);
+		m.ApplyPipelineReflectionMaterial(context, prevDrawCount);
 		context->DrawIndexedInstanced(m.indexCount, drawCount, m.startIndex, m.startVertexIndex, 0);
 		m.ClearPipelineReflection(context);
 
@@ -111,7 +97,7 @@ void Renderer::Render(ID3D11DeviceContext* context)
 		auto& m = mesh[i];
 		
 		
-		m.ApplyPipeline(context);
+		m.ApplyPipeline(context, prevDrawCount);
 		context->DrawIndexedInstanced(m.indexCount, drawCount, m.startIndex, m.startVertexIndex, 0);
 		m.ClearPipelineMaterial(context);
 	
@@ -152,7 +138,7 @@ void Renderer::Forward_Render(ID3D11DeviceContext * context)
 
 	for (uint i = 0; i < blendCount; i++)
 	{
-		blendMesh[i].ApplyPipeline(context);
+		blendMesh[i].ApplyPipeline(context, prevDrawCount);
 		context->DrawIndexedInstanced(blendMesh[i].indexCount, drawCount, blendMesh[i].startIndex, blendMesh[i].startVertexIndex, 0);
 
 		blendMesh[i].ClearPipelineMaterial(context);

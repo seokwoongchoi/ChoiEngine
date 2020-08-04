@@ -1,12 +1,13 @@
 #include "Framework.h"
 #include "Animator.h"
-
+#include "Renderer.h"
 #include "Resources/Mesh.h"
 #include "Resources/TextureTransforms.h"
 
 
 Animator::Animator(ID3D11Device * device)
-	:ColliderSystem(device, "../_Shaders/ComputeShaders/ColliderCS.hlsl", "SkeletalColliderCS"),device(device),  texture(nullptr), srv(nullptr), maxkeyframe(0), maxBoneCount(0), tweenBuffer(nullptr)
+	:ColliderSystem(device, "../_Shaders/ComputeShaders/ColliderCS.hlsl", "SkeletalColliderCS"),device(device),
+	texture(nullptr), srv(nullptr), maxkeyframe(0), maxBoneCount(0), tweenBuffer(nullptr), RunningTime{}
 {
 	//collider = new ColliderSystem(device, "../_Shaders/ComputeShaders/ColliderCS.hlsl", "SkeletalColliderCS");
 	boneTransfomrs = new SkinnedTransform[MAX_ACTOR_COUNT];
@@ -17,8 +18,25 @@ Animator::Animator(ID3D11Device * device)
 	bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	bufferDesc.ByteWidth = sizeof(TweenDesc);
+	bufferDesc.ByteWidth = sizeof(TweenDesc)*20;
 	Check(device->CreateBuffer(&bufferDesc, NULL, &tweenBuffer));
+
+
+	ZeroMemory(&bufferDesc, sizeof(D3D11_BUFFER_DESC));
+	bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	bufferDesc.ByteWidth = sizeof(BoneBoxDesc) * 20;
+	Check(device->CreateBuffer(&bufferDesc, NULL, &boneBoxBuffer));
+	
+	tweenDesc.assign(20, TweenDesc());
+	boneBoxDesc.assign(20, BoneBoxDesc());
+	for (uint i = 0; i < 20; i++)
+	{
+		tweenDesc[i].index = i;
+	}
+	for(uint i=0;i<6;i++)
+	tweenDesc[i].Curr.Clip = i;
 }
 
 Animator::~Animator()
@@ -26,12 +44,23 @@ Animator::~Animator()
 	
 }
 
+void Animator::PushDrawCount(const uint & index, const Matrix & world)
+{
+	instTexture->instTransforms[index][renderers[index]->drawCount] = world;
+	CreateInstTransformSRV();
+	renderers[index]->drawCount++;
+}
 
 void Animator::BindPipeline(ID3D11DeviceContext * context)
 {
+	uint totalCount = 0;
+	for (uint i = 0; i < renderers.size(); i++)
+	{
+		totalCount += renderers[i]->drawCount;
+	}
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
 	context->Map(tweenBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-	memcpy(MappedResource.pData, &tweenDesc, sizeof(tweenDesc));
+	memcpy(MappedResource.pData, tweenDesc.data(), sizeof(TweenDesc)*totalCount);
 	context->Unmap(tweenBuffer, 0);
 	context->VSSetConstantBuffers(3, 1, &tweenBuffer);
 
@@ -40,26 +69,47 @@ void Animator::BindPipeline(ID3D11DeviceContext * context)
 	
 }
 
-void Animator::Update(const uint& index)
+void Animator::Update(const uint& actorIndex)
 {
-	//for (uint i = 0; i < 20; i++)
+
+	int culledIndex = -1;
+	culledIndex = FrustumCulling(actorIndex);
+
+	if (culledIndex >= 0)
 	{
+		SortTweenBuffer(actorIndex, culledIndex);
+	}
+
+
+	
+			
+	
+	if(actorIndex >0)
+	renderers[actorIndex]->prevDrawCount = renderers[actorIndex - 1]->drawCount;
+	
+
+	uint start = renderers[actorIndex]->prevDrawCount;
+	uint end = renderers[actorIndex]->prevDrawCount + renderers[actorIndex]->drawCount;
+	for (uint index = start; index < end; index++)
+	{
+	    //tweenDesc[index].Curr.Clip = tweenDesc[index].index;
 		const auto& clip = clips[tweenDesc[index].Curr.Clip];
 
 		static const float speed = 1.0f;
 		//현재 애니메이션
 		{
-			tweenDesc[index].Curr.RunningTime += Time::Delta();
+			RunningTime[index] += Time::Delta();
+		
 
 			float time = 1.0f / clip->FrameRate() / speed;
-			if (tweenDesc[index].Curr.RunningTime >= time)
+			if (RunningTime[index] >= time)
 			{
-				tweenDesc[index].Curr.RunningTime = 0.0f;
+				RunningTime[index] = 0.0f;
 
 				tweenDesc[index].Curr.CurrFrame = (tweenDesc[index].Curr.CurrFrame + 1) % clip->FrameCount();
 				tweenDesc[index].Curr.NextFrame = (tweenDesc[index].Curr.CurrFrame + 1) % clip->FrameCount();
 			}
-			tweenDesc[index].Curr.Time = tweenDesc[index].Curr.RunningTime / time;
+			tweenDesc[index].Curr.Time = RunningTime[index] / time;
 		}
 
 		//바뀔 애니메이션이 존재함
@@ -78,24 +128,24 @@ void Animator::Update(const uint& index)
 				tweenDesc[index].Next.CurrFrame = 0;
 				tweenDesc[index].Next.NextFrame = 0;
 				tweenDesc[index].Next.Time = 0;
-				tweenDesc[index].Next.RunningTime = 0.0f;
+				RunningTime[index] = 0.0f;
 
 				tweenDesc[index].ChangeTime = 0.0f;
 				tweenDesc[index].TweenTime = 0.0f;
 			}
 			else
 			{
-				tweenDesc[index].Next.RunningTime += Time::Delta();
+				RunningTime[index] += Time::Delta();
 
 				float time = 1.0f / nextClip->FrameRate() / speed;
 				if (tweenDesc[index].Next.Time >= 1.0f)
 				{
-					tweenDesc[index].Next.RunningTime = 0;
+					RunningTime[index] = 0;
 
 					tweenDesc[index].Next.CurrFrame = (tweenDesc[index].Next.CurrFrame + 1) % nextClip->FrameCount();
 					tweenDesc[index].Next.NextFrame = (tweenDesc[index].Next.CurrFrame + 1) % nextClip->FrameCount();
 				}
-				tweenDesc[index].Next.Time = tweenDesc[index].Next.RunningTime / time;
+				tweenDesc[index].Next.Time = RunningTime[index] / time;
 			}
 		}
 	}
@@ -140,7 +190,7 @@ void Animator::AnimTransformSRV()
 					else
 						parent = saveParentMatrix[parentIndex];
 
-					const auto& frame = clips[i]->Keyframe(String::ToWString(bone->Name()));
+					const auto& frame = clips[i]->Keyframe(bone->Name());
 
 					if (frame != nullptr)
 					{
@@ -267,7 +317,7 @@ void Animator::ReadClip(const wstring & name)
 		r->Open(file);
 		const auto& clip = make_shared< ModelClip>();
 
-		clip->name = String::ToWString(r->String());
+		clip->name =r->String();
 		clip->duration = r->Float();
 		clip->frameRate = r->Float();
 		clip->frameCount = r->UInt();
@@ -276,7 +326,7 @@ void Animator::ReadClip(const wstring & name)
 		for (UINT i = 0; i < keyframesCount; i++)
 		{
 			const auto& keyframe = make_shared< ModelKeyframe>();
-			keyframe->BoneName = String::ToWString(r->String());
+			keyframe->BoneName = r->String();
 
 			UINT size = r->UInt();
 			if (size > 0)
@@ -299,6 +349,31 @@ void Animator::ReadClip(const wstring & name)
 
 
 	AnimTransformSRV();
+}
+
+void Animator::SortTweenBuffer(const uint & actorIndex, const uint & drawIndex)
+{
+	uint index = 0;
+	if (actorIndex == 0)
+	{
+		index = drawIndex;
+	}
+	else
+	{
+		index = renderers[actorIndex]->prevDrawCount + drawIndex;
+	}
+
+	
+	TweenDesc temp = tweenDesc[index];
+
+	
+	uint count = renderers[actorIndex]->drawCount;
+	
+	for (uint i = index; i < count; i++)
+		tweenDesc[i] = tweenDesc[i + 1];
+
+	tweenDesc[count] = temp;
+    
 }
 
 void Animator::ReadBone(BinaryReader * r)

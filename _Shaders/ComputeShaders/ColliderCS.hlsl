@@ -1,10 +1,11 @@
 #include "Matrix.hlsl"
 
-#define MAX_MODEL_INSTANCE 50
+#define MAX_MODEL_INSTANCE 10
 #define MAX_ACTOR_BONECOLLIDER 2
 
-Texture2DArray BoneTransforms;
-Texture2D InstInput;
+
+Texture2D<float4> InstTransforms : register(t0);
+Texture2DArray<float4> AnimBoneTransforms : register(t1);
 
 RWTexture2D<float4> Output;
 //RWTexture2D<float4> EffectOutput;
@@ -15,50 +16,46 @@ cbuffer CB_Box
     matrix BoxBound;
    
 };
-cbuffer CB_DrawCount
+cbuffer CB_DrawCount:register(b0)
 {
-    uint drawCount;
-    uint actorIndex;
-    uint particleIndex;
-    float pad0;
+    uint staticDrawCount : packoffset(c0.x);
+    uint skeletalDrawCount : packoffset(c0.y);
+    uint particleIndex : packoffset(c0.z);
+    float pad0 : packoffset(c0.w);
 };
-void GetInstMatrix(inout matrix transform, uint index)
+void GetInstMatrix(inout matrix transform, uint actorIndex, uint InstID)
 {
-    float4 m1 = InstInput.Load(int3(0, index, 0));
-    float4 m2 = InstInput.Load(int3(1, index, 0));
-    float4 m3 = InstInput.Load(int3(2, index, 0));
-    float4 m4 = InstInput.Load(int3(3, index, 0));
-        
-    transform = matrix(m1, m2, m3, m4);
+    float4 inst1 = InstTransforms[int2(InstID * 4 + 0, actorIndex)];
+    float4 inst2 = InstTransforms[int2(InstID * 4 + 1, actorIndex)];
+    float4 inst3 = InstTransforms[int2(InstID * 4 + 2, actorIndex)];
+    float4 inst4 = InstTransforms[int2(InstID * 4 + 3, actorIndex)];
+    transform = matrix(inst1, inst2, inst3, inst4);
 }
 
-[numthreads(1, 1, 1)]
-void StaticColliderCS(uint3 globalThreadId : SV_DispatchThreadID)
+[numthreads(MAX_MODEL_INSTANCE, 1, 1)]
+void StaticColliderCS(uint3 groupID : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID, uint3 globalThreadId : SV_DispatchThreadID)
 {
-    
-    matrix transform = 0;
-    GetInstMatrix(transform, globalThreadId.x);
-    matrix final = mul(BoxBound, transform);
-    
-    uint factor = lerp(drawCount, drawCount + Output[uint2(9, actorIndex - 1)].b, saturate(actorIndex));
-       
-    Output[uint2(9, actorIndex)] = float4(factor, 0, 0, 0);
+    if (globalThreadId.x < staticDrawCount)
+    {
+        matrix transform = 0;
+        GetInstMatrix(transform, groupThreadId.x, groupID.x);
+        matrix final = mul(BoxBound, transform);
+          
         
-    uint index = lerp(globalThreadId.x, Output[uint2(9, actorIndex - 1)].r + globalThreadId.x, saturate(actorIndex));
-  
- 
+        GroupMemoryBarrierWithGroupSync();
+        uint index = skeletalDrawCount + globalThreadId.x;
+      
+        Output[uint2(0, index)] = float4(final._11, final._12, final._13, final._14);
+        Output[uint2(1, index)] = float4(final._21, final._22, final._23, final._24);
+        Output[uint2(2, index)] = float4(final._31, final._32, final._33, final._34);
+        Output[uint2(3, index)] = float4(final._41, final._42, final._43, final._44);
     
-    Output[uint2(0, index)] = float4(final._11, final._12, final._13, final._14);
-    Output[uint2(1, index)] = float4(final._21, final._22, final._23, final._24);
-    Output[uint2(2, index)] = float4(final._31, final._32, final._33, final._34);
-    Output[uint2(3, index)] = float4(final._41, final._42, final._43, final._44);
-    
-    Output[uint2(4, index)] = 0;
-    Output[uint2(5, index)] = 0;
-    Output[uint2(6, index)] = 0;
-    Output[uint2(7, index)] = 0;
-    
-    Output[uint2(8, index)] = float4(actorIndex, globalThreadId.x, drawCount, 1);
+        Output[uint2(4, index)] = 0;
+        Output[uint2(5, index)] = 0;
+        Output[uint2(6, index)] = 0;
+        Output[uint2(7, index)] = 0;
+    }
+   
      
    
 }
@@ -128,10 +125,10 @@ cbuffer CB_EffectAttach
 matrix LoadAnimTransforms(uint boneIndices, uint frame, uint clip)
 {
     float4 c0, c1, c2, c3;
-    c0 = BoneTransforms.Load(uint4(boneIndices * 4 + 0, frame, clip, 0));
-    c1 = BoneTransforms.Load(uint4(boneIndices * 4 + 1, frame, clip, 0));
-    c2 = BoneTransforms.Load(uint4(boneIndices * 4 + 2, frame, clip, 0));
-    c3 = BoneTransforms.Load(uint4(boneIndices * 4 + 3, frame, clip, 0));
+    c0 = AnimBoneTransforms.Load(uint4(boneIndices * 4 + 0, frame, clip, 0));
+    c1 = AnimBoneTransforms.Load(uint4(boneIndices * 4 + 1, frame, clip, 0));
+    c2 = AnimBoneTransforms.Load(uint4(boneIndices * 4 + 2, frame, clip, 0));
+    c3 = AnimBoneTransforms.Load(uint4(boneIndices * 4 + 3, frame, clip, 0));
     
     return matrix(c0, c1, c2, c3);
 }
@@ -152,11 +149,10 @@ matrix GetNextAnimTransforms(uint index, uint AttachBoneIndex)
     return lerp(curr, next, (matrix) Tweenframes[index].Next.Time);
        
 }
-
-[numthreads(1, 1, 1)]
-void SkeletalColliderCS(uint3 globalThreadId : SV_DispatchThreadID)
+[numthreads(MAX_MODEL_INSTANCE, 1, 1)]
+void SkeletalColliderCS(uint3 groupID : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID, uint3 globalThreadId : SV_DispatchThreadID)
 {
-    
+    if (globalThreadId.x < skeletalDrawCount)
     {
       
         matrix result = 0;
@@ -170,15 +166,15 @@ void SkeletalColliderCS(uint3 globalThreadId : SV_DispatchThreadID)
         matrix compute2 = 0;
         GroupMemoryBarrierWithGroupSync();
         result = lerp(
-        GetCurrAnimTransforms(globalThreadId.x, BoneCollider[0].index),
-        lerp(GetCurrAnimTransforms(globalThreadId.x, BoneCollider[0].index), GetNextAnimTransforms(globalThreadId.x, BoneCollider[0].index),
-        Tweenframes[globalThreadId.x].TweenTime),
-        saturate(Tweenframes[globalThreadId.x].Next.Clip + 1)
+        GetCurrAnimTransforms(groupThreadId.x, BoneCollider[0].index),
+        lerp(GetCurrAnimTransforms(groupThreadId.x, BoneCollider[0].index), GetNextAnimTransforms(groupThreadId.x, BoneCollider[0].index),
+        Tweenframes[groupThreadId.x].TweenTime),
+        saturate(Tweenframes[groupThreadId.x].Next.Clip + 1)
         );
               
         
         computeMatrix = mul(BoneCollider[0].local, result);
-        GetInstMatrix(transform, globalThreadId.x);
+        GetInstMatrix(transform, groupThreadId.x, groupID.x);
         final = mul(computeMatrix, transform);
         decompose(final, position, q, scale);
         
@@ -189,10 +185,10 @@ void SkeletalColliderCS(uint3 globalThreadId : SV_DispatchThreadID)
         if (BoneCollider[1].index > 0)
         {
             matrix result2 = lerp(
-            GetCurrAnimTransforms(globalThreadId.x, BoneCollider[1].index),
-            lerp(GetCurrAnimTransforms(globalThreadId.x, BoneCollider[1].index), GetNextAnimTransforms(globalThreadId.x, BoneCollider[1].index),
-            Tweenframes[globalThreadId.x].TweenTime),
-            saturate(Tweenframes[globalThreadId.x].Next.Clip + 1)
+            GetCurrAnimTransforms(groupThreadId.x, BoneCollider[1].index),
+            lerp(GetCurrAnimTransforms(groupThreadId.x, BoneCollider[1].index), GetNextAnimTransforms(groupThreadId.x, BoneCollider[1].index),
+            Tweenframes[groupThreadId.x].TweenTime),
+            saturate(Tweenframes[groupThreadId.x].Next.Clip + 1)
             );
        
             matrix computeMatrix2 = mul(BoneCollider[1].local, result2);
@@ -209,14 +205,10 @@ void SkeletalColliderCS(uint3 globalThreadId : SV_DispatchThreadID)
       
         GroupMemoryBarrierWithGroupSync();
 
-       
+            
       
-           
-        uint factor = lerp(drawCount, drawCount + Output[uint2(9, actorIndex - 1)].b, saturate(actorIndex));
-       
-        Output[uint2(9, actorIndex)] = float4(factor, 0, 0, 0);
         
-        uint index = lerp(globalThreadId.x, Output[uint2(9, actorIndex - 1)].r + globalThreadId.x, saturate(actorIndex));
+        uint index = globalThreadId.x;
         
         Output[uint2(0, index)] = float4(compute._11, compute._12, compute._13, compute._14);
         Output[uint2(1, index)] = float4(compute._21, compute._22, compute._23, compute._24);
@@ -227,68 +219,53 @@ void SkeletalColliderCS(uint3 globalThreadId : SV_DispatchThreadID)
         Output[uint2(5, index)] = float4(compute2._21, compute2._22, compute2._23, compute2._24);
         Output[uint2(6, index)] = float4(compute2._31, compute2._32, compute2._33, compute2._34);
         Output[uint2(7, index)] = float4(compute2._41, compute2._42, compute2._43, compute2._44);
-        
-        Output[uint2(8, index)] = float4(actorIndex, globalThreadId.x, drawCount, 0);
-     
-     
-        
-      
-     
-        
-        //Output[actorIndex].Factor.a = lerp(drawCount, drawCount + Output[actorIndex - 1].Factor.a, saturate(actorIndex));
-        //uint inedx = lerp(globalThreadId.x, Output[actorIndex - 1].Factor.a + globalThreadId.x, saturate(actorIndex));
-        //Output[inedx].Result = compute;
-     
-        //Output[inedx].Factor.r = actorIndex;
-        //Output[inedx].Factor.g = globalThreadId.x;
- 
-       
+          
    
     }
    
 }
 
 
-[numthreads(1, 1, 1)]
-void EffectCS(uint3 globalThreadId : SV_DispatchThreadID)
-{
+//[numthreads(1, 1, 1)]
+//void EffectCS(uint3 globalThreadId : SV_DispatchThreadID)
+//{
     
    
    
-   matrix result3 = lerp
-         (
-         GetCurrAnimTransforms(globalThreadId.x, effectData[particleIndex].EffectIndex),
-         lerp
-         (
-         GetCurrAnimTransforms(globalThreadId.x, effectData[particleIndex].EffectIndex),
-         GetNextAnimTransforms(globalThreadId.x, effectData[particleIndex].EffectIndex),
-         Tweenframes[globalThreadId.x].TweenTime
-         ),
-         saturate(Tweenframes[globalThreadId.x].Next.Clip + 1)
-         );
-    //matrix local = mul(effectData[particleIndex].effectTranslation,effectData[particleIndex].effectlocal);
-    matrix computeMatrix3 = mul(effectData[particleIndex].effectlocal, result3);
-   // GetInstMatrix(transform, globalThreadId.x);
+//   matrix result3 = lerp
+//         (
+//         GetCurrAnimTransforms(globalThreadId.x, effectData[particleIndex].EffectIndex),
+//         lerp
+//         (
+//         GetCurrAnimTransforms(globalThreadId.x, effectData[particleIndex].EffectIndex),
+//         GetNextAnimTransforms(globalThreadId.x, effectData[particleIndex].EffectIndex),
+//         Tweenframes[globalThreadId.x].TweenTime
+//         ),
+//         saturate(Tweenframes[globalThreadId.x].Next.Clip + 1)
+//         );
+//    //matrix local = mul(effectData[particleIndex].effectTranslation,effectData[particleIndex].effectlocal);
+//    matrix computeMatrix3 = mul(effectData[particleIndex].effectlocal, result3);
+//   // GetInstMatrix(transform, globalThreadId.x);
    
             
      
    
-   float3 position = 0;
-    float4 q = float4(0.0f, 0.0f, 0.0f,0.0f);
-   float3 scale = 0;
+//   float3 position = 0;
+//    float4 q = float4(0.0f, 0.0f, 0.0f,0.0f);
+//   float3 scale = 0;
         
-    decompose(computeMatrix3, position, q, scale);
-    matrix result = compose( position, q, float3(1, 1, 1));
-   //
+//    decompose(computeMatrix3, position, q, scale);
+//    matrix result = compose( position, q, float3(1, 1, 1));
+//   //
         
 
      
-    EffectOutput[uint2(0, globalThreadId.x)] = float4(result._11, result._12, result._13, result._14);
-    EffectOutput[uint2(1, globalThreadId.x)] = float4(result._21, result._22, result._23, result._24);
-    EffectOutput[uint2(2, globalThreadId.x)] = float4(result._31, result._32, result._33, result._34);
-    EffectOutput[uint2(3, globalThreadId.x)] = float4(result._41, result._42, result._43, result._44);
+//    EffectOutput[uint2(0, globalThreadId.x)] = float4(result._11, result._12, result._13, result._14);
+//    EffectOutput[uint2(1, globalThreadId.x)] = float4(result._21, result._22, result._23, result._24);
+//    EffectOutput[uint2(2, globalThreadId.x)] = float4(result._31, result._32, result._33, result._34);
+//    EffectOutput[uint2(3, globalThreadId.x)] = float4(result._41, result._42, result._43, result._44);
         
-}
+//}
 
 
 

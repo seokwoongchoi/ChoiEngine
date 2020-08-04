@@ -783,7 +783,7 @@ void LightManager::DoDebugCascadedShadows(ID3D11DeviceContext * context)
 	
 
 	// Set the depth state for the directional light
-	context->OMSetDepthStencilState( NoDepthWriteLessStencilMaskState, SceneStencilFlag);
+	//context->OMSetDepthStencilState( NoDepthWriteLessStencilMaskState, SceneStencilFlag);
 
 	// Once we are done with the directional light, turn on the blending
 	ID3D11BlendState* PrevBlendState;

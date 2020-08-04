@@ -3,18 +3,20 @@
 class Renderer 
 {	
 	friend class ColliderSystem;
+	friend class Animator;
 public:
 	Renderer()
 		:device(nullptr),vertexBuffer(nullptr), indexBuffer(nullptr), shadowVertexBuffer(nullptr), reflectionPS(nullptr),vs(nullptr), ps(nullptr),
 		inputLayout(nullptr), rsState(nullptr), mesh(nullptr),  sampLinear(nullptr), 
 		stride(0), offset(0), slot(0), meshCount(0), ID(0), materials{},
 		AdditiveBlendState(nullptr), forwardPS(nullptr), blendMesh(nullptr), blendCount(0), blendMeshIndex(0), drawCount(0), sinputLayout(nullptr),
-		shadowVS(nullptr), boxMin(0,0,0), boxMax(0,0,0)
+		shadowVS(nullptr), boxMin(0,0,0), boxMax(0,0,0), prevDrawCount(0)
 	{}
 	~Renderer() = default;
 
 protected:
 	uint drawCount;
+	uint prevDrawCount;
 public:
 	bool ReadMesh(BinaryReader* r, const ReadMeshType& meshType);
 	template<typename T>

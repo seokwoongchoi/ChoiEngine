@@ -14,9 +14,9 @@ public:
 	~Mesh();
 
 	void CreateBuffer(ID3D11Device* device, const uint& actorIndex);
-	void ApplyPipeline(ID3D11DeviceContext* context);
-	void ApplyPipelineNoMaterial(ID3D11DeviceContext* context);
-	void ApplyPipelineReflectionMaterial(ID3D11DeviceContext* context);
+	void ApplyPipeline(ID3D11DeviceContext* context, const uint& prevDrawCount);
+	void ApplyPipelineNoMaterial(ID3D11DeviceContext* context, const uint& prevDrawCount);
+	void ApplyPipelineReflectionMaterial(ID3D11DeviceContext* context, const uint& prevDrawCount);
 	void ClearPipeline(ID3D11DeviceContext* context);
 	void ClearPipelineMaterial(ID3D11DeviceContext* context);
 	void ClearPipelineReflection(ID3D11DeviceContext* context);
@@ -45,7 +45,7 @@ protected:
 		int boneIndex = -1;
 		uint actorIndex = 0;
 		uint clipIndex = 0;
-		uint pad = 0;
+		uint prevDrawCount = 0;
 	} boneDesc;
 	ID3D11Buffer* boneBuffer;
 	ID3D11Buffer* nullBuffer;
@@ -111,7 +111,7 @@ struct ModelKeyframeData
 
 struct ModelKeyframe
 {
-	wstring BoneName;
+	string BoneName;
 	vector<ModelKeyframeData> Transforms;
 };
 
@@ -126,7 +126,7 @@ public:
 #endif
 
 public:
-	ModelClip() :name(L""), duration(0.0f), frameRate(0.0f), frameCount(0)
+	ModelClip() :name(""), duration(0.0f), frameRate(0.0f), frameCount(0)
 	{}
 	~ModelClip() = default;
 
@@ -135,7 +135,7 @@ public:
 	inline float FrameRate() { return frameRate; }
 	inline const uint& FrameCount() { return frameCount; }
 
-	inline shared_ptr<ModelKeyframe> Keyframe(const wstring& name)
+	inline shared_ptr<ModelKeyframe> Keyframe(const string& name)
 	{
 		if (keyframeMap.count(name) < 1)
 			return nullptr;
@@ -145,13 +145,13 @@ public:
 
 
 private:
-	wstring name;
+	string name;
 
 	float duration;
 	float frameRate;
 	UINT frameCount;
 
-	unordered_map<wstring, shared_ptr<ModelKeyframe>> keyframeMap;
+	unordered_map<string, shared_ptr<ModelKeyframe>> keyframeMap;
 
 	
 

@@ -264,8 +264,10 @@ void Editor::ActorAsset()
 
 	ImGui::Begin("Assets", 0, flags);
 	{
+
 		static bool isEditActor = false;
-		static vector< shared_ptr<ActorEditor>>::iterator saveIter;
+	
+		static vector< shared_ptr<ActorEditor>>::iterator saveIter= actors.end();
 		vector< shared_ptr<ActorEditor>>::iterator find = find_if(actors.begin(), actors.end(), [](shared_ptr<ActorEditor>actor)
 		{
 			return actor->ImageButton();
@@ -273,17 +275,25 @@ void Editor::ActorAsset()
 		
 		if (find != actors.end())
 		{
+			
 			isEditActor = true;
 			if (ImGui::GetIO().MouseDown[1])
 				ImGui::OpenPopup("actorPopUp");
 
 			saveIter = find;
 
+			for (vector<shared_ptr<ActorEditor>>::iterator iter = find+1; iter != actors.end(); iter++)
+			{
+				shared_ptr < ActorEditor>& actor = *iter;
+				actor->ImageButton();
+			}
 		}
 		else
 		{
+			
 			isEditActor = false;
 		}
+
 		if (ImGui::BeginPopup("actorPopUp"))
 		{
 			if (ImGui::MenuItem("Copy")) {}
@@ -446,7 +456,7 @@ void Editor::DebugRender()
 	uint renderedStaticActorCount = engine->collider->ActorCount();
 	uint renderedSkeletalActorCount = engine->animator->ActorCount();
 
-	Color color = Color(1, 0, 0, 1);
+	Color color = Color(0, 1, 0, 1);
 	for (uint i = 0; i < renderedStaticActorCount; i++)
 	{
 		uint darCount = engine->collider->DrawCount(i);

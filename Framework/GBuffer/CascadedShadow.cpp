@@ -48,8 +48,8 @@ void CascadedShadow::Update(const Vector3 & vDirectionalDir)
 	view = GlobalData::GetView();
 	Matrix viewInv;
 	D3DXMatrixInverse(&viewInv, nullptr,&view);
-	camPos = Vector3(viewInv._41, viewInv._42, viewInv._43);
-	camForward = Vector3(viewInv._31, viewInv._32, viewInv._33);
+	camPos = GlobalData::Position();
+	camForward = GlobalData::Forward();
 	camUp = Vector3(viewInv._21, viewInv._22, viewInv._23);
 	camRight = Vector3(viewInv._11, viewInv._12, viewInv._13);
 	

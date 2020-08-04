@@ -1,4 +1,4 @@
-#define MAX_MODEL_INSTANCE 50
+#define MAX_MODEL_INSTANCE 20
 
 cbuffer CB_World : register(b0)
 {
