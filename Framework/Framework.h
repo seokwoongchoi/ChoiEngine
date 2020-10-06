@@ -10,6 +10,7 @@
 #include <assert.h>
 
 //STL
+#include <fstream>      // std::ifstream
 #include <iostream>
 #include <string>
 #include <vector>

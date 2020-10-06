@@ -31,6 +31,8 @@ namespace D3D11_Helper
         D3D_SHADER_MACRO* defines,
         ID3DBlob** blob
     )
+
+
     {
 #ifndef OPTIMIZATION
         uint flags = D3DCOMPILE_ENABLE_STRICTNESS;
@@ -57,6 +59,24 @@ namespace D3D11_Helper
 
         return result;
     }
+
+	inline ID3DBlob* LoadBinary(const wstring& fileName)
+	{
+		ifstream fin(fileName, ios::binary);
+		fin.seekg(0, ios_base::end);
+
+		ifstream::pos_type size = (int)fin.tellg();
+		fin.seekg(0, ios_base::beg);
+
+		ID3DBlob* blob = nullptr;
+		Check(D3DCreateBlob(static_cast<SIZE_T>(size), &blob));
+
+		fin.read((char*)blob->GetBufferPointer(), size);
+		fin.close();
+
+		return blob;
+	}
+
 
     inline const char* DXGI_ERROR_TO_STRING(const HRESULT& error)
     {

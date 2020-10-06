@@ -13,6 +13,8 @@ void Renderer::Initiallize(ID3D11Device* device,const uint & ID)
 	offset = 0;
 	slot = 0;
 	CreateStates();
+
+	
 }
 
 
@@ -22,18 +24,19 @@ void Renderer::Depth_PreRender(ID3D11DeviceContext* context)
 	context->VSSetShader(shadowVS, nullptr, 0);
 		
 	
-	uint depthStride = sizeof(Vector3);
-	context->IASetVertexBuffers(slot, 1, &shadowVertexBuffer, &depthStride, &offset);
+
+	context->IASetVertexBuffers(slot, 1, &shadowVertexBuffer, &shadowStride, &offset);
 	context->IASetInputLayout(*sinputLayout);
 	context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 	context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+	uint temp = bMaintainShadow &&drawCount == 0 ? 1 : drawCount;
 
 	for (uint i = 0; i < meshCount; i++)
 	{
 		auto& m = mesh[i];
-		m.ApplyPipelineNoMaterial(context, prevDrawCount);
-		context->DrawIndexedInstanced(m.indexCount, drawCount, m.startIndex, m.startVertexIndex, 0);
+		m.ApplyPipelineNoMaterial(context, prevDrawCount,ID);
+		context->DrawIndexedInstanced(m.indexCount, temp, m.startIndex, m.startVertexIndex, 0);
 		m.ClearPipeline(context);
 	}
 
@@ -45,7 +48,7 @@ void Renderer::Depth_PreRender(ID3D11DeviceContext* context)
 
 void Renderer::Reflection_PreRender(ID3D11DeviceContext * context)
 {
-	context->VSSetShader(vs, nullptr, 0);
+	context->VSSetShader(reflectionVS, nullptr, 0);
 	context->PSSetShader(reflectionPS, nullptr, 0);
 
 
@@ -63,7 +66,7 @@ void Renderer::Reflection_PreRender(ID3D11DeviceContext * context)
 	for (uint i = 0; i < meshCount; i++)
 	{
 		auto& m = mesh[i];
-		m.ApplyPipelineReflectionMaterial(context, prevDrawCount);
+		m.ApplyPipelineReflectionMaterial(context, prevDrawCount, ID);
 		context->DrawIndexedInstanced(m.indexCount, drawCount, m.startIndex, m.startVertexIndex, 0);
 		m.ClearPipelineReflection(context);
 
@@ -77,6 +80,8 @@ void Renderer::Reflection_PreRender(ID3D11DeviceContext * context)
 
 void Renderer::Render(ID3D11DeviceContext* context)
 {
+	
+
 	context->VSSetShader(vs, nullptr, 0);
 	context->PSSetShader(ps, nullptr, 0);
 	
@@ -90,20 +95,19 @@ void Renderer::Render(ID3D11DeviceContext* context)
 	context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 	context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	
-	
+
 	
 	for (uint i = 0; i < meshCount; i++)
 	{
 		auto& m = mesh[i];
 		
 		
-		m.ApplyPipeline(context, prevDrawCount);
+		m.ApplyPipeline(context, prevDrawCount, ID);
 		context->DrawIndexedInstanced(m.indexCount, drawCount, m.startIndex, m.startVertexIndex, 0);
 		m.ClearPipelineMaterial(context);
 	
 	}
-	
-	
+
 
 	context->VSSetShader(nullptr, nullptr, 0);
 	context->PSSetShader(nullptr, nullptr, 0);
@@ -116,12 +120,8 @@ void Renderer::Forward_Render(ID3D11DeviceContext * context)
 	context->VSSetShader(vs, nullptr, 0);
 	context->PSSetShader(forwardPS, nullptr, 0);
 
-	context->VSSetShader(vs, nullptr, 0);
-	context->PSSetShader(forwardPS, nullptr, 0);
-
 	context->PSSetSamplers(0, 1, &sampLinear);
 	context->RSSetState(nullptr);
-
 
 
 	context->IASetVertexBuffers(slot, 1, &vertexBuffer, &stride, &offset);
@@ -138,7 +138,7 @@ void Renderer::Forward_Render(ID3D11DeviceContext * context)
 
 	for (uint i = 0; i < blendCount; i++)
 	{
-		blendMesh[i].ApplyPipeline(context, prevDrawCount);
+		blendMesh[i].ApplyPipeline(context, prevDrawCount, ID);
 		context->DrawIndexedInstanced(blendMesh[i].indexCount, drawCount, blendMesh[i].startIndex, blendMesh[i].startVertexIndex, 0);
 
 		blendMesh[i].ClearPipelineMaterial(context);
@@ -199,6 +199,7 @@ void Renderer::CreateStates()
 	
 	Check(device->CreateBlendState(&descBlend, &AdditiveBlendState));
 }
+
 
 
 void Renderer::ReadMaterial(const wstring& name)
@@ -280,7 +281,7 @@ void Renderer::BindMaterial()
 	for (uint i = 0; i < meshCount; i++)
 	{
 
-		mesh[i].CreateBuffer(device,ID);
+		mesh[i].CreateBuffer(device);
 		string name = mesh[i].materialName;
 		auto find = find_if(materials.begin(), materials.end(), [&name](shared_ptr<class Material> material)
 		{
@@ -297,7 +298,7 @@ void Renderer::BindMaterial()
 		for (uint i = 0; i < blendCount; i++)
 		{
 
-			blendMesh[i].CreateBuffer(device,ID);
+			blendMesh[i].CreateBuffer(device);
 			string name = blendMesh[i].materialName;
 			auto find = find_if(materials.begin(), materials.end(), [&name](shared_ptr<class Material> material)
 			{
@@ -321,24 +322,12 @@ void Renderer::CreateShader(const string& file)
 	SafeRelease(shadowVS);
 	SafeRelease(ps);
 	SafeRelease(reflectionPS);
-	
+	SafeRelease(reflectionVS);
 	
 	ID3DBlob* ShaderBlob = nullptr;
-	auto path = file;
-	auto entryPoint =  "VS";
-	auto shaderModel = "vs_5_0";
-
-	Check(D3D11_Helper::CompileShader
-	(
-		path,
-		entryPoint,
-		shaderModel,
-		nullptr,
-		&ShaderBlob
-	));
-
+	auto path = file+"/VS.cso";
 	
-
+	ShaderBlob = D3D11_Helper::LoadBinary(String::ToWString(path));
 	Check( device->CreateVertexShader
 	(
 		ShaderBlob->GetBufferPointer(),
@@ -351,20 +340,22 @@ void Renderer::CreateShader(const string& file)
 	inputLayout->Create(device, ShaderBlob);
 	SafeRelease(ShaderBlob);
 
-	entryPoint = "CascadedShadowGenVS";
-	shaderModel = "vs_5_0";
-
-	Check(D3D11_Helper::CompileShader
+	path = file + "/ReflectionVS.cso";
+	ShaderBlob = D3D11_Helper::LoadBinary(String::ToWString(path));
+	
+	Check(device->CreateVertexShader
 	(
-		path,
-		entryPoint,
-		shaderModel,
+		ShaderBlob->GetBufferPointer(),
+		ShaderBlob->GetBufferSize(),
 		nullptr,
-		&ShaderBlob
+		&reflectionVS
 	));
 
+	SafeRelease(ShaderBlob);
 
-
+	path = file + "/CascadedShadowGenVS.cso";
+	ShaderBlob = D3D11_Helper::LoadBinary(String::ToWString(path));
+	
 	Check(device->CreateVertexShader
 	(
 		ShaderBlob->GetBufferPointer(),
@@ -378,16 +369,8 @@ void Renderer::CreateShader(const string& file)
 
 	SafeRelease(ShaderBlob);
 
-	entryPoint = "PS";
-	shaderModel = "ps_5_0";
-	Check(D3D11_Helper::CompileShader
-	(
-		path,
-		entryPoint,
-		shaderModel,
-		nullptr,
-		&ShaderBlob
-	));
+	path = file + "/PS.cso";
+	ShaderBlob = D3D11_Helper::LoadBinary(String::ToWString(path));
 
 	Check(device->CreatePixelShader
 	(
@@ -399,18 +382,9 @@ void Renderer::CreateShader(const string& file)
 
 	SafeRelease(ShaderBlob);
 
-	entryPoint = "ReflectionPS";
-	shaderModel = "ps_5_0";
-	Check(D3D11_Helper::CompileShader
-	(
-		path,
-		entryPoint,
-		shaderModel,
-		nullptr,
-		&ShaderBlob
-	));
-
-
+	path = file + "/ReflectionPS.cso";
+	ShaderBlob = D3D11_Helper::LoadBinary(String::ToWString(path));
+	
 
 	Check(device->CreatePixelShader
 	(
@@ -427,17 +401,8 @@ void Renderer::CreateShader(const string& file)
 	{
 		SafeRelease(forwardPS);
 
-		entryPoint = "ForwardPS";
-		shaderModel = "ps_5_0";
-		Check(D3D11_Helper::CompileShader
-		(
-			path,
-			entryPoint,
-			shaderModel,
-			nullptr,
-			&ShaderBlob
-		));
-
+		path = file + "/ForwardPS.cso";
+		ShaderBlob = D3D11_Helper::LoadBinary(String::ToWString(path));
 
 
 		Check(device->CreatePixelShader
@@ -520,10 +485,10 @@ bool Renderer::ReadMesh(BinaryReader* r,const ReadMeshType& meshType)
 	{
 
 	case ReadMeshType::StaticMesh:
-		BindingMesh<VertexTextureNormalTangent>(r);
+		BindingStaticMesh(r);
 		break;
 	case ReadMeshType::SkeletalMesh:
-		BindingMesh<VertexTextureNormalTangentBlend>(r);
+		BindingSkeletalMesh(r);
 		break;
 	
 	}
@@ -537,6 +502,8 @@ bool Renderer::ReadMesh(BinaryReader* r,const ReadMeshType& meshType)
 		boxMax.x = r->Float();
 		boxMax.y = r->Float();
 		boxMax.z = r->Float();
+
+		
 	}
 
 
@@ -550,4 +517,191 @@ bool Renderer::ReadMesh(BinaryReader* r,const ReadMeshType& meshType)
 
 	return true;
 }
+
+void Renderer::BindingStaticMesh(BinaryReader * r)
+{
+	vector< VertexTextureNormalTangent> vertices;
+	stride = sizeof(VertexTextureNormalTangent);
+	vector< uint> indices;
+	uint totalCount = r->UInt();
+	uint totalIndexCount = r->UInt();
+	vertices.assign(totalCount, VertexTextureNormalTangent());
+	indices.assign(totalIndexCount, uint());
+
+
+	{
+		void* ptr = reinterpret_cast<void*>(vertices.data());
+		r->Byte(&ptr, sizeof(VertexTextureNormalTangent) * totalCount);
+
+	}
+
+	{
+		void* ptr = reinterpret_cast<void*>(indices.data());
+		r->Byte(&ptr, sizeof(uint) *totalIndexCount);
+
+	}
+
+
+	SafeRelease(vertexBuffer);
+	SafeRelease(shadowVertexBuffer);
+	SafeRelease(indexBuffer);
+
+
+	D3D11_BUFFER_DESC desc;
+	ZeroMemory(&desc, sizeof(D3D11_BUFFER_DESC));
+	desc.ByteWidth = sizeof(VertexTextureNormalTangent) * totalCount;
+	desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	D3D11_SUBRESOURCE_DATA subResource;
+	ZeroMemory(&subResource, sizeof(subResource));
+	subResource.pSysMem = vertices.data();
+	Check(device->CreateBuffer(&desc, &subResource, &vertexBuffer));
+
+
+
+	//Thread::Get()->AddTask([&]()
+	{
+
+		shadowStride = sizeof(Vector3);
+		vector< Vector3> shadowVertices;
+		shadowVertices.assign(totalCount, Vector3());
+
+		for (uint i = 0; i < totalCount; i++)
+		{
+			memcpy(shadowVertices[i], vertices[i].Position, sizeof(Vector3));
+		}
+		D3D11_BUFFER_DESC desc;
+		ZeroMemory(&desc, sizeof(D3D11_BUFFER_DESC));
+		desc.ByteWidth = sizeof(Vector3) * totalCount;
+		desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+		desc.Usage = D3D11_USAGE_DEFAULT;
+
+
+		D3D11_SUBRESOURCE_DATA subResource;
+		ZeroMemory(&subResource, sizeof(subResource));
+		subResource.pSysMem = shadowVertices.data();
+	
+
+
+
+		Check(device->CreateBuffer(&desc, &subResource, &shadowVertexBuffer));
+		shadowVertices.clear();
+		shadowVertices.shrink_to_fit();
+
+	}
+	//);
+
+	
+
+	ZeroMemory(&desc, sizeof(D3D11_BUFFER_DESC));
+	desc.ByteWidth = sizeof(uint) * totalIndexCount;
+	desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	desc.Usage = D3D11_USAGE_IMMUTABLE;
+
+	ZeroMemory(&subResource, sizeof(subResource));
+	subResource.pSysMem = indices.data();
+	Check(device->CreateBuffer(&desc, &subResource, &indexBuffer));
+
+
+
+
+	vertices.clear();
+	vertices.shrink_to_fit();
+
+	indices.clear();
+	indices.shrink_to_fit();
+}
+
+void Renderer::BindingSkeletalMesh(BinaryReader * r)
+{
+	vector< VertexTextureNormalTangentBlend> vertices;
+	stride = sizeof(VertexTextureNormalTangentBlend);
+	vector< uint> indices;
+	uint totalCount = r->UInt();
+	uint totalIndexCount = r->UInt();
+	vertices.assign(totalCount, VertexTextureNormalTangentBlend());
+	indices.assign(totalIndexCount, uint());
+
+
+	{
+		void* ptr = reinterpret_cast<void*>(vertices.data());
+		r->Byte(&ptr, sizeof(VertexTextureNormalTangentBlend) * totalCount);
+
+	}
+
+	{
+		void* ptr = reinterpret_cast<void*>(indices.data());
+		r->Byte(&ptr, sizeof(uint) *totalIndexCount);
+
+	}
+
+
+	SafeRelease(vertexBuffer);
+	SafeRelease(shadowVertexBuffer);
+	SafeRelease(indexBuffer);
+
+
+	D3D11_BUFFER_DESC desc;
+	ZeroMemory(&desc, sizeof(D3D11_BUFFER_DESC));
+	desc.ByteWidth = sizeof(VertexTextureNormalTangentBlend) * totalCount;
+	desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	D3D11_SUBRESOURCE_DATA subResource;
+	ZeroMemory(&subResource, sizeof(subResource));
+	subResource.pSysMem = vertices.data();
+	Check(device->CreateBuffer(&desc, &subResource, &vertexBuffer));
+
+
+
+	//Thread::Get()->AddTask([&]()
+	{
+
+		shadowStride = sizeof(shadowDesc);
+		vector< shadowDesc> shadowVertices;
+		shadowVertices.assign(totalCount, shadowDesc());
+
+		for (uint i = 0; i < totalCount; i++)
+		{
+			memcpy(shadowVertices[i].Position, vertices[i].Position, sizeof(Vector3));
+			memcpy(shadowVertices[i].Indices, vertices[i].Indices, sizeof(Vector4));
+			memcpy(shadowVertices[i].Weights, vertices[i].Weights, sizeof(Vector4));
+		}
+		D3D11_BUFFER_DESC desc;
+		ZeroMemory(&desc, sizeof(D3D11_BUFFER_DESC));
+		desc.ByteWidth = sizeof(shadowDesc) * totalCount;
+		desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+		desc.Usage = D3D11_USAGE_DEFAULT;
+
+
+		D3D11_SUBRESOURCE_DATA subResource;
+		ZeroMemory(&subResource, sizeof(subResource));
+		subResource.pSysMem = shadowVertices.data();
+	
+		Check(device->CreateBuffer(&desc, &subResource, &shadowVertexBuffer));
+		shadowVertices.clear();
+		shadowVertices.shrink_to_fit();
+	}
+	//);
+
+
+
+	ZeroMemory(&desc, sizeof(D3D11_BUFFER_DESC));
+	desc.ByteWidth = sizeof(uint) * totalIndexCount;
+	desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	desc.Usage = D3D11_USAGE_IMMUTABLE;
+
+	ZeroMemory(&subResource, sizeof(subResource));
+	subResource.pSysMem = indices.data();
+	Check(device->CreateBuffer(&desc, &subResource, &indexBuffer));
+
+
+
+
+	vertices.clear();
+	vertices.shrink_to_fit();
+
+	indices.clear();
+	indices.shrink_to_fit();
+}
+
 

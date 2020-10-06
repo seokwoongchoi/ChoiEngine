@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Materials xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <Material>
+        <Name>Bodymat</Name>
+        <DiffuseFile>Douglas_Body_Diffuse.png</DiffuseFile>
+        <NormalFile>Douglas_Body_Normal.png</NormalFile>
+        <RoughnessFile>SpecularMap.png</RoughnessFile>
+        <MetallicFile>Douglas_Body_Specular.png</MetallicFile>
+        <Diffuse R="1" G="1" B="1" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Bodymat</Name>
+        <DiffuseFile>Douglas_Body_Diffuse.png</DiffuseFile>
+        <NormalFile>Douglas_Body_Normal.png</NormalFile>
+        <RoughnessFile>SpecularMap.png</RoughnessFile>
+        <MetallicFile>Douglas_Body_Specular.png</MetallicFile>
+        <Diffuse R="1" G="1" B="1" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Bodymat</Name>
+        <DiffuseFile>Douglas_Body_Diffuse.png</DiffuseFile>
+        <NormalFile>Douglas_Body_Normal.png</NormalFile>
+        <RoughnessFile>SpecularMap.png</RoughnessFile>
+        <MetallicFile>Douglas_Body_Specular.png</MetallicFile>
+        <Diffuse R="1" G="1" B="1" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Shoesmat</Name>
+        <DiffuseFile>Douglas_Shoes_Diffuse.png</DiffuseFile>
+        <NormalFile>Douglas_Shoes_Normal.png</NormalFile>
+        <RoughnessFile>Leather_Roughness.png</RoughnessFile>
+        <MetallicFile>Douglas_Shoes_Specular.png</MetallicFile>
+        <Diffuse R="1" G="1" B="1" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Topmat</Name>
+        <DiffuseFile>Douglas_Top_Diffuse.png</DiffuseFile>
+        <NormalFile>Douglas_Top_Normal.png</NormalFile>
+        <RoughnessFile>CamoFabric_Roughness.png</RoughnessFile>
+        <MetallicFile>Douglas_Top_Specular.png</MetallicFile>
+        <Diffuse R="1" G="1" B="1" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Bottommat</Name>
+        <DiffuseFile>Douglas_Bottom_Diffuse.png</DiffuseFile>
+        <NormalFile>Douglas_Bottom_Normal.png</NormalFile>
+        <RoughnessFile>CamoFabric_Roughness.png</RoughnessFile>
+        <MetallicFile>Douglas_Bottom_Specular.png</MetallicFile>
+        <Diffuse R="1" G="1" B="1" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Tachi_Sword_SG</Name>
+        <DiffuseFile>Tachi_Sword_MESH2_Tachi_Sword_SG_BaseColor.jpg</DiffuseFile>
+        <NormalFile>Tachi_Sword_MESH2_Tachi_Sword_SG_Normal.jpg</NormalFile>
+        <RoughnessFile>Tachi_Sword_MESH2_Tachi_Sword_SG_Rough.png</RoughnessFile>
+        <MetallicFile>Tachi_Sword_MESH2_Tachi_Sword_SG_Metallic.jpg</MetallicFile>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+</Materials>

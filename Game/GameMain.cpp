@@ -38,6 +38,7 @@ int APIENTRY WinMain
 	}
 
 	auto engine = std::make_unique<Engine>();
+	engine->Load();
 	Window::Resize = [&engine](const uint& width, const uint& height)
 	{
 		engine->Resize(width, height);

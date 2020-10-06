@@ -1,3 +1,4 @@
+
 #include "stdafx.h"
 #include "Editor.h"
 #include "./Core/Window.h"
@@ -21,7 +22,7 @@ int APIENTRY WinMain
 		desc.AppName = Window::AppName;
 		desc.Instance = Window::Instance;
 		desc.bFullScreen = Window::IsFullScreen;
-		desc.bVsync = false;
+		desc.bVsync = true;
 		desc.Handle = Window::Handle;
 		desc.Width = Window::GetWidth();
 		desc.Height = Window::GetHeight();

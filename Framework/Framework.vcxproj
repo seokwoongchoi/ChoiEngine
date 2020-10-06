@@ -166,12 +166,20 @@ copy /Y "$(SolutionDir)Debug\Framework.pdb" "$(SolutionDir)Editor\</Command>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="EventSystems\ActorAi.cpp" />
+    <ClCompile Include="EventSystems\ActorController.cpp" />
+    <ClCompile Include="BehaviorTree\Behavior.cpp" />
+    <ClCompile Include="BehaviorTree\BehaviorTree.cpp" />
+    <ClCompile Include="EventSystems\EventSystem.cpp" />
+    <ClCompile Include="EventSystems\EffectSystem.cpp" />
     <ClCompile Include="Core\D3D11\D3D.cpp" />
     <ClCompile Include="Environment\Island11.cpp" />
     <ClCompile Include="Environment\Sky\Cloud.cpp" />
     <ClCompile Include="Environment\Sky\Scattering.cpp" />
     <ClCompile Include="Environment\Sky\Sky.cpp" />
+    <ClCompile Include="Particles\ParticleSimulation.cpp" />
+    <ClCompile Include="Particles\Sparks.cpp" />
+    <ClCompile Include="EventSystems\Transforms.cpp" />
+    <ClCompile Include="Particles\Smoke.cpp" />
     <ClCompile Include="Viewer\Frustum.cpp" />
     <ClCompile Include="GBuffer\CascadedShadow.cpp" />
     <ClCompile Include="EventSystems\Animator.cpp" />
@@ -210,9 +218,17 @@ copy /Y "$(SolutionDir)Debug\Framework.pdb" "$(SolutionDir)Editor\</Command>
     <ClCompile Include="Viewer\Viewport.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="EventSystems\ActorController.h" />
+    <ClInclude Include="BehaviorTree\Behavior.h" />
+    <ClInclude Include="BehaviorTree\BehaviorTree.h" />
+    <ClInclude Include="EventSystems\EventSystem.h" />
+    <ClInclude Include="EventSystems\EffectSystem.h" />
+    <ClInclude Include="Particles\ParticleSimulation.h" />
+    <ClInclude Include="Particles\Sparks.h" />
+    <ClInclude Include="EventSystems\Transforms.h" />
+    <ClInclude Include="Particles\Smoke.h" />
     <ClInclude Include="Viewer\Frustum.h" />
     <ClInclude Include="Resources\TextureTransforms.h" />
-    <ClInclude Include="EventSystems\ActorAi.h" />
     <ClInclude Include="Core\D3D11\D3D.h" />
     <ClInclude Include="Core\D3D11\D3D11_Helper.h" />
     <ClInclude Include="Environment\Island11.h" />
@@ -222,7 +238,6 @@ copy /Y "$(SolutionDir)Debug\Framework.pdb" "$(SolutionDir)Editor\</Command>
     <ClInclude Include="GBuffer\CascadedShadow.h" />
     <ClInclude Include="EventSystems\Animator.h" />
     <ClInclude Include="EventSystems\ColliderSystem.h" />
-    <ClInclude Include="EventSystems\Loader.h" />
     <ClInclude Include="EventSystems\PhysicsSystem.h" />
     <ClInclude Include="GBuffer\LightManager.h" />
     <ClInclude Include="GBuffer\GBufferData.h" />

@@ -3,7 +3,7 @@
 class Camera
 {
 public:
-	Camera() :move(20), R(2), position(0, 0, 0), forward(0, 0, 1), data{}, delta(0.008f)
+	Camera() :move(20), R(2), position(0, 0, 0), forward(0, 0, 1), data{}, delta(0.04f)
 	{
 		D3DXMatrixIdentity(&matView);
 		D3DXMatrixIdentity(&proj);

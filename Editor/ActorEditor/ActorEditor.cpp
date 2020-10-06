@@ -4,7 +4,8 @@
 #include "PreviewRenderer.h"
 #include "Resources/Mesh.h"
 #include "Editor.h"
-
+#include "EventSystems/ColliderSystem.h"
+#include "EventSystems/Animator.h"
 
 ActorEditor::ActorEditor(ID3D11Device* device, class Engine* engine, class Editor* editor):
 	engine(engine),editor(editor),
@@ -21,10 +22,10 @@ ActorEditor::ActorEditor(ID3D11Device* device, class Engine* engine, class Edito
     bCompiled(false),
     bHasEffect(false),
 	bMove(false),
+	bBindedTree(false),
 	dsv(nullptr), meshType(ReadMeshType::Default), currentBone(nullptr), modelName(L""), actorIndex(0), size(800,600),
 	currentClipNum(0), mode(EditMode::Render), camSpeed(0.8f),
-	gizmoMode(GizmoMode::Default), boxIndex(-1), colliderIndex{},
-	gizmoColliderIndex(0)
+	gizmoMode(GizmoMode::Default), gizmoColliderIndex(0)
 {
 	previewRender = new PreviewRenderer(device);
 	uint width = D3D::Width();
@@ -138,6 +139,125 @@ ActorEditor::~ActorEditor()
 	}
 }
 
+void ActorEditor::Save()
+{
+	previewRender->SaveMaterialFile(modelName);
+	previewRender->SaveMeshFile(modelName, meshType);
+}
+
+void ActorEditor::Save(BinaryWriter * w)
+{
+	Thread::Get()->AddTask([&]() {
+
+		Save();
+
+	});
+
+	
+	uint actorCount = 0;
+	switch (meshType)
+	{
+
+	case ReadMeshType::StaticMesh:
+	{
+		actorCount = editor->staticActorCount;
+	}
+	break;
+	case ReadMeshType::SkeletalMesh:
+	{
+		actorCount = editor->skeletalActorCount;
+	}
+	break;
+	}
+	w->UInt(actorIndex);
+	w->UInt(actorCount);
+	w->UInt(static_cast<uint>(meshType));
+	w->String(String::ToString(modelName));
+
+
+	switch (meshType)
+	{
+
+	case ReadMeshType::StaticMesh:
+	{
+		uint drawCount;
+		engine->collider->RenderandCulledCount(actorIndex, drawCount);
+		w->UInt(drawCount);
+		for (uint i = 0; i < drawCount; i++)
+		{
+			Matrix temp = engine->collider->GetInstMatrix(actorIndex,i);
+			w->Matrix(temp);
+		}
+	}
+	break;
+	case ReadMeshType::SkeletalMesh:
+	{
+		uint drawCount;
+		engine->animator->RenderandCulledCount(actorIndex, drawCount);
+		w->UInt(drawCount);
+		for (uint i = 0; i < drawCount; i++)
+		{
+			Matrix temp = engine->animator->GetInstMatrix(actorIndex, i);
+			w->Matrix(temp);
+		}
+	}
+	break;
+	}
+	
+
+}
+
+void ActorEditor::Load(BinaryReader * r)
+{
+	uint temp = r->UInt();
+	 temp = r->UInt();
+	uint tempmeshType = r->UInt();
+	string tempModelName = r->String();
+	wstring tempwString = String::ToWString(tempModelName);
+
+	uint actorCount = 0;
+	
+	switch (tempmeshType)
+	{
+	case 1:
+		LoadStaticMesh(L"../_Models/StaticMeshes/" + tempwString + L"/" + tempwString + L"_Edit" + L".mesh");
+		actorCount = editor->staticActorCount;
+		break;
+	case 2:
+		LoadSkeletalMesh(L"../_Models/SkeletalMeshes/" + tempwString + L"/" + tempwString + L"_Edit" + L".mesh");
+		actorCount = editor->skeletalActorCount;
+		break;
+	
+	}
+	 
+	engine->Load(actorIndex, modelName, actorCount, meshType);
+
+	uint drawCount = r->UInt();
+	if(drawCount>0)
+	switch (tempmeshType)
+	{
+	case 1:
+		for (uint i = 0; i < drawCount; i++)
+		{
+			Matrix temp = r->Matrix();
+			engine->collider->PushDrawCount(actorIndex, temp);
+		}
+		break;
+	case 2:
+		for (uint i = 0; i < drawCount; i++)
+		{
+			Matrix temp = r->Matrix();
+			engine->animator->PushDrawCount(actorIndex, temp);
+		}
+		break;
+
+	}
+
+	bMove = true;
+
+
+}
+
 void ActorEditor::Render(ID3D11DeviceContext* context)
 {
 	context->ClearState();
@@ -204,7 +324,19 @@ bool ActorEditor::ImageButton()
 	if (bCompiled)
 	{
 	
-		engine->Load(actorIndex, modelName, meshType);
+		uint actorCount = 0;
+		switch (meshType)
+		{
+		
+		case ReadMeshType::StaticMesh:
+			actorCount = editor->staticActorCount;
+			break;
+		case ReadMeshType::SkeletalMesh:
+			actorCount = editor->skeletalActorCount;
+			break;
+		
+		}
+		engine->Load(actorIndex, modelName, actorCount, meshType);
 		bCompiled = false;
 		bMove = true;
 		
@@ -251,10 +383,11 @@ void ActorEditor::EditingMode()
 
 void ActorEditor::Compile()
 {
-	previewRender->SaveMaterialFile(modelName);
-	Thread::Get()->AddTask([&]() {
-		previewRender->SaveMeshFile(modelName, meshType);
 	
+	Thread::Get()->AddTask([&]() {
+
+		
+		Save();
 		bCompiled = true;
 	});
 
@@ -343,12 +476,10 @@ void ActorEditor::ImGizmo()
 	case GizmoMode::Collider:
 	{
 	;
-		if(boxIndex<0)
-		ColliderGizmo(mode, operation, -1);
-		else
-		{
-			ColliderGizmo(mode, operation, gizmoColliderIndex);
-		}
+	
+		
+	   ColliderGizmo(mode, operation, gizmoColliderIndex);
+		
 	}
 		
 		break;
@@ -614,6 +745,7 @@ void ActorEditor::ShowAnimFrame(const ImVec2 & size)
 	uint frame = previewRender->tweenDesc.Curr.CurrFrame;
 	ImGui::SliderInt("Frame", (int*)&frame, 0, clip->FrameCount() - 1);
 	previewRender->tweenDesc.Curr.CurrFrame = frame;
+	
 	if (ImGui::ImageButton(buttonTextures[0]->SRV(), ImVec2(20.0f, 20.0f)))//play
 	{
 		previewRender->bPause = false;
@@ -642,6 +774,12 @@ void ActorEditor::ShowAnimFrame(const ImVec2 & size)
 
 void ActorEditor::ShowComponents(const ImVec2 & size)
 {
+
+	if (previewRender->boxCount > 0&& componentList.size()<=2)
+	{
+		for(uint i=0;i< previewRender->boxCount;i++)
+		componentList.emplace_back("BoneCollider" + to_string(i));
+	}
 	ImGui::SameLine();
 	ImGui::BeginChild("##Components", ImVec2(size.x*0.25f - 70.0f, 0), true);
 	{
@@ -677,6 +815,7 @@ void ActorEditor::ShowComponents(const ImVec2 & size)
 								componentName = componentList[i];
 								if (componentName == "Collider")
 								{
+									gizmoColliderIndex = -1;
 									gizmoMode = GizmoMode::Collider;
 								}
 								for (uint i = 0; i < MAX_ACTOR_BONECOLLIDER; i++)
@@ -703,14 +842,14 @@ void ActorEditor::ShowComponents(const ImVec2 & size)
 								}*/
 								
 							}
-						/*	if (IsBindedTree&&componentList[i] == "ActorAi")
+							if (bBindedTree&&componentList[i] == "ActorAI")
 							{
-								string treeName = "BehaviorTree" + to_string(sharedData->behviorTreeNum);
+								string treeName = "BehaviorTree" + to_string(previewRender->behaviorTreeIndex);
 								if (ImGui::TreeNodeEx(treeName.c_str(), flags))
 								{
 									ImGui::TreePop();
 								}
-							}*/
+							}
 							ImGui::TreePop();
 						}
 
@@ -762,24 +901,31 @@ void ActorEditor::ShowComponentPopUp()
 		}
 		if (ImGui::MenuItem("ActorCamera"))
 		{
-			//if (!components[ComponentType::ActorCamera])
-			//{
+			auto allTrue = all_of (componentList.begin(), componentList.end(), [](const string& check)
+			{
+				return check != "ActorCamera";
+			});
 
-			//	//components.emplace_back(animator);
-			//	CreateActorCamera();
-			//}
+			if (allTrue)
+			{
+				componentList.emplace_back("ActorCamera");
+			}
+		
 
 
 		}
 		if (ImGui::MenuItem("ActorAI"))
 		{
-			/*if (!components[ComponentType::ActorAi])
+			auto allTrue = all_of(componentList.begin(), componentList.end(), [](const string& check)
 			{
+				return check != "ActorAI";
+			});
 
-				CreateActorAI();
-			}*/
-
-
+			if (allTrue)
+			{
+				componentList.emplace_back("ActorAI");
+			}
+			  
 		}
 
 		ImGui::EndPopup();
@@ -788,6 +934,74 @@ void ActorEditor::ShowComponentPopUp()
 
 void ActorEditor::ShowComponentListPopUp(const string & componentName)
 {
+	if (ImGui::BeginPopup("ComponentList Popup"))
+	{
+		if (ImGui::MenuItem("Delete"))
+		{
+			if (componentName == "ActorCamera")
+			{
+
+				for (uint i = 0; i < componentList.size(); i++)
+				{
+					if (componentList[i] == "ActorCamera")
+					{
+						componentList.erase(componentList.begin() + i);
+					}
+				}
+	
+
+
+			}
+
+			for (uint b = 0; b < MAX_ACTOR_BONECOLLIDER; b++)
+			{
+				if (componentName == "BoneCollider" + to_string(b))
+				{
+					for (uint i = 0; i < componentList.size(); i++)
+					{
+						if (componentList[i] == "BoneCollider" + to_string(b))
+						{
+							componentList.erase(componentList.begin() + i);
+							if (previewRender->boxCount > 0)
+							{
+								previewRender->boxCount--;
+								ColliderBoxData temp;
+								D3DXMatrixIdentity(&temp.ColliderBoxWorld);
+								previewRender->colliderBoxData[b] = temp;
+							}
+						}
+					}
+
+				}
+			}
+
+
+		}
+		if (componentName == "ActorAI")
+		{
+			ImGui::Separator();
+			//if (ImGui::MenuItem("BehaviorTree"))
+			{
+
+				uint count = editor->behaviorTrees.size();
+				for (uint i = 0; i < count; i++)
+				{
+
+					const string& temp = "BehaviorTree" + to_string(i);
+					if (ImGui::MenuItem(temp.c_str()))
+					{
+						previewRender->behaviorTreeIndex = i;
+						bBindedTree = true;
+					}
+
+				}
+
+
+			}
+		}
+
+		ImGui::EndPopup();
+	}
 }
 
 void ActorEditor::ClipFinder(const wstring & file)
@@ -813,7 +1027,7 @@ void ActorEditor::LoadSkeletalMesh(const wstring & file)
 
 	BarrierModelUse();
 	
-
+	previewRender->CreateSahders("../_Shaders/PreviewSkeletalModel.hlsl");
 	
 	modelName = Path::GetFileNameWithoutExtension(file);
 
@@ -826,23 +1040,17 @@ void ActorEditor::LoadSkeletalMesh(const wstring & file)
 	if (index == string::npos)
 	{
 		previewRender->ReadMaterial(modelName);
-		previewRender->ReadMesh(file, meshType);
+		previewRender->ReadMesh(file, modelName,meshType);
 	}
 	else if (modelName.substr(index + 1, 4) == L"Edit")
 	{
 		modelName = modelName.substr(0, index);
 		previewRender->ReadEditedMaterial(modelName);
-		previewRender->ReadEditedMesh(file, meshType);
+		previewRender->ReadEditedMesh(file, modelName, meshType);
 	}
 
+
 	ClipFinder(modelName);
-	for (auto& clip : clipList)
-	{
-		previewRender->ReadClip(modelName + L"/" + clip);
-	}
-	previewRender->CreateAnimTransformSRV();
-	previewRender->CreateSahders("../_Shaders/PreviewSkeletalModel.hlsl");
-	
 	componentList.emplace_back("SkeletalMesh");
 	componentList.emplace_back("Collider");
 	actorIndex = editor->skeletalActorCount++;
@@ -870,13 +1078,13 @@ void ActorEditor::LoadStaticMesh(const wstring & file)
 	if (index==string::npos)
 	{
 		previewRender->ReadMaterial(modelName);
-		previewRender->ReadMesh(file, meshType);
+		previewRender->ReadMesh(file, modelName, meshType);
 	}
 	else if (modelName.substr(index + 1, 4) == L"Edit")
     {
 		modelName = modelName.substr(0, index);
     	previewRender->ReadEditedMaterial(modelName);
-    	previewRender->ReadEditedMesh(file, meshType);
+    	previewRender->ReadEditedMesh(file, modelName, meshType);
     }
   
     	
@@ -885,6 +1093,22 @@ void ActorEditor::LoadStaticMesh(const wstring & file)
 
 	componentList.emplace_back("StaticMesh");
 	componentList.emplace_back("Collider");
+
+	//if (previewRender->boxCount > 0)
+	//{
+
+	//}
+
+	//	
+	//
+
+	// currentBone->BoneIndex();
+	//previewRender->boxCount = boxIndex + 1;
+	//previewRender->colliderBoxData[boxIndex].Index = colliderIndex[boxIndex];
+
+
+
+	//componentList.emplace_back("BoneCollider" + to_string(boxIndex));
 	actorIndex = editor->staticActorCount++;
 
 
@@ -1085,7 +1309,7 @@ void ActorEditor::ShowHierarchy()
 	//	if (previewRender->bLoaded)
 		{
 			const auto& bone = previewRender->bones;
-			const uint& count = bone.size();
+			const uint& count = previewRender->boneCount;
 
 			
 			switch (meshType)
@@ -1103,6 +1327,9 @@ void ActorEditor::ShowHierarchy()
 				shared_ptr<class ModelBone> root = nullptr;
 				for (uint i = 0; i < count; i++)
 				{
+					
+					if (bone[i] == nullptr) break;
+
 					if (bone[i]->ChildsData())
 					{
 						root = bone[i];
@@ -1174,8 +1401,8 @@ void ActorEditor::ShowStaticBones(shared_ptr<class ModelBone> bone)
 
 void ActorEditor::ShowSkeletalBones(shared_ptr<class ModelBone> bone)
 {
-	auto child = bone->ChildsData();
-	ImGuiTreeNodeFlags  flags = !child ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_OpenOnDoubleClick : ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+	vector<shared_ptr<ModelBone>> childs = bone->GetChilds();
+	ImGuiTreeNodeFlags  flags = childs.empty() ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_OpenOnDoubleClick : ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnDoubleClick;
 	static string temp = "";
 	if (temp == bone->Name())
 		flags |= ImGuiTreeNodeFlags_Selected;
@@ -1196,12 +1423,14 @@ void ActorEditor::ShowSkeletalBones(shared_ptr<class ModelBone> bone)
 		
 		
 		}
-		uint count = bone->GetChilds().size();
-		for (uint i = 0; i < count; i++)
+		
+		for (auto& child : childs)
 		{
-			ShowSkeletalBones(child[i]);
-
+			if (child)
+				ShowSkeletalBones(child);
 		}
+
+		
 		ImGui::TreePop();
 	}
 	
@@ -1283,17 +1512,14 @@ void ActorEditor::ShowHierarcyPopup()
 
 void ActorEditor::CreateBox()
 {
-	boxIndex++;
-	if (!currentBone || boxIndex > MAX_ACTOR_BONECOLLIDER - 1) return;
-
-
-	colliderIndex[boxIndex] = currentBone->BoneIndex();
-	previewRender->boxCount = boxIndex + 1;
-	previewRender->colliderBoxData[boxIndex].Index= colliderIndex[boxIndex];
+	
+	if (!currentBone ||previewRender->boxCount>= MAX_ACTOR_BONECOLLIDER) return;
 
 
 
-	componentList.emplace_back("BoneCollider" + to_string(boxIndex));
+	previewRender->colliderBoxData[previewRender->boxCount].Index= currentBone->BoneIndex();
+	componentList.emplace_back("BoneCollider" + to_string(previewRender->boxCount));
+	previewRender->boxCount++;
 }
 
 void ActorEditor::BlendMesh()

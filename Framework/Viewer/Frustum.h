@@ -10,7 +10,7 @@ public:
 
 	bool ContainPoint(Vector3& position);
 	bool ContainRect(float xCenter, float yCenter, float zCenter, float xSize, float ySize, float zSize);
-	bool ContainRect(Vector3 center, Vector3 size);
+	bool ContainRect(const Vector3& center,const  Vector3& size);
 	bool ContainCube(Vector3& center, float radius);
 private:
 	Plane planes[6];

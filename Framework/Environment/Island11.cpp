@@ -1,5 +1,6 @@
 #include "Framework.h"
 #include "Island11.h"
+#include "Utility/QuadTree.h"
 //#include "Core/D3D11/D3D11_Helper.h"
 #define PI 3.14159265358979323846f
 int gp_wrap(int a)
@@ -10,7 +11,7 @@ int gp_wrap(int a)
 }
 
 
-Island11::Island11(ID3D11Device* device)
+Island11::Island11(ID3D11Device* device,QuadTree* tree)
 	:viewDesc{}, device(nullptr), updateDesc{},MultiSampleCount(1), MultiSampleQuality(0), BackBufferWidth(1280.0f), BackBufferHeight(720.0f), RenderCaustics(true), TotalTime(0.0f),
 	shader(nullptr),rock_bump_texture(nullptr),rock_bump_textureSRV(nullptr),rock_microbump_texture(nullptr),rock_microbump_textureSRV(nullptr),rock_diffuse_texture(nullptr),rock_diffuse_textureSRV(nullptr),
     sand_bump_texture(nullptr),sand_bump_textureSRV(nullptr),sand_microbump_texture(nullptr),sand_microbump_textureSRV(nullptr),sand_diffuse_texture(nullptr),sand_diffuse_textureSRV(nullptr),
@@ -51,7 +52,7 @@ Island11::Island11(ID3D11Device* device)
 	Check(device->CreateBuffer(&bufferDesc, NULL, &mainViewBuffer));
 
 	
-	CreateTerrain();
+	CreateTerrain(tree);
 	LoadTextures();
 	ReCreateBuffers();
 	
@@ -321,6 +322,11 @@ void Island11::Update(ID3D11DeviceContext* context)
 	Vector3 SunPos;
 	SunPos = -1 * 10000 * GlobalData::LightDirection();
 	SunPos.y += 5500.f;
+	if (SunPos.y < 4000.0f)
+	{
+		SunPos.y = 4000.0f;
+	}
+	
 	updateDesc.LightPosition = SunPos;
 	updateDesc.WaterBumpTexcoordShift = Vector2(TotalTime*1.5f, TotalTime*0.75f);
 	updateDesc.ScreenSizeInv = Vector2(1.0f / (BackBufferWidth*main_buffer_size_multiplier), 1.0f / (BackBufferHeight*main_buffer_size_multiplier));
@@ -351,7 +357,7 @@ void Island11::Reflection(ID3D11DeviceContext* context)
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST);
 	stride = sizeof(float) * 4;
 	context->IASetVertexBuffers(0, 1, &heightfield_vertexbuffer, &stride, &offset);
-	shader->Draw(context,2, 0, terrain_numpatches_1d*terrain_numpatches_1d, 0);
+	shader->Draw(context,0, 2, terrain_numpatches_1d*terrain_numpatches_1d, 0);
 
 }
 
@@ -367,7 +373,7 @@ void Island11::Caustics(ID3D11DeviceContext * context)
 
 		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 		context->IASetVertexBuffers(0, 0, NULL, NULL, NULL);
-		shader->Draw(context, 1, 0, 4, 0);
+		shader->Draw(context, 0, 1, 4, 0);
 	}
 }
 
@@ -386,7 +392,7 @@ void Island11::Terrain(ID3D11DeviceContext* context)
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST);
 	stride = sizeof(float) * 4;
 	context->IASetVertexBuffers(0, 1, &heightfield_vertexbuffer, &stride, &offset);
-	shader->Draw(context,4,0, terrain_numpatches_1d*terrain_numpatches_1d, 0);
+	shader->Draw(context,0,4, terrain_numpatches_1d*terrain_numpatches_1d, 0);
 }
 
 void Island11::Refraction(ID3D11DeviceContext* context,ID3D11ShaderResourceView* srv, ID3D11Texture2D* texture)
@@ -425,7 +431,7 @@ void Island11::Water(ID3D11DeviceContext* context)
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST);
 	stride = sizeof(float) * 4;
 	context->IASetVertexBuffers(0, 1, &heightfield_vertexbuffer, &stride, &offset);
-	shader->Draw(context,3, 0, terrain_numpatches_1d*terrain_numpatches_1d, 0);
+	shader->Draw(context,0, 3, terrain_numpatches_1d*terrain_numpatches_1d, 0);
 
 }
 
@@ -533,8 +539,9 @@ void Island11::SetupRefractionView()
 
 
 
-void Island11::CreateTerrain()
+void Island11::CreateTerrain(QuadTree* tree)
 {
+	auto& height = tree->heightMap;
 	int i, j, k, l;
 	float x, z;
 	int ix, iz;
@@ -559,7 +566,6 @@ void Island11::CreateTerrain()
 	backterrain[terrain_gridpoints + terrain_gridpoints * terrain_gridpoints] = 0;
 	currentstep = terrain_gridpoints;
 	srand(12);
-
 	// generating fractal terrain using square-diamond method
 	while (currentstep > 1)
 	{

@@ -27,8 +27,7 @@ struct TweenFrame
 {
     float TakeTime;
     float TweenTime;
-    float Padding1;
-    uint padding2;
+    float2 Padding;
     
     Keyframe Curr;
     Keyframe Next;
@@ -148,6 +147,25 @@ VertexModelOutput VS(VertexSkeletal input)
     VertexModelOutput output;
     SetAnimationWorld(input.BlendIndices,input.BlendWeights,input.InstID);
     output.Position = WorldPosition(input.Position);
+    output.Position = ViewProjection(output.Position);
+    output.Normal = WorldNormal(input.Normal);
+    output.Tangent = WorldTangent(input.Tangent);
+    output.Uv = input.Uv;
+    //output.Cull.x = dot(float4(output.wPosition.xyz - ViewPosition(), 1.0f), -g_FrustumNormals[0]);
+   //output.Cull.y = dot(float4(output.wPosition.xyz - ViewPosition(), 1.0f), -g_FrustumNormals[1]);
+   //output.Cull.z = dot(float4(output.wPosition.xyz - ViewPosition(), 1.0f), -g_FrustumNormals[2]);
+   //output.Cull.w = 0;
+    return output;
+}
+
+//const static float4 plane = float4(0, 1, 0, 0.0);
+VertexModelOutputReflection ReflectionVS(VertexSkeletal input)
+{
+    VertexModelOutputReflection output;
+    SetAnimationWorld(input.BlendIndices, input.BlendWeights, input.InstID);
+    output.Position = WorldPosition(input.Position);
+    float4 plane = float4(0, 1, 0, output.Position.y + 0.6f);
+    output.Cull = dot(output.Position, plane);
     output.Position = ViewProjection(output.Position);
     output.Normal = WorldNormal(input.Normal);
     output.Tangent = WorldTangent(input.Tangent);

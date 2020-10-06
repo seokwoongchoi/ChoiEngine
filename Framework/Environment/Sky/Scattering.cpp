@@ -37,14 +37,16 @@ Scattering::Scattering(ID3D11Device* device)
 	Check(device->CreateSamplerState(&samDesc, &LinearSampler));
 
 	D3D11_DEPTH_STENCIL_DESC descDepth;
-	descDepth.DepthEnable = false;
-	descDepth.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
-	descDepth.DepthFunc = D3D11_COMPARISON_GREATER_EQUAL;
-	descDepth.StencilEnable = false;
+	descDepth.DepthEnable = true;
+	descDepth.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	descDepth.DepthFunc = D3D11_COMPARISON_LESS;
+	descDepth.StencilEnable = TRUE;
 	descDepth.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
 	descDepth.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
-	
-	Check(device->CreateDepthStencilState(&descDepth, &NoDepth));
+	const D3D11_DEPTH_STENCILOP_DESC stencilMarkOp = { D3D11_STENCIL_OP_REPLACE, D3D11_STENCIL_OP_REPLACE, D3D11_STENCIL_OP_REPLACE, D3D11_COMPARISON_ALWAYS };
+	descDepth.FrontFace = stencilMarkOp;
+	descDepth.BackFace = stencilMarkOp;
+	Check(device->CreateDepthStencilState(&descDepth, &depthStencilState));
 
 	texture = new Texture();
 	texture->Load(device,L"Environment/Starfield.png");
@@ -111,12 +113,12 @@ void Scattering::Render(ID3D11DeviceContext* context)
 		context->PSSetConstantBuffers(0, 1, &pixelBuffer);
 	}
 
-	//ID3D11DepthStencilState* PrevDepthState;
-	//UINT PrevStencil;
-	//context->OMGetDepthStencilState(&PrevDepthState, &PrevStencil);
+	ID3D11DepthStencilState* PrevDepthState;
+	UINT PrevStencil;
+	context->OMGetDepthStencilState(&PrevDepthState, &PrevStencil);
 
 	// Set the depth state for the directional light
-	//context->OMSetDepthStencilState(NoDepth, PrevStencil);
+	context->OMSetDepthStencilState(depthStencilState, 2);
 	uint offset = 0;
 	
 	context->IASetVertexBuffers(slot, 1, &domeVertexBuffer, &stride, &offset);
@@ -128,7 +130,7 @@ void Scattering::Render(ID3D11DeviceContext* context)
 	context->DrawIndexed(domeIndexCount,0,0);
 
 
-	//context->OMSetDepthStencilState(PrevDepthState, PrevStencil);
+	context->OMSetDepthStencilState(PrevDepthState, PrevStencil);
 
 	ID3D11ShaderResourceView* nullSRV = nullptr;
 	context->PSSetShaderResources(0, 1, &nullSRV);
@@ -136,6 +138,8 @@ void Scattering::Render(ID3D11DeviceContext* context)
 	context->PSSetConstantBuffers(0, 1, &nullBuffer);
 	context->VSSetShader(nullptr, nullptr, 0);
 	context->PSSetShader(nullptr, nullptr, 0);
+
+
 }
 
 void Scattering::CreateDoom()

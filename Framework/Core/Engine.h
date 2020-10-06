@@ -1,37 +1,50 @@
 #pragma once
-#define MAX_ACTOR_COUNT 10
+
 #define MAX_THREAD_COUNT 6
 
 class Engine final
 {
 #ifdef EDITORMODE
 	friend class Editor;
-
+	friend class ActorEditor;
 #endif
 
 
 public:
-	Engine();
+	explicit Engine();
 	~Engine();
+
+	
+private:
+
+	
 	Engine(const Engine&) = delete;
 	Engine& operator=(const Engine&) = delete;
 
-
-	
-	void Load(const uint& index, const wstring& modelName, const ReadMeshType& meshTyp);
+public:
+	void Load();
+	void Load(const uint& index, const wstring& modelName, const uint& actorCount,const ReadMeshType& meshType);
+	void LoadParticle(const uint& index, const wstring& path,const ReadParticleType& particleType);
 	void PusInstance(const uint & index, const  Matrix& world, const ReadMeshType& meshType);
 public:
 
 	void Resize(uint width, uint height);
+	void Update(bool bStart);
 	void Update();
 	void Render();
-	
+
 public:
 	void Begin();
 	inline void Present(){
 		immediateContext->SetPredication(predicate, true);
 		swapChain->Present(bVsync == true ? 1 : 0, 0); 
 	}
+
+private:
+	float ClearColor[4];
+	uint staticActorCount;
+	uint skeletalActorCount;
+
 protected:
 	class SSAO* ssao;
 	class SSLR* sslr;
@@ -42,12 +55,15 @@ protected:
 	shared_ptr<Texture> preintegratedFG;
 	ID3D11ShaderResourceView* skyIRSRV;
 protected:
+
+	class EffectSystem* effects;
 	class Animator* animator;
+	class PhysicsSystem* physics;
 	class ColliderSystem* collider;
 	class Renderer* staticRenderer;
 	class Renderer* skeletalRenderer;
 private:
-	class Camera* mainCamera;
+	class ActorController* actorController;
 	Matrix VP;
 	ID3D11Buffer* mainViewBuffer;
 private:
@@ -62,9 +78,10 @@ protected:
 	ID3D11DeviceContext* immediateContext;
 private:
 	ID3D11DeviceContext* deferredContext[MAX_THREAD_COUNT];
-	ID3D11CommandList* commadList[MAX_ACTOR_COUNT];
+	ID3D11CommandList* commadList[MAX_THREAD_COUNT];
 	IDXGISwapChain* swapChain;
 	bool bVsync;
+
 private:
 	ID3D11Debug* debugDevice;
 	UINT gpuMemorySize;
@@ -83,11 +100,6 @@ private:
 	void DeleteBackBuffer();
 private:
 	bool bShowCascadedDebug;
-
-	float ClearColor[4];
-private:
-	uint staticActorCount;
-	uint skeletalActorCount;
 
 //private:
 //	struct CB_FOG

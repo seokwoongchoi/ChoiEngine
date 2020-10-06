@@ -81,8 +81,8 @@ void GBufferData::PrepareForPacking(ID3D11DeviceContext* context)
 	context->ClearRenderTargetView(normalRTV, ClearColor);
 
 
-	//UINT8 SceneStencilFlag = 2;
-	//context->OMSetDepthStencilState(depthStencilState, SceneStencilFlag);
+	UINT8 SceneStencilFlag = 2;
+	context->OMSetDepthStencilState(depthStencilState, SceneStencilFlag);
 }
 
 void GBufferData::PrepareForWaterPacking(ID3D11DeviceContext * context)
@@ -94,8 +94,8 @@ void GBufferData::PrepareForWaterPacking(ID3D11DeviceContext * context)
 	context->OMSetRenderTargets(3, rt, depthStencilDSV);
 
 	
-	//UINT8 SceneStencilFlag = 2;
-	//context->OMSetDepthStencilState(depthStencilState, SceneStencilFlag);
+	UINT8 SceneStencilFlag = 2;
+	context->OMSetDepthStencilState(depthStencilState, SceneStencilFlag);
 }
 
 void GBufferData::PrepareForUnpack(ID3D11DeviceContext* context)

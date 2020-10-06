@@ -176,7 +176,7 @@ void SSLR::Render(ID3D11DeviceContext* DC, ID3D11ShaderResourceView * ssaoSRV, I
 	const Vector3& forward = GlobalData::Forward();
 	const float& dotCamSun = -D3DXVec3Dot(&forward, &dir);
 	
-	if (dotCamSun <= -0.1f || dir.y > 0.1)
+	if (dotCamSun <= 0.0f || dir.y > 0.1)
 	{
 		return;
 	}
@@ -198,15 +198,15 @@ void SSLR::Render(ID3D11DeviceContext* DC, ID3D11ShaderResourceView * ssaoSRV, I
 	Proj = GlobalData::GetProj();
 	
 	ViewProjection = View * Proj;
-	/*
-	if (dotCamSun <= 0.0f)
-	{
-		D3DXMatrixInverse(&mViewProjection, nullptr, &mViewProjection);
-		vSunPos *= -1;
-	}*/
+
 	
     D3DXVec3TransformCoord(&SunPosSS, &SunPos, &ViewProjection);
 
+	
+	if (abs(SunPosSS.x) >= Params.MaxSunDist || abs(SunPosSS.y) >= Params.MaxSunDist)
+	{
+		return;
+	}
 
 	 Vector3 sunColor;
 
@@ -215,12 +215,7 @@ void SSLR::Render(ID3D11DeviceContext* DC, ID3D11ShaderResourceView * ssaoSRV, I
 	
 	sunColor*= Params.intensity;
 
-	//
-	//float MaxDist = max(abs(SunPosSS.x), abs(SunPosSS.y));
-	//if (MaxDist > 5.0f)
-	//{
-	//	sunColor *= (Params.MaxSunDist - MaxDist);
-	//}
+
 
 	PrepareOcclusion(DC,ssaoSRV);
 	RayTrace(DC,Vector2(SunPosSS.x, SunPosSS.y), sunColor);

@@ -3,20 +3,22 @@
 #include "Resources/Mesh.h"
 #include "Resources/TextureTransforms.h"
 #include "Core/D3D11/D3D11_Helper.h"
-#include "Renderer.h"
+
 #include "Viewer/Frustum.h"
+#include "PhysicsSystem.h"
+
 ColliderSystem::ColliderSystem(ID3D11Device * device, const string& path, const string& entryPoint)
 	:device(device),  texture(nullptr), srv(nullptr), actorCount(0), boneTexture(nullptr), ColliderCS(nullptr),
-	InstBuffer(nullptr), InstBufferSRV(nullptr), instTexture(nullptr), frustum(nullptr),drawBuffer(nullptr)
+	InstBuffer(nullptr), InstBufferSRV(nullptr), frustum(nullptr),drawBuffer(nullptr), totalCount(0)
 {
 	frustum = new Frustum();
-	instTexture= new InstTransform();
+	
 	CreateInstTransformSRV();
 	
 	for (uint a = 0; a < MAX_ACTOR_COUNT; a++)
 		for (UINT i = 0; i < MAX_MODEL_INSTANCE; i++)
 		{
-			D3DXMatrixIdentity(&instTexture->instTransforms[a][i]);
+			D3DXMatrixIdentity(&instTransforms[a][i]);
 
 		}//for(i)
 	//////////////////////////////////////////////////////////////////////////
@@ -56,68 +58,205 @@ ColliderSystem::ColliderSystem(ID3D11Device * device, const string& path, const 
 	Check(device->CreateBuffer(&bufferDesc, NULL, &drawBuffer));
 }
 
-void ColliderSystem::SortInstMatrix(const uint & actorIndex, const uint & drawIndex)
+
+//void ColliderSystem::UpdateInstBuffer()
+//{
+//	ID3D11DeviceContext * context;
+//	device->GetImmediateContext(&context);
+//
+//
+//	D3D11_MAPPED_SUBRESOURCE MappedResource;
+//	context->Map(InstBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+//	memcpy(MappedResource.pData, instTransforms, sizeof(Matrix)*actorCount*MAX_MODEL_INSTANCE);
+//	context->Unmap(InstBuffer, 0);
+//}
+//
+
+
+void ColliderSystem::FrustumCulling(const uint& index)
 {
-	Matrix temp = instTexture->instTransforms[actorIndex][drawIndex];
-	uint count = renderers[actorIndex]->drawCount>0? renderers[actorIndex]->drawCount - 1:0;
-	for(uint i= drawIndex;i< count;i++)
-	instTexture->instTransforms[actorIndex][i] = instTexture->instTransforms[actorIndex][i+1];
+	
+	//if (renderers[index]->drawCount == 0)return;
 
-	instTexture->instTransforms[actorIndex][count] = temp;
-
-	ID3D11DeviceContext* context = nullptr;
-	device->GetImmediateContext(&context);
-
-	CreateInstTransformSRV();
-}
-
-const int& ColliderSystem::FrustumCulling(const uint& index)
-{
 	frustum->Update();
-	const Vector3& min = renderers[index]->boxMin;
-	const Vector3& max = renderers[index]->boxMax;
-	temp[0] = Vector3(min.x, min.y, max.z);
-	temp[1] = Vector3(max.x, min.y, max.z);
-	temp[2] = Vector3(min.x, max.y, max.z);
-	temp[3] = Vector3(max);
-	temp[4] = Vector3(min);
-	temp[5] = Vector3(max.x, min.y, min.z);
-	temp[6] = Vector3(min.x, max.y, min.z);
-	temp[7] = Vector3(max.x, max.y, min.z);
 
-	uint count = renderers[index]->drawCount+ culledCount[index];
-	for (uint i = 0; i < count; i++)
-	{
-		for (uint b = 0; b < 8; b++)
-		{
-			D3DXVec3TransformCoord(&dest[b], &temp[b], &instTexture->instTransforms[index][i]);
-		}
+	
+	 const uint& count = renderers[index]->drawCount;
 
-		bool inFrustum = frustum->ContainCube((dest[4] + dest[3])*0.5f, (dest[3].x - dest[4].x)*0.5f);
-		if (inFrustum == false)
-		{
-			if (i >= renderers[index]->drawCount) continue;
 
-			culledCount[index]++;
+	 bool bChanged = false;
+	
+
+	 for (uint i = 0; i < count; i++)
+	 {
+
+
+		 D3DXVec3TransformCoord(&min, &renderers[index]->boxMin, &instTransforms[index][i]);
+		 D3DXVec3TransformCoord(&max, &renderers[index]->boxMax, &instTransforms[index][i]);
+
+		 bool inFrustum = frustum->ContainRect((max + min)*0.5f, (max - min)*0.5f);
+		 if (inFrustum == false)
+		 {
+
+
+
+			 uint lastIndex = renderers[index]->drawCount - 1;
+
+			 cout << "culled: ";
+			 cout << to_string(i) << endl;
+
+
+			 if (i == lastIndex)
+			 {
+				 renderers[index]->drawCount--;
+
+				 culledCount[index]++;
+				 break;
+			 }
+
+
+			 {
+				 memcpy(&temp, &instTransforms[index][i], sizeof(Matrix));
+				 memcpy(&instTransforms[index][i], &instTransforms[index][lastIndex], sizeof(Matrix));
+				 memcpy(&instTransforms[index][lastIndex], &temp, sizeof(Matrix));
 			
-			SortInstMatrix(index,i);
-			renderers[index]->drawCount--;
-			cout << "culled" << endl;
-			return i;
-		}
-		else
-		{
-			if(i>= renderers[index]->drawCount)
-			{
-				renderers[index]->drawCount++;
-				culledCount[index]--;
-				cout << "InFrustum" << endl;
-				return -2;
-			}
-		}
+				
+			 }
+
+
+			 renderers[index]->drawCount--;
+
+			 culledCount[index]++;
+
+			 bChanged = true;
+
+
+
+			 break;
+
+		 }
+	 }
+
+	 const uint& totalCount = renderers[index]->drawCount + culledCount[index];
+
+
+	 for (uint i = count; i < totalCount; i++)
+	 {
+
+
+		 D3DXVec3TransformCoord(&min, &renderers[index]->boxMin, &instTransforms[index][i]);
+		 D3DXVec3TransformCoord(&max, &renderers[index]->boxMax, &instTransforms[index][i]);
+
+		 bool inFrustum = frustum->ContainRect((max + min)*0.5f, (max - min)*0.5f);
+		 if (inFrustum == true)
+		 {
+			 //if (i >= renderers[index]->drawCount)
+			 {
+
+
+				 cout << "InFrustum: ";
+				 cout << to_string(i) << endl;
+
+				 if (i == count)
+				 {
+					 renderers[index]->drawCount++;
+					 culledCount[index]--;
+
+					 break;
+				 }
+
+				 {
+					 memcpy(&temp, &instTransforms[index][count], sizeof(Matrix));
+
+					 memcpy(&instTransforms[index][count], &instTransforms[index][i], sizeof(Matrix));
+					 memcpy(&instTransforms[index][i], &temp, sizeof(Matrix));
+					 uint animIndex = 0;
+					
+					 bChanged = true;
+				 }
+
+				 renderers[index]->drawCount++;
+				 culledCount[index]--;
+
+				 break;
+			 }
+		 }
+
+
+	 }
+
+	 if (bChanged)
+	 {
+		 ID3D11DeviceContext* context;
+		 device->GetImmediateContext(&context);
+		 D3D11_MAPPED_SUBRESOURCE MappedResource;
+		 context->Map(InstBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+		 memcpy(MappedResource.pData, instTransforms, sizeof(Matrix)*actorCount*MAX_MODEL_INSTANCE);
+		 context->Unmap(InstBuffer, 0);
 		
-	}
-	return -1;
+
+	 }
+	//bool bChanged = false;
+	//
+	//for (uint i = 0; i < count; i++)
+	//{
+	//	D3DXVec3TransformCoord(&min, &renderers[index]->boxMin, &instTransforms[index][i]);
+	//	D3DXVec3TransformCoord(&max, &renderers[index]->boxMax, &instTransforms[index][i]);
+
+
+	//	bool inFrustum = frustum->ContainCube((max + min)*0.5f, (max.x - min.x)*0.5f);
+	//	if (inFrustum == false)
+	//	{
+	//	
+
+	//		if (i >= renderers[index]->drawCount) continue;
+
+	//		cout << "culled: ";
+	//		cout << to_string(i) << endl;
+
+	//		uint culledDrawCount = renderers[index]->drawCount - 1;
+	//		/*if (i == culledDrawCount)
+	//		{
+	//			renderers[index]->drawCount--;
+
+	//			culledCount[index]++;
+	//			break;
+	//		}*/
+
+	//	
+	//		
+	//		Matrix temp = instTransforms[index][i];
+	//		memcpy(instTransforms[index][i], instTransforms[index][culledDrawCount], sizeof(Matrix));
+	//		memcpy(instTransforms[index][culledDrawCount], temp, sizeof(Matrix));
+	//		
+	//				
+	//		renderers[index]->drawCount--;
+	//		culledCount[index]++;
+	//	
+	//	
+	//		bChanged = true;
+	//	}
+	//	else
+	//	{
+	//		if (i >= renderers[index]->drawCount)
+	//		{
+
+	//			renderers[index]->drawCount++;
+	//			culledCount[index]--;
+
+	//			cout << "InFrustum: ";
+	//			cout << to_string(i) << endl;
+
+	//			
+	//		}
+	//	}
+
+	//}
+	//if(bChanged)
+	//	UpdateInstBuffer();
+	
+	
+	
 }
 
 Vector3 * ColliderSystem::GetBoxMinMax(const uint & actorIndex, const uint & drawCount)
@@ -136,23 +275,15 @@ Vector3 * ColliderSystem::GetBoxMinMax(const uint & actorIndex, const uint & dra
 
 	for (uint b = 0; b < 8; b++)
 	{
-		D3DXVec3TransformCoord(&dest[b], &temp[b], &instTexture->instTransforms[actorIndex][drawCount]);
+		D3DXVec3TransformCoord(&dest[b], &temp[b], &instTransforms[actorIndex][drawCount]);
 	}
 	
 
 	return &dest[0];
 }
 
-const Matrix & ColliderSystem::GetInstMatrix(const uint & index)
-{
-	return instTexture->instTransforms[index][renderers[index]->drawCount - 1];
-}
 
-void ColliderSystem::SetInstMatrix(const uint & index, const Matrix & world)
-{
-	instTexture->instTransforms[index][renderers[index]->drawCount-1] = world;
-	CreateInstTransformSRV();
-}
+
 
 const uint & ColliderSystem::DrawCount(const uint & index)
 {
@@ -160,6 +291,14 @@ const uint & ColliderSystem::DrawCount(const uint & index)
 	return renderers[index]->drawCount;
 	
 }
+
+void ColliderSystem::RenderandCulledCount(const uint & index, uint& CulledCount)
+{
+	CulledCount = renderers[index]->drawCount + culledCount[index];
+	
+}
+
+
 
 void ColliderSystem::CreateModelTransformSRV()
 {
@@ -181,8 +320,8 @@ void ColliderSystem::CreateModelTransformSRV()
 		desc.Width = MAX_BONE_TRANSFORMS * 4;
 		desc.Height = MAX_ACTOR_COUNT;
 		desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-		desc.Usage = D3D11_USAGE_DEFAULT;
-		desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		desc.Usage = D3D11_USAGE_IMMUTABLE;
+		//desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 		desc.MipLevels = 1;
 		desc.ArraySize = 1;
@@ -263,7 +402,8 @@ void ColliderSystem::CreateInstTransformSRV()
 		desc.Height = MAX_ACTOR_COUNT;
 
 		desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-		desc.Usage = D3D11_USAGE_DEFAULT;
+		//desc.Usage = D3D11_USAGE_DEFAULT;
+		desc.Usage = D3D11_USAGE_DYNAMIC;
 		desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 		desc.MipLevels = 1;
@@ -275,9 +415,9 @@ void ColliderSystem::CreateInstTransformSRV()
 
 
 		D3D11_SUBRESOURCE_DATA subResource;
-		subResource.pSysMem = instTexture->instTransforms;
+		subResource.pSysMem = &instTransforms;
 		subResource.SysMemPitch = sizeof(Matrix)*MAX_MODEL_INSTANCE;
-		subResource.SysMemSlicePitch = 0;
+		subResource.SysMemSlicePitch = MAX_ACTOR_COUNT;
 
 		Check(device->CreateTexture2D(&desc, &subResource, &InstBuffer));
 	}
@@ -321,12 +461,16 @@ void ColliderSystem::BindingBone()
 
 void ColliderSystem::ClearTextureTransforms()
 {
-	SafeDelete(instTexture);
+	//SafeDelete(instTexture);
 	SafeDelete(boneTexture);
 }
 
+
+
 void ColliderSystem::BindPipeline(ID3D11DeviceContext * context)
 {
+	
+
 	ID3D11ShaderResourceView* srvArray[2] = { InstBufferSRV,srv };
 	context->VSSetShaderResources(0, 2, srvArray);
 	
@@ -356,16 +500,21 @@ void ColliderSystem::ReadBone(BinaryReader * r)
 
 void ColliderSystem::RegisterRenderer(Renderer * renderer, const uint & index)
 {
+	
 	if (renderers[index])
 	{
 		return;
 	}
 	renderers[index] = renderer;
+	
+	
 }
 
 void ColliderSystem::PushDrawCount(const uint & index, const Matrix & world)
 {
-	instTexture->instTransforms[index][renderers[index]->drawCount] = world;
+	if (renderers[index]->drawCount >= MAX_MODEL_INSTANCE) return;
+
+	instTransforms[index][renderers[index]->drawCount] = world;
 	
 	
 

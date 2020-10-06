@@ -4,38 +4,40 @@
 
 void Freedom::Update()
 {
-	if (Mouse::Get()->Press(1) == false)
-		return;
-
 	
 	
-
+		
 	if (Keyboard::Get()->Press('W'))
-		position += forward * move *delta;
+		movement_speed += forward * acceleration*move *delta;
 	else if (Keyboard::Get()->Press('S'))
-		position -= forward * move * delta;
+		movement_speed -= forward * acceleration*move *delta;
 
 	if (Keyboard::Get()->Press('D'))
-		position += right * move * delta;
+		movement_speed += right * acceleration*move *delta;
 	else if (Keyboard::Get()->Press('A'))
-		position -= right * move * delta;
-
+		movement_speed -= right * acceleration*move *delta;
 	if (Keyboard::Get()->Press('E'))
-		position += up * move * delta;
+		movement_speed += up * acceleration*move *delta;
 	else if (Keyboard::Get()->Press('Q'))
-		position -= up * move * delta;
+		movement_speed -= up * acceleration*move *delta;
 
+	if (Mouse::Get()->Press(1) == true)
+	{
+		auto& moveValue = Mouse::Get()->GetMoveValue();
+
+		rotation.x += moveValue.y*R* delta;
+		rotation.y += moveValue.x*R* delta;
 	
 
+		Rotation();
+	}
 	
+	position += movement_speed;
 	
-	Vector3 val = Mouse::Get()->GetMoveValue();
-	rotation.x += val.y*R*delta;
-	rotation.y += val.x*R*delta;
-	rotation.z = 0.0f;
-	Rotation();
+	movement_speed *= drag * (1.0f - Time::Delta());
 
 	Move();
+	
 }
 
 void Freedom::Move()

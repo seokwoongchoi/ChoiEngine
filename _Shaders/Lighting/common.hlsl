@@ -52,14 +52,13 @@ struct Material
     
     float4 diffuseColor;
 
-    float3 Factors;
+    float3 Factors;//x=roughness,y=metallic
     float TerrainMask;
 
     float3 normal;
     float LinearDepth;
      
-    float roughness;
-    float metallic;
+   
 };
 
 Material UnpackGBuffer(int2 location)
@@ -79,13 +78,15 @@ Material UnpackGBuffer(int2 location)
     Out.Factors = Factors.xyz;
     Out.TerrainMask = Factors.w;
     
+    //Out.roughness = Out.Factors.x;
+    //Out.metallic = Out.Factors.y;
+    
     float4 normal = NormalTexture.Load(location3);
     Out.normal = normal.xyz;
     
     Out.normal =  normalize(Out.normal * 2.0 - 1.0);
     
-    Out.roughness = Out.Factors.x;
-    Out.metallic = Out.Factors.y;
+   
     return Out;
 }
 

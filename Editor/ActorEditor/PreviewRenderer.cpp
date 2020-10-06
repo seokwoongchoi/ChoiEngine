@@ -5,6 +5,7 @@
 #include "Resources/Mesh.h"
 #include "ProgressBar/ProgressReport.h"
 #include "ProgressBar/ProgressBar.h"
+#include "ActorEditor.h"
 
 
 
@@ -21,7 +22,7 @@ PreviewRenderer::PreviewRenderer(ID3D11Device * device)
 	viewUp(0, 0, 0), blendCount(0), blendMeshIndex(0), tweenBuffer(nullptr), tweenDesc{},
 	AdditiveBlendState(nullptr), skinTransforms(nullptr), bPause(true), saveParentMatrix(nullptr), maxkeyframe(0),
 	invGlobal{}, parent{}, S{}, R{}, T{}, animation{}, nuArmedBoneCount(0),p(nullptr), meshType(ReadMeshType::Default),
-	boxCount(0)
+	boxCount(0), behaviorTreeIndex(-1), bHasCam(false)
 {
 	D3DXMatrixIdentity(&boxWorld);
 	preintegratedFG = make_shared< Texture>();
@@ -166,7 +167,20 @@ void PreviewRenderer::SaveMeshFile(const wstring & name, const ReadMeshType & me
 		w->Float(max.x);
 		w->Float(max.y);
 		w->Float(max.z);
-		
+
+		w->UInt(boxCount);
+		if (boxCount > 0)
+		{			
+			for (uint i = 0; i < boxCount; i++)
+			{
+				w->UInt(colliderBoxData[i].Index);
+				w->Matrix(colliderBoxData[i].ColliderBoxWorld);
+			    w->Matrix(bones[colliderBoxData[i].Index]->Transform());
+			}
+		}
+		w->Int(behaviorTreeIndex);
+
+		w->Bool(bHasCam);
 
 		w->Close();
 		SafeDelete(w);
@@ -250,7 +264,7 @@ void PreviewRenderer::SaveMaterialFile(const wstring & name)
 	document->SaveFile((folder + file).c_str());
 }
 
-void PreviewRenderer::ReadMesh(const wstring & file, const ReadMeshType & meshType)
+void PreviewRenderer::ReadMesh(const wstring & file, const wstring & modelName, const ReadMeshType & meshType)
 {
 	this->meshType = meshType;
 	staticVertices.clear();
@@ -261,7 +275,7 @@ void PreviewRenderer::ReadMesh(const wstring & file, const ReadMeshType & meshTy
 
 	ProgressReport::Get().SetJobCount(ProgressReport::Model,1000);
 	
-	Thread::Get()->AddTask([&]() 
+	Thread::Get()->AddTask([&, file, modelName, meshType]()
 	{
 	
 		bLoaded = false;
@@ -319,6 +333,9 @@ void PreviewRenderer::ReadMesh(const wstring & file, const ReadMeshType & meshTy
 
 			mesh->name = r->String();
 			mesh->boneDesc.boneIndex = r->Int();
+			
+			
+			
 			mesh->materialName = r->String();
 
 
@@ -435,6 +452,10 @@ void PreviewRenderer::ReadMesh(const wstring & file, const ReadMeshType & meshTy
 		
 		for (uint i = 0; i <2010; i++)
 			ProgressReport::Get().IncrementJobsDone(ProgressReport::Model);
+
+
+		if (meshType == ReadMeshType::SkeletalMesh)
+			ReadClip(modelName);
 		bLoaded = true;
 
 	});
@@ -442,7 +463,7 @@ void PreviewRenderer::ReadMesh(const wstring & file, const ReadMeshType & meshTy
 
 }
 
-void PreviewRenderer::ReadEditedMesh(const wstring & file, const ReadMeshType & meshType)
+void PreviewRenderer::ReadEditedMesh(const wstring & file, const wstring & modelName, const ReadMeshType & meshType)
 {
 	staticVertices.clear();
 	staticVertices.shrink_to_fit();
@@ -451,11 +472,11 @@ void PreviewRenderer::ReadEditedMesh(const wstring & file, const ReadMeshType & 
 	indices.clear();
 	indices.shrink_to_fit();
 
-	ProgressReport::Get().SetJobCount(ProgressReport::Model, 1000);
+	
 
-	Thread::Get()->AddTask([&, file]()
+	Thread::Get()->AddTask([&, file, modelName, meshType]()
 	{
-
+		ProgressReport::Get().SetJobCount(ProgressReport::Model, 8000);
 		bLoaded = false;
 		BinaryReader* r = new BinaryReader();
 
@@ -466,7 +487,7 @@ void PreviewRenderer::ReadEditedMesh(const wstring & file, const ReadMeshType & 
 		bones.shrink_to_fit();
 		uint tempBoneCount = r->UInt();
 
-		ProgressReport::Get().SetJobCount(ProgressReport::Model, tempBoneCount);
+		
 		for (UINT i = 0; i < tempBoneCount; i++)
 		{
 			auto& bone = make_shared< ModelBone>();
@@ -476,11 +497,15 @@ void PreviewRenderer::ReadEditedMesh(const wstring & file, const ReadMeshType & 
 			bone->transform = r->Matrix();
 			bones.emplace_back(bone);
 			boneCount++;
-
-
-			ProgressReport::Get().IncrementJobsDone(ProgressReport::Model);
-		}
 	
+			
+			
+			
+		}
+		for (uint i = 0; i < 2000; i++)
+		{
+			ProgressReport::Get().IncrementJobsDone(ProgressReport::Model);
+	    }
 
 		nuArmedBoneCount = boneCount;
 
@@ -499,10 +524,7 @@ void PreviewRenderer::ReadEditedMesh(const wstring & file, const ReadMeshType & 
 		
 		}
 
-		ProgressReport::Get().SetJobCount(ProgressReport::Model, (tempMeshCount * 500) + 1000);
-
-		for (uint i = 0; i < 1000; i++)
-			ProgressReport::Get().IncrementJobsDone(ProgressReport::Model);
+		
 		uint offset = 0;
 		uint indexOffset = 0;
 
@@ -526,8 +548,7 @@ void PreviewRenderer::ReadEditedMesh(const wstring & file, const ReadMeshType & 
 					meshes.emplace_back(blendMesh);
 					meshCount++;
 
-					for (uint i = 0; i < 500; i++)
-						ProgressReport::Get().IncrementJobsDone(ProgressReport::Model);
+					
 				}
 				continue;
 			
@@ -549,18 +570,19 @@ void PreviewRenderer::ReadEditedMesh(const wstring & file, const ReadMeshType & 
 			meshes.emplace_back(mesh);
 			meshCount++;
 
-			for (uint i = 0; i < 500; i++)
-				ProgressReport::Get().IncrementJobsDone(ProgressReport::Model);
+		
 
 		}//for(i)
 		
-		
+		for (uint i = 0; i < 2000; i++)
+		{
+			ProgressReport::Get().IncrementJobsDone(ProgressReport::Model);
+		}
 
 		uint totalCount = r->UInt();
 		uint totalIndexCount = r->UInt();
 		indices.assign(totalIndexCount, uint());
 
-		ProgressReport::Get().SetJobCount(ProgressReport::Model, 1000);
 		switch (meshType)
 		{
 		case ReadMeshType::StaticMesh:
@@ -568,20 +590,20 @@ void PreviewRenderer::ReadEditedMesh(const wstring & file, const ReadMeshType & 
 			CreateModelTransformSRV();
 			stride = sizeof(VertexTextureNormalTangent);
 			staticVertices.assign(totalCount, VertexTextureNormalTangent());
-		
-
+					
 			{
 				void* ptr = reinterpret_cast<void*>(staticVertices.data());
 				r->Byte(&ptr, sizeof(VertexTextureNormalTangent) * totalCount);
 
 			}
+		
 			{
 				void* ptr = reinterpret_cast<void*>(indices.data());
 				r->Byte(&ptr, sizeof(uint) *totalIndexCount);
 
 			}
-
 			BindingStaticMesh();
+
 
 		}
 		break;
@@ -590,24 +612,30 @@ void PreviewRenderer::ReadEditedMesh(const wstring & file, const ReadMeshType & 
 			
 	        stride = sizeof(VertexTextureNormalTangentBlend);
 	        skeletalVertices.assign(totalCount, VertexTextureNormalTangentBlend());
-	          
+		
 	        {
 	        	void* ptr = reinterpret_cast<void*>(skeletalVertices.data());
 	        	r->Byte(&ptr, sizeof(VertexTextureNormalTangentBlend) * totalCount);
 	        
 	        }
+			
 			{
 				void* ptr = reinterpret_cast<void*>(indices.data());
 				r->Byte(&ptr, sizeof(uint) *totalIndexCount);
 
 			}
+			
 			BindingSkeletalMesh();
-
+		
+				
 		}
 		break;
 		}
 
-		
+		for (uint i = 0; i < 2000; i++)
+		{
+			ProgressReport::Get().IncrementJobsDone(ProgressReport::Model);
+		}
 		{
 		
 			boxMin.x = r->Float();
@@ -623,6 +651,21 @@ void PreviewRenderer::ReadEditedMesh(const wstring & file, const ReadMeshType & 
 			D3DXMatrixTranspose(&W, &previewDesc.W);
 			D3DXVec3TransformCoord(&boxMin, &boxMin, &W);
 			D3DXVec3TransformCoord(&boxMax, &boxMax, &W);
+
+			uint  tempBoxCount= r->UInt();
+			if (tempBoxCount > 0)
+			{
+				for (uint i = 0; i < tempBoxCount; i++)
+				{
+					colliderBoxData[i].Index=r->UInt();
+					colliderBoxData[i].ColliderBoxWorld=r->Matrix();
+					Matrix temp= r->Matrix();
+					
+				}
+				boxCount = tempBoxCount;
+			}
+
+			
 		
 		}
 
@@ -632,8 +675,15 @@ void PreviewRenderer::ReadEditedMesh(const wstring & file, const ReadMeshType & 
 
 		BindingMaterialBone();
 		
-		for (uint i = 0; i < 2010; i++)
+		for (uint i = 0; i < 2000; i++)
+		{
 			ProgressReport::Get().IncrementJobsDone(ProgressReport::Model);
+		}
+
+		if(meshType==ReadMeshType::SkeletalMesh)
+		ReadClip(modelName);
+		///////////////////////////////////////////////////////////////////////
+	
 		bLoaded = true;
 
 	});
@@ -818,42 +868,90 @@ void PreviewRenderer::ReadEditedMaterial(const wstring & name)
 
 void PreviewRenderer::ReadClip(const wstring & name)
 {
-	const auto& file = L"../_Models/SkeletalMeshes/" + name + L".clip";
+	wstring filePath = L"../_Models/SkeletalMeshes/" + name + L"/";
+	vector<wstring> files;
 
-	BinaryReader* r = new BinaryReader();
-	r->Open(file);
+	wstring filter = L"*.clip";
+	Path::GetFiles(&files, filePath, filter, false);
 
-
-	const auto& clip = make_shared< ModelClip>();
-
-	clip->name = r->String();
-	clip->duration = r->Float();
-	clip->frameRate = r->Float();
-	clip->frameCount = r->UInt();
-
-	UINT keyframesCount = r->UInt();
-	for (UINT i = 0; i < keyframesCount; i++)
+	for (uint i = 0; i < files.size(); i++)
 	{
-		const auto& keyframe = make_shared< ModelKeyframe>();
-		keyframe->BoneName = r->String();
+		auto clipfileName = Path::GetFileName(files[i]);
+		const auto& file = L"../_Models/SkeletalMeshes/" + name + L"/" + clipfileName;
 
-		UINT size = r->UInt();
-		if (size > 0)
+		BinaryReader* r = new BinaryReader();
+		r->Open(file);
+		const auto& clip = make_shared< ModelClip>();
+
+		clip->name = r->String();
+		clip->duration = r->Float();
+		clip->frameRate = r->Float();
+		clip->frameCount = r->UInt();
+
+		UINT keyframesCount = r->UInt();
+		for (UINT i = 0; i < keyframesCount; i++)
 		{
-			keyframe->Transforms.assign(size, ModelKeyframeData());
+			const auto& keyframe = make_shared< ModelKeyframe>();
+			keyframe->BoneName = r->String();
 
-			void* ptr = (void *)&keyframe->Transforms[0];
-			r->Byte(&ptr, sizeof(ModelKeyframeData) * size);
+			UINT size = r->UInt();
+			if (size > 0)
+			{
+				keyframe->Transforms.assign(size, ModelKeyframeData());
+
+				void* ptr = reinterpret_cast<void *>(&keyframe->Transforms[0]);
+				r->Byte(&ptr, sizeof(ModelKeyframeData) * size);
+			}
+
+			clip->keyframeMap[keyframe->BoneName] = keyframe;
+
 		}
 
-		clip->keyframeMap[keyframe->BoneName] = keyframe;
+		r->Close();
+		SafeDelete(r);
 
+		clips.emplace_back(clip);
 	}
 
-	r->Close();
-	SafeDelete(r);
 
-	clips.push_back(clip);
+	CreateAnimTransformSRV();
+	////////////////////////////////////////////////////////////////////////////////////////
+	//const auto& file = L"../_Models/SkeletalMeshes/" + name + L".clip";
+
+	//BinaryReader* r = new BinaryReader();
+	//r->Open(file);
+
+
+	//const auto& clip = make_shared< ModelClip>();
+
+	//clip->name = r->String();
+	//clip->duration = r->Float();
+	//clip->frameRate = r->Float();
+	//clip->frameCount = r->UInt();
+
+	//UINT keyframesCount = r->UInt();
+	//for (UINT i = 0; i < keyframesCount; i++)
+	//{
+	//	const auto& keyframe = make_shared< ModelKeyframe>();
+	//	keyframe->BoneName = r->String();
+
+	//	UINT size = r->UInt();
+	//	if (size > 0)
+	//	{
+	//		keyframe->Transforms.assign(size, ModelKeyframeData());
+
+	//		void* ptr = (void *)&keyframe->Transforms[0];
+	//		r->Byte(&ptr, sizeof(ModelKeyframeData) * size);
+	//	}
+
+	//	clip->keyframeMap[keyframe->BoneName] = keyframe;
+
+	//}
+
+	//r->Close();
+	//SafeDelete(r);
+
+	//clips.push_back(clip);
 
 	
 }
@@ -1141,6 +1239,7 @@ void PreviewRenderer::DeleteMesh(const uint & index)
 				noParent->parentIndex = -1;
 				
 			}
+			boneCount--;
 			bones.erase(boneRemove);
 		}
 			
@@ -1431,7 +1530,7 @@ void PreviewRenderer::Render(ID3D11DeviceContext * context)
 	{
 		if (blendCount > 0 && i == blendMeshIndex)continue;
 		auto& m = meshes[i];
-		m->ApplyPipeline(context,0);
+		m->ApplyPipeline(context);
 		context->DrawIndexed(m->indexCount, m->startIndex, m->startVertexIndex);
 		m->ClearPipelineMaterial(context);
 
@@ -1444,7 +1543,7 @@ void PreviewRenderer::Render(ID3D11DeviceContext * context)
 	context->OMSetBlendState(AdditiveBlendState, prevBlendFactor, prevSampleMask);
 	for (auto& blendMesh : blendMeshes)
 	{
-		blendMesh->ApplyPipeline(context,0);
+		blendMesh->ApplyPipeline(context);
 		context->DrawIndexed(blendMesh->indexCount, blendMesh->startIndex, blendMesh->startVertexIndex);
 		blendMesh->ClearPipelineMaterial(context);
 	}
@@ -1494,6 +1593,94 @@ void PreviewRenderer::BoxRender(ID3D11DeviceContext * context,const Matrix & mat
 		DebugLine::Get()->PreviewRender(context, matrix*VP);
 }
 
+void PreviewRenderer::CapsuleRender(ID3D11DeviceContext * context, const Matrix & matrix, const Color & color)
+{
+	const uint& stackCount = 30;
+	const float& thetaStep = 2.0f * Math::PI / stackCount;
+
+	
+	const Vector3& start = Vector3(0, 0, 0);
+	const Vector3& dir = Vector3(0, 1, 0);
+	const Vector3& end = dir * 1;
+	const float& radius = 0.5f;
+
+	Vector3 axis;
+	D3DXVec3Cross(&axis, &Vector3(0, 0, 1), &dir);
+	float radian = D3DXVec3Dot(&Vector3(0, 0, 1), &dir) - Math::PI*0.5f;
+
+	Matrix R;
+	
+	D3DXMatrixRotationAxis(&R, &axis, radian);
+	vector<Vector3> v, v2, v3;
+	vector<Vector3> e, e2, e3;
+	for (UINT i = 0; i <= stackCount; i++)
+	{
+		float theta = i * thetaStep;
+
+		Vector3 p = Vector3
+		(
+			(radius * cosf(theta)),
+			0,
+			(radius * sinf(theta))
+		);
+		Vector3 p2 = Vector3
+		(
+			0,
+			(radius * cosf(theta)),
+			(radius * sinf(theta))
+		);
+		Vector3 p3 = Vector3
+		(
+			(radius * cosf(theta)),
+			(radius * sinf(theta)),
+			0
+		);
+		D3DXVec3TransformCoord(&p, &p, &R);
+		D3DXVec3TransformCoord(&p2, &p2, &R);
+		D3DXVec3TransformCoord(&p3, &p3, &R);
+		p += start;
+		p2 += start;
+		p3 += start;
+		v.emplace_back(p);
+		v2.emplace_back(p2);
+		v3.emplace_back(p3);
+
+		p += end;
+		p2 += end;
+		p3 += end;
+		e.emplace_back(p);
+		e2.emplace_back(p2);
+		e3.emplace_back(p3);
+	}
+	for (UINT i = 0; i < stackCount; i++)
+	{
+		if (i <= stackCount / 2)
+		{
+			DebugLine::Get()->RenderLine(v[i], v[i + 1]);
+			DebugLine::Get()->RenderLine(v2[i], v2[i + 1]);
+		}
+		DebugLine::Get()->RenderLine(v3[i], v3[i + 1]);
+	}
+	DebugLine::Get()->RenderLine(v3[stackCount / 4], e3[stackCount / 4]);
+	DebugLine::Get()->RenderLine(v3[stackCount / 2], e3[stackCount / 2]);
+	DebugLine::Get()->RenderLine(v3[stackCount * 3 / 4], e3[stackCount * 3 / 4]);
+	DebugLine::Get()->RenderLine(v3[stackCount], e3[stackCount]);
+
+	for (UINT i = 0; i < stackCount; i++)
+	{
+		if (i >= stackCount / 2)
+		{
+			DebugLine::Get()->RenderLine(e[i], e[i + 1]);
+			DebugLine::Get()->RenderLine(e2[i], e2[i + 1]);
+		}
+		DebugLine::Get()->RenderLine(e3[i], e3[i + 1]);
+	}
+
+	Matrix VP;
+	D3DXMatrixTranspose(&VP, &previewDesc.VP);
+	DebugLine::Get()->PreviewRender(context,matrix*VP);
+}
+
 void PreviewRenderer::DebugRender(ID3D11DeviceContext * context)
 {
 	BoxRender(context, boxWorld, boxMin, boxMax, Color(0, 1, 0, 1));
@@ -1506,7 +1693,7 @@ void PreviewRenderer::DebugRender(ID3D11DeviceContext * context)
 		{
 			
 			const Matrix& currFarameMatrix = skinTransforms[tweenDesc.Curr.Clip].Transform[tweenDesc.Curr.CurrFrame][colliderBoxData[i].Index];
-			if (unArmedBoneCount > colliderBoxData[i].Index)
+			if (unArmedBoneCount > static_cast<uint>(colliderBoxData[i].Index))
 			{
 				colliderBoxData[i].matrix = bones[colliderBoxData[i].Index]->Transform()*currFarameMatrix* W;
 			}
@@ -1521,11 +1708,12 @@ void PreviewRenderer::DebugRender(ID3D11DeviceContext * context)
 			D3DXMatrixTranslation(&colliderBoxData[i].T, colliderBoxData[i].position.x,
 				colliderBoxData[i].position.y, colliderBoxData[i].position.z);
 
-			const Vector3& boneBoxMin = Vector3(-0.5f, -0.5f, -0.5f);
-			const Vector3& boneBoxMax = Vector3(0.5f, 0.5f, 0.5f);
+			//const Vector3& boneBoxMin = Vector3(-0.5f, -0.5f, -0.5f);
+			//const Vector3& boneBoxMax = Vector3(0.5f, 0.5f, 0.5f);
 
-			colliderBoxData[i].result = colliderBoxData[i].ColliderBoxWorld* colliderBoxData[i].R * colliderBoxData[i].T;
-			BoxRender(context,colliderBoxData[i].result, boneBoxMin, boneBoxMax, Color(0, 1, 0, 1));
+			colliderBoxData[i].result = colliderBoxData[i].ColliderBoxWorld*colliderBoxData[i].R * colliderBoxData[i].T;
+			//BoxRender(context,colliderBoxData[i].result, boneBoxMin, boneBoxMax, Color(0, 1, 0, 1));
+			CapsuleRender(context, colliderBoxData[i].result,  Color(0, 1, 0, 1));
 		}
 
 }
@@ -1744,7 +1932,7 @@ void PreviewRenderer::BindingMaterialBone()
 	{
 		
 
-		meshes[i]->CreateBuffer(device,0);
+		meshes[i]->CreateBuffer(device);
 
 		string name = meshes[i]->materialName;
 		auto find = find_if(materials.begin(), materials.end(), [&name](shared_ptr<class Material> material) 
@@ -1761,7 +1949,7 @@ void PreviewRenderer::BindingMaterialBone()
 			for (uint i = 0; i < blendCount; i++)
 			{
 
-				blendMeshes[i]->CreateBuffer(device,0);
+				blendMeshes[i]->CreateBuffer(device);
 				string name = blendMeshes[i]->materialName;
 				auto find = find_if(materials.begin(), materials.end(), [&name](shared_ptr<class Material> material)
 				{

@@ -1,4 +1,38 @@
 #pragma once
+typedef struct
+{
+	Vector3 Position;
+	Vector3 Direction;
+	float Range;
+	Vector3 Color;
+	int iShadowmapIdx;
+	float Intencity;
+} PointLights;
+
+typedef struct
+{
+	Vector3 Position;
+	Vector3 Direction;
+	float Range;
+	float OuterAngle;
+	float InnerAngle;
+	Vector3 Color;
+	int iShadowmapIdx;
+	float Intencity;
+} SpotLights;
+
+typedef struct
+{
+	Vector3 Position;
+	Vector3 Direction;
+	float Range;
+	float Length;
+	float OuterAngle;
+	float InnerAngle;
+	Vector3 Color;
+	int iShadowmapIdx;
+	float Intencity;
+} CapsuleLights;
 
 class LightManager
 {
@@ -21,26 +55,34 @@ public:
 
 
 public:
-	void ClearLights() { arrLights.clear(); LastShadowLight = -1; NextFreeSpotShadowmap = -1;  NextFreePointShadowmap = -1; }
-	void AddPointLight(const Vector3& PointPosition, float PointRange, const Vector3& PointColor, bool bCastShadow)
-	{
-		LIGHT pointLight;
 
-		pointLight.eLightType = TYPE_POINT;
+	
+
+	void AddPointLight(const Vector3& PointPosition, float PointRange, const Vector3& PointColor, float Intencity, bool bCastShadow)
+	{
+		PointLights pointLight;
+
+	
 		pointLight.Position = PointPosition;
 		pointLight.Range = PointRange;
 		pointLight.Color = PointColor;
+		pointLight.Intencity = Intencity;
     	pointLight.iShadowmapIdx = bCastShadow ? GetNextFreePointShadowmapIdx() : -1;
 
-		arrLights.push_back(pointLight);
+		pointLights.emplace_back(pointLight);
+	}
+	PointLights* GetPointLights()
+	{
+		
+		return pointLights.data();
 	}
 
 	void AddSpotLight(const Vector3& SpotPosition, const Vector3& SpotDirection, float SpotRange,
-		float SpotOuterAngle, float SpotInnerAngle, const Vector3& SpotColor, bool bCastShadow)
+		float SpotOuterAngle, float SpotInnerAngle, float Intencity, const Vector3& SpotColor, bool bCastShadow)
 	{
-		LIGHT spotLight;
+		SpotLights spotLight;
 
-		spotLight.eLightType = TYPE_SPOT;
+		
 		spotLight.Position = SpotPosition;
 		spotLight.Direction = SpotDirection;
 		spotLight.Range = SpotRange;
@@ -48,16 +90,16 @@ public:
 		spotLight.InnerAngle = Math::PI * SpotInnerAngle / 180.0f;
 		spotLight.Color = SpotColor;
 		spotLight.iShadowmapIdx = bCastShadow ? GetNextFreeSpotShadowmapIdx() : -1;
-
-		arrLights.push_back(spotLight);
+		spotLight.Intencity = Intencity;
+		spotLights.push_back(spotLight);
 	}
 
 	void AddCapsuleLight(const Vector3& CapsulePosition, const Vector3& CapsuleDirection, float CapsuleRange,
-		float CapsuleLength, const Vector3& CapsuleColor)
+		float CapsuleLength, float Intencity, const Vector3& CapsuleColor)
 	{
-		LIGHT capsuleLight;
+		CapsuleLights capsuleLight;
 
-		capsuleLight.eLightType = TYPE_CAPSULE;
+	
 		capsuleLight.Position = CapsulePosition;
 		capsuleLight.Direction = CapsuleDirection;
 		capsuleLight.Range = CapsuleRange;
@@ -66,7 +108,8 @@ public:
 		capsuleLight.iShadowmapIdx = -1;
 		capsuleLight.OuterAngle = 0.0f;
 		capsuleLight.InnerAngle = 0.0f;
-		arrLights.push_back(capsuleLight);
+		capsuleLight.Intencity = Intencity;
+		capsuleLights.push_back(capsuleLight);
 	}
 
 	void DoLighting(ID3D11DeviceContext* context);
@@ -77,41 +120,40 @@ private:
 	ID3D11Device* device;
 private:
 	void CreateCascadedShadowBuffers(const Vector2& size);
-private:
-
-	typedef enum
-	{
-		TYPE_POINT = 0,
-		TYPE_SPOT,
-		TYPE_CAPSULE
-	} LIGHT_TYPE;
 
 
-	typedef struct
-	{
-		LIGHT_TYPE eLightType = {};
-		Vector3 Position;
-		Vector3 Direction;
-		float Range;
-		float Length;
-		float OuterAngle;
-		float InnerAngle;
-		Vector3 Color;
-		int iShadowmapIdx;
-	} LIGHT;
 public:
 
 	void DirectionalLight(ID3D11DeviceContext* context);
-	void PointLight(ID3D11DeviceContext* context, const Vector3& Pos, float Range, const Vector3& Color, int iShadowmapIdx, bool bWireframe);
+	void PointLight(ID3D11DeviceContext* context, const Vector3& Pos, float Range, const Vector3& Color, float Intencity, int iShadowmapIdx, bool bWireframe);
 	void SpotLight(ID3D11DeviceContext* context, const Vector3& Pos, const Vector3& Dir, float Range, float InnerAngle, float OuterAngle, const Vector3& Color, int iShadowmapIdx, bool bWireframe);
 	void CapsuleLight(ID3D11DeviceContext* context, const Vector3& Pos, const Vector3& Dir, float Range, float fLen, const Vector3& Color, bool bWireframe);
 public:
 
 	int GetNextFreeSpotShadowmapIdx() { return (NextFreeSpotShadowmap + 1 <  iTotalSpotShadowmaps) ? ++NextFreeSpotShadowmap : -1; }
-    void SpotShadowGen(ID3D11DeviceContext* context, const LIGHT& light);
+    void SpotShadowGen(ID3D11DeviceContext* context, const SpotLights& light);
 	int GetNextFreePointShadowmapIdx() { return ( NextFreePointShadowmap + 1 < TotalPointShadowmaps) ? ++ NextFreePointShadowmap : -1; }
-	void PointShadowGen(ID3D11DeviceContext* context, const LIGHT& light);
+	void PointShadowGen(ID3D11DeviceContext* context, const PointLights& light);
 	void CascadedShadowsGen(ID3D11DeviceContext* context);
+private:
+	D3DXMATRIX LightWorldScale;
+	D3DXMATRIX LightWorldTrans;
+	D3DXMATRIX WorldViewProjection;
+	struct CB_POINT_LIGHT_DOMAIN
+	{
+		Matrix WolrdViewProj;
+	}PointLightDomainDesc;
+
+	struct CB_POINT_LIGHT_PIXEL
+	{
+		Vector3 PointLightPos;
+		float PointLightRangeRcp;
+		Vector3 PointColor;
+		float Intencity;
+		Vector2 LightPerspectiveValues;
+		float pad2[2];
+	}PointLightPixelDesc;
+		
 public:
 	// Directional light
 	ID3D11VertexShader*  DirLightVertexShader;
@@ -209,8 +251,13 @@ public:
 	ID3D11DepthStencilView* CascadedDepthStencilDSV;
 	ID3D11ShaderResourceView* CascadedDepthStencilSRV;
 
-	std::vector<LIGHT> arrLights;
+	
+	vector<PointLights> pointLights;
 
+	vector<SpotLights> spotLights;
+
+
+	vector<CapsuleLights> capsuleLights;
 private:
 	
 	D3D11_VIEWPORT shadowVP[3];

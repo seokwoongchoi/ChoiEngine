@@ -8,12 +8,12 @@ void Orbit::PreviewUpdate()
 
 void Orbit::Update()
 {
-	if (Mouse::Get()->Press(1) == false)
-		return;
+	//if (Mouse::Get()->Press(1) == false)
+	//	return;
 
-	Vector3 val = Mouse::Get()->GetMoveValue();
-	R.y += (val.y *0.15f)* delta;
-	R.x += (val.x *0.15f)* delta;
+	//Vector3 val = Mouse::Get()->GetMoveValue();
+	R.y += (moveValue.y *0.15f)* delta;
+	R.x += (moveValue.x *0.15f)* delta;
 
 	
 	

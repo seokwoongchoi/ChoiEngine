@@ -1,5 +1,5 @@
 #pragma once
-#define MAX_LINE_VERTEX 1000
+#define MAX_LINE_VERTEX 10000
 
 class DebugLine
 {
@@ -33,6 +33,7 @@ public:
 	void Initiallize(ID3D11Device* device);
 	void PreviewRender(ID3D11DeviceContext* context,const Matrix& matrix);
 	void Render(ID3D11DeviceContext* context);
+	void BoneBoxRender(ID3D11DeviceContext* context,ID3D11ShaderResourceView* srv);
 
 
 private:
@@ -53,13 +54,14 @@ private:
 	vector<VertexColor> vertices;
 	
 private:
-	
+	ID3D11DepthStencilState*  DepthStencil;
 	
 
 	ID3D11ShaderResourceView  *srv;
 	
 private:
 	ID3D11VertexShader*   DebugVS;
+	ID3D11VertexShader*   BoneBoxVS;
 	ID3D11PixelShader*    DebugPS;
 	class InputLayout* debugInputLayout;
 

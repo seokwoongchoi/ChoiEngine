@@ -22,20 +22,7 @@ struct CB_DIRECTIONAL
 	Vector4 ToCascadeSpace[3];
 };
 
-struct CB_POINT_LIGHT_DOMAIN
-{
-	Matrix WolrdViewProj;
-};
 
-struct CB_POINT_LIGHT_PIXEL
-{
-	Vector3 PointLightPos;
-	float PointLightRangeRcp;
-	Vector3 PointColor;
-	float pad;
-	Vector2 LightPerspectiveValues;
-	float pad2[2];
-};
 
 struct CB_SPOT_LIGHT_DOMAIN
 {
@@ -79,35 +66,35 @@ struct CB_CAPSULE_LIGHT_PIXEL
 #pragma pack(pop)
 LightManager::LightManager()
 	:device(nullptr),shadowVP{},ShowLightVolume(false), LastShadowLight(-1), NextFreeSpotShadowmap(-1), NextFreePointShadowmap(-1),
- DirLightVertexShader(NULL),  DirLightPixelShader(NULL),  DirLightCB(NULL),
- PointLightVertexShader(NULL),  PointLightHullShader(NULL),  PointLightDomainShader(NULL),  PointLightPixelShader(NULL),  PointLightShadowPixelShader(NULL),
- PointLightDomainCB(NULL),  PointLightPixelCB(NULL),
- SpotLightVertexShader(NULL),  SpotLightHullShader(NULL),  SpotLightDomainShader(NULL), SpotLightPixelShader(NULL),  SpotLightShadowPixelShader(NULL),
- SpotLightDomainCB(NULL),  SpotLightPixelCB(NULL),
- CapsuleLightVertexShader(NULL),  CapsuleLightHullShader(NULL),  CapsuleLightDomainShader(NULL),  CapsuleLightPixelShader(NULL),
- CapsuleLightDomainCB(NULL),  CapsuleLightPixelCB(NULL),
-// pShadowGenVSLayout(NULL),
- CascadedShadowGenGeometryShader(NULL),
- SpotShadowGenVertexShader(NULL),  SpotShadowGenVertexCB(NULL),
- PointShadowGenVertexShader(NULL),  PointShadowGenGeometryShader(NULL),  PointShadowGenGeometryCB(NULL),
-  CascadedShadowGenGeometryCB(NULL), DebugCascadesPixelShader(NULL),
- NoDepthWriteLessStencilMaskState(NULL),  NoDepthWriteGreatherStencilMaskState(NULL),  ShadowGenDepthState(NULL),
-AdditiveBlendState(NULL), NoDepthClipFrontRS(NULL),  WireframeRS(NULL),
- ShadowGenRS(NULL),  CascadedShadowGenRS(NULL),  PCFSamplerState(NULL),
-CascadedDepthStencilRT(NULL), CascadedDepthStencilDSV(NULL), CascadedDepthStencilSRV(NULL)
+ DirLightVertexShader(nullptr),  DirLightPixelShader(nullptr),  DirLightCB(nullptr),
+ PointLightVertexShader(nullptr),  PointLightHullShader(nullptr),  PointLightDomainShader(nullptr),  PointLightPixelShader(nullptr),  PointLightShadowPixelShader(nullptr),
+ PointLightDomainCB(nullptr),  PointLightPixelCB(nullptr),
+ SpotLightVertexShader(nullptr),  SpotLightHullShader(nullptr),  SpotLightDomainShader(nullptr), SpotLightPixelShader(nullptr),  SpotLightShadowPixelShader(nullptr),
+ SpotLightDomainCB(nullptr),  SpotLightPixelCB(nullptr),
+ CapsuleLightVertexShader(nullptr),  CapsuleLightHullShader(nullptr),  CapsuleLightDomainShader(nullptr),  CapsuleLightPixelShader(nullptr),
+ CapsuleLightDomainCB(nullptr),  CapsuleLightPixelCB(nullptr),
+// pShadowGenVSLayout(nullptr),
+ CascadedShadowGenGeometryShader(nullptr),
+ SpotShadowGenVertexShader(nullptr),  SpotShadowGenVertexCB(nullptr),
+ PointShadowGenVertexShader(nullptr),  PointShadowGenGeometryShader(nullptr),  PointShadowGenGeometryCB(nullptr),
+  CascadedShadowGenGeometryCB(nullptr), DebugCascadesPixelShader(nullptr),
+ NoDepthWriteLessStencilMaskState(nullptr),  NoDepthWriteGreatherStencilMaskState(nullptr),  ShadowGenDepthState(nullptr),
+AdditiveBlendState(nullptr), NoDepthClipFrontRS(nullptr),  WireframeRS(nullptr),
+ ShadowGenRS(nullptr),  CascadedShadowGenRS(nullptr),  PCFSamplerState(nullptr),
+CascadedDepthStencilRT(nullptr), CascadedDepthStencilDSV(nullptr), CascadedDepthStencilSRV(nullptr)
 {
 	for (int i = 0; i <  iTotalSpotShadowmaps; i++)
 	{
-		 SpotDepthStencilRT[i] = NULL;
-		 SpotDepthStencilDSV[i] = NULL;
-		 SpotDepthStencilSRV[i] = NULL;
+		 SpotDepthStencilRT[i] = nullptr;
+		 SpotDepthStencilDSV[i] = nullptr;
+		 SpotDepthStencilSRV[i] = nullptr;
 	}
 
 	for (int i = 0; i < TotalPointShadowmaps; i++)
 	{
-		 PointDepthStencilRT[i] = NULL;
-		 PointDepthStencilDSV[i] = NULL;
-		 PointDepthStencilSRV[i] = NULL;
+		 PointDepthStencilRT[i] = nullptr;
+		 PointDepthStencilDSV[i] = nullptr;
+		 PointDepthStencilSRV[i] = nullptr;
 	}
 }
 
@@ -192,8 +179,8 @@ void LightManager::Init(ID3D11Device* device)
 	Check(device->CreateRasterizerState(&descRast, & ShadowGenRS));
 	
 	descRast.DepthBias =6;
-	descRast.CullMode = D3D11_CULL_BACK;
-	descRast.SlopeScaledDepthBias = 3;
+	//descRast.CullMode = D3D11_CULL_FRONT;
+	descRast.SlopeScaledDepthBias = 1.0f;
 	descRast.DepthClipEnable = false;
 	Check(device->CreateRasterizerState(&descRast, & CascadedShadowGenRS));
 	
@@ -248,44 +235,44 @@ void LightManager::Init(ID3D11Device* device)
 	};
 	descShaderView.Texture2D.MipLevels = 1;
 
-	char strResName[32];
-	for (int i = 0; i <  iTotalSpotShadowmaps; i++)
-	{
-		sprintf_s(strResName, "Spot Shadowmap Target %d", i);
-		Check(device->CreateTexture2D(&dtd, NULL, & SpotDepthStencilRT[i]));
-		
+	//char strResName[32];
+	//for (int i = 0; i <  iTotalSpotShadowmaps; i++)
+	//{
+	//	//sprintf_s(strResName, "Spot Shadowmap Target %d", i);
+	//	Check(device->CreateTexture2D(&dtd, nullptr, & SpotDepthStencilRT[i]));
+	//	
 
-		sprintf_s(strResName, "Spot Shadowmap Depth View %d", i);
-		Check(device->CreateDepthStencilView( SpotDepthStencilRT[i], &descDepthView, & SpotDepthStencilDSV[i]));
-		
-		sprintf_s(strResName, "Spot Shadowmap Resource View %d", i);
-		Check(device->CreateShaderResourceView( SpotDepthStencilRT[i], &descShaderView, & SpotDepthStencilSRV[i]));
-		
-	}
+	//	//sprintf_s(strResName, "Spot Shadowmap Depth View %d", i);
+	//	Check(device->CreateDepthStencilView( SpotDepthStencilRT[i], &descDepthView, & SpotDepthStencilDSV[i]));
+	//	
+	//	//sprintf_s(strResName, "Spot Shadowmap Resource View %d", i);
+	//	Check(device->CreateShaderResourceView( SpotDepthStencilRT[i], &descShaderView, & SpotDepthStencilSRV[i]));
+	//	
+	//}
 
 	// Allocate the point shadow targets and views
-	
-	dtd.ArraySize = 6;
-	dtd.MiscFlags = D3D10_RESOURCE_MISC_TEXTURECUBE;
-	descDepthView.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
-	descDepthView.Texture2DArray.FirstArraySlice = 0;
-	descDepthView.Texture2DArray.ArraySize = 6;
-	descShaderView.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
-	descShaderView.TextureCube.MipLevels = 1;
-	descShaderView.TextureCube.MostDetailedMip = 0;
-	for (int i = 0; i < TotalPointShadowmaps; i++)
-	{
-		sprintf_s(strResName, "Point Shadowmap Target %d", i);
-		Check(device->CreateTexture2D(&dtd, NULL, & PointDepthStencilRT[i]));
-		
+	//
+	//dtd.ArraySize = 6;
+	//dtd.MiscFlags = D3D10_RESOURCE_MISC_TEXTURECUBE;
+	//descDepthView.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
+	//descDepthView.Texture2DArray.FirstArraySlice = 0;
+	//descDepthView.Texture2DArray.ArraySize = 6;
+	//descShaderView.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
+	//descShaderView.TextureCube.MipLevels = 1;
+	//descShaderView.TextureCube.MostDetailedMip = 0;
+	//for (int i = 0; i < TotalPointShadowmaps; i++)
+	//{
+	//	//sprintf_s(strResName, "Point Shadowmap Target %d", i);
+	//	Check(device->CreateTexture2D(&dtd, nullptr, & PointDepthStencilRT[i]));
+	//	
 
-		sprintf_s(strResName, "Point Shadowmap Depth View %d", i);
-		Check(device->CreateDepthStencilView( PointDepthStencilRT[i], &descDepthView, & PointDepthStencilDSV[i]));
-		
-		sprintf_s(strResName, "Point Shadowmap Resource View %d", i);
-		Check(device->CreateShaderResourceView( PointDepthStencilRT[i], &descShaderView, & PointDepthStencilSRV[i]));
-		
-	}
+	//	//sprintf_s(strResName, "Point Shadowmap Depth View %d", i);
+	//	Check(device->CreateDepthStencilView( PointDepthStencilRT[i], &descDepthView, & PointDepthStencilDSV[i]));
+	//	
+	//	//sprintf_s(strResName, "Point Shadowmap Resource View %d", i);
+	//	Check(device->CreateShaderResourceView( PointDepthStencilRT[i], &descShaderView, & PointDepthStencilSRV[i]));
+	//	
+	//}
 
 	float width = static_cast<float>(D3D::Width());
     float height = static_cast<float>(D3D::Height());
@@ -311,35 +298,22 @@ void LightManager::CreateShaders(ID3D11Device* device)
 	auto entryPoint = "DirLightVS";
 	auto shaderModel = "vs_5_0";
 	// Load the directional light shaders
-	ID3DBlob* ShaderBlob = NULL;
+	ID3DBlob* ShaderBlob = nullptr;
 	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
-	/*HANDLE fileHandle = CreateFile(L"../_Shaders/Lighting/DirLight_vs.cso", GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
-	bool bChecked = fileHandle != INVALID_HANDLE_VALUE;
-	assert(bChecked);
+    ifstream fin(L"", std::ios::binary);
 
-	DWORD dataSize = GetFileSize(fileHandle, NULL);
-	assert(dataSize != 0xFFFFFFFF);
 
-	void* data = malloc(dataSize);
-	DWORD readSize;
-	Check(ReadFile(fileHandle, data, dataSize, &readSize, NULL));
 
-	CloseHandle(fileHandle);
-	fileHandle = NULL;
-
-	D3DCreateBlob(dataSize, &ShaderBlob
-	);
-	memcpy(ShaderBlob->GetBufferPointer(), data, dataSize);*/
 	Check(device->CreateVertexShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &DirLightVertexShader));
+		ShaderBlob->GetBufferSize(), nullptr, &DirLightVertexShader));
 	SafeRelease(ShaderBlob);
 
 	entryPoint = "DirLightPS";
 	shaderModel = "ps_5_0";
 	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
 	Check(device->CreatePixelShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &DirLightPixelShader));
+		ShaderBlob->GetBufferSize(), nullptr, &DirLightPixelShader));
 	SafeRelease(ShaderBlob);
 
 
@@ -369,7 +343,7 @@ void LightManager::CreateShaders(ID3D11Device* device)
 	shaderModel = "ps_5_0";
 	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
 	Check(device->CreatePixelShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &DebugCascadesPixelShader));
+		ShaderBlob->GetBufferSize(), nullptr, &DebugCascadesPixelShader));
 	SafeRelease(ShaderBlob);
 
 	// Load the point light shaders
@@ -378,36 +352,36 @@ void LightManager::CreateShaders(ID3D11Device* device)
 	shaderModel = "vs_5_0";
 	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
 	Check(device->CreateVertexShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &PointLightVertexShader));
+		ShaderBlob->GetBufferSize(), nullptr, &PointLightVertexShader));
 	SafeRelease(ShaderBlob);
 
 	entryPoint = "PointLightHS";
 	shaderModel = "hs_5_0";
 	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
 	Check(device->CreateHullShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &PointLightHullShader));
+		ShaderBlob->GetBufferSize(), nullptr, &PointLightHullShader));
 	SafeRelease(ShaderBlob);
 
 	entryPoint = "PointLightDS";
 	shaderModel = "ds_5_0";
 	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
 	Check(device->CreateDomainShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &PointLightDomainShader));
+		ShaderBlob->GetBufferSize(), nullptr, &PointLightDomainShader));
 	SafeRelease(ShaderBlob);
 
 	entryPoint = "PointLightPS";
 	shaderModel = "ps_5_0";
 	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
 	Check(device->CreatePixelShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &PointLightPixelShader));
+		ShaderBlob->GetBufferSize(), nullptr, &PointLightPixelShader));
 	SafeRelease(ShaderBlob);
 
-	entryPoint = "PointLightShadowPS";
+	/*entryPoint = "PointLightShadowPS";
 	shaderModel = "ps_5_0";
 	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
 	Check(device->CreatePixelShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &PointLightShadowPixelShader));
-	SafeRelease(ShaderBlob);
+		ShaderBlob->GetBufferSize(), nullptr, &PointLightShadowPixelShader));
+	SafeRelease(ShaderBlob);*/
 
 	// Load the spot light shaders
 	path = "../_Shaders/Lighting/SpotLight.hlsl";
@@ -415,75 +389,75 @@ void LightManager::CreateShaders(ID3D11Device* device)
 	shaderModel = "vs_5_0";
 	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
 	Check(device->CreateVertexShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &SpotLightVertexShader));
+		ShaderBlob->GetBufferSize(), nullptr, &SpotLightVertexShader));
 	SafeRelease(ShaderBlob);
 
 	entryPoint = "SpotLightHS";
 	shaderModel = "hs_5_0";
 	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
 	Check(device->CreateHullShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &SpotLightHullShader));
+		ShaderBlob->GetBufferSize(), nullptr, &SpotLightHullShader));
 	SafeRelease(ShaderBlob);
 
 	entryPoint = "SpotLightDS";
 	shaderModel = "ds_5_0";
 	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
 	Check(device->CreateDomainShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &SpotLightDomainShader));
+		ShaderBlob->GetBufferSize(), nullptr, &SpotLightDomainShader));
 	SafeRelease(ShaderBlob);
 
 	entryPoint = "SpotLightPS";
 	shaderModel = "ps_5_0";
 	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
 	Check(device->CreatePixelShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &SpotLightPixelShader));
+		ShaderBlob->GetBufferSize(), nullptr, &SpotLightPixelShader));
 	SafeRelease(ShaderBlob);
 
 
-	entryPoint = "SpotLightShadowPS";
+	/*entryPoint = "SpotLightShadowPS";
 	shaderModel = "ps_5_0";
 	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
 	Check(device->CreatePixelShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &SpotLightShadowPixelShader));
-	SafeRelease(ShaderBlob);
+		ShaderBlob->GetBufferSize(), nullptr, &SpotLightShadowPixelShader));
+	SafeRelease(ShaderBlob);*/
 
 	// Load the spot capsule shaders
-	path = "../_Shaders/Lighting/CapsuleLight.hlsl";
-	entryPoint = "CapsuleLightVS";
-	shaderModel = "vs_5_0";
-	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
-	Check(device->CreateVertexShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &CapsuleLightVertexShader));
-	SafeRelease(ShaderBlob);
+	//path = "../_Shaders/Lighting/CapsuleLight.hlsl";
+	//entryPoint = "CapsuleLightVS";
+	//shaderModel = "vs_5_0";
+	//Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
+	//Check(device->CreateVertexShader(ShaderBlob->GetBufferPointer(),
+	//	ShaderBlob->GetBufferSize(), nullptr, &CapsuleLightVertexShader));
+	//SafeRelease(ShaderBlob);
 
-	entryPoint = "CapsuleLightHS";
-	shaderModel = "hs_5_0";
-	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
-	Check(device->CreateHullShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &CapsuleLightHullShader));
-	SafeRelease(ShaderBlob);
+	//entryPoint = "CapsuleLightHS";
+	//shaderModel = "hs_5_0";
+	//Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
+	//Check(device->CreateHullShader(ShaderBlob->GetBufferPointer(),
+	//	ShaderBlob->GetBufferSize(), nullptr, &CapsuleLightHullShader));
+	//SafeRelease(ShaderBlob);
 
-	entryPoint = "CapsuleLightDS";
-	shaderModel = "ds_5_0";
-	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
-	Check(device->CreateDomainShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &CapsuleLightDomainShader));
-	SafeRelease(ShaderBlob);
+	//entryPoint = "CapsuleLightDS";
+	//shaderModel = "ds_5_0";
+	//Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
+	//Check(device->CreateDomainShader(ShaderBlob->GetBufferPointer(),
+	//	ShaderBlob->GetBufferSize(), nullptr, &CapsuleLightDomainShader));
+	//SafeRelease(ShaderBlob);
 
-	entryPoint = "CapsuleLightPS";
-	shaderModel = "ps_5_0";
-	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
-	Check(device->CreatePixelShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &CapsuleLightPixelShader));
-	SafeRelease(ShaderBlob);
+	//entryPoint = "CapsuleLightPS";
+	//shaderModel = "ps_5_0";
+	//Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
+	//Check(device->CreatePixelShader(ShaderBlob->GetBufferPointer(),
+	//	ShaderBlob->GetBufferSize(), nullptr, &CapsuleLightPixelShader));
+	//SafeRelease(ShaderBlob);
 
-	// Load the shadow generation shaders
-	path = "../_Shaders/Lighting/ShadowGen.hlsl";
-	entryPoint = "SpotShadowGenVS";
-	shaderModel = "vs_5_0";
-	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
-	Check(device->CreateVertexShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &SpotShadowGenVertexShader));
+	//// Load the shadow generation shaders
+	//path = "../_Shaders/Lighting/ShadowGen.hlsl";
+	//entryPoint = "SpotShadowGenVS";
+	//shaderModel = "vs_5_0";
+	//Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
+	//Check(device->CreateVertexShader(ShaderBlob->GetBufferPointer(),
+	//	ShaderBlob->GetBufferSize(), nullptr, &SpotShadowGenVertexShader));
 
 	//// Create a layout for the object data
 	//const D3D11_INPUT_ELEMENT_DESC layout[] =
@@ -494,30 +468,30 @@ void LightManager::CreateShaders(ID3D11Device* device)
 	//	ShaderBlob->GetBufferSize(), & pShadowGenVSLayout));
 	
 
-	SafeRelease(ShaderBlob);
+	/*SafeRelease(ShaderBlob);
 
 
 	entryPoint = "PointShadowGenVS";
 	shaderModel = "vs_5_0";
 	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
 	Check(device->CreateVertexShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &PointShadowGenVertexShader));
+		ShaderBlob->GetBufferSize(), nullptr, &PointShadowGenVertexShader));
 	SafeRelease(ShaderBlob);
 
 	entryPoint = "PointShadowGenGS";
 	shaderModel = "gs_5_0";
 	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
 	Check(device->CreateGeometryShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &PointShadowGenGeometryShader));
+		ShaderBlob->GetBufferSize(), nullptr, &PointShadowGenGeometryShader));
 	SafeRelease(ShaderBlob);
-
+*/
 	
-
+	path = "../_Shaders/Lighting/ShadowGen.hlsl";
 	entryPoint = "CascadedShadowMapsGenGS";
 	shaderModel = "gs_5_0";
 	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
 	Check(device->CreateGeometryShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), NULL, &CascadedShadowGenGeometryShader));
+		ShaderBlob->GetBufferSize(), nullptr, &CascadedShadowGenGeometryShader));
 	SafeRelease(ShaderBlob);
 
 	
@@ -532,43 +506,43 @@ void LightManager::CreateBuffers(ID3D11Device* device)
 	cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	cbDesc.ByteWidth = sizeof(CB_DIRECTIONAL);
-	Check(device->CreateBuffer(&cbDesc, NULL, &DirLightCB));
+	Check(device->CreateBuffer(&cbDesc, nullptr, &DirLightCB));
 	//DXUT_SetDebugName( pDirLightCB, "Directional Light CB");
 
 	cbDesc.ByteWidth = sizeof(CB_POINT_LIGHT_DOMAIN);
-	Check(device->CreateBuffer(&cbDesc, NULL, &PointLightDomainCB));
+	Check(device->CreateBuffer(&cbDesc, nullptr, &PointLightDomainCB));
 	//DXUT_SetDebugName( pPointLightDomainCB, "Point Light Domain CB");
 
 	cbDesc.ByteWidth = sizeof(CB_POINT_LIGHT_PIXEL);
-	Check(device->CreateBuffer(&cbDesc, NULL, &PointLightPixelCB));
+	Check(device->CreateBuffer(&cbDesc, nullptr, &PointLightPixelCB));
 	//DXUT_SetDebugName( pPointLightPixelCB, "Point Light Pixel CB");
 
 	cbDesc.ByteWidth = sizeof(CB_SPOT_LIGHT_DOMAIN);
-	Check(device->CreateBuffer(&cbDesc, NULL, &SpotLightDomainCB));
+	Check(device->CreateBuffer(&cbDesc, nullptr, &SpotLightDomainCB));
 	//DXUT_SetDebugName( pSpotLightDomainCB, "Spot Light Domain CB");
 
 	cbDesc.ByteWidth = sizeof(CB_SPOT_LIGHT_PIXEL);
-	Check(device->CreateBuffer(&cbDesc, NULL, &SpotLightPixelCB));
+	Check(device->CreateBuffer(&cbDesc, nullptr, &SpotLightPixelCB));
 	//DXUT_SetDebugName( pSpotLightPixelCB, "Spot Light Pixel CB");
 
 	cbDesc.ByteWidth = sizeof(CB_CAPSULE_LIGHT_DOMAIN);
-	Check(device->CreateBuffer(&cbDesc, NULL, &CapsuleLightDomainCB));
+	Check(device->CreateBuffer(&cbDesc, nullptr, &CapsuleLightDomainCB));
 	//DXUT_SetDebugName( pCapsuleLightDomainCB, "Capsule Light Domain CB");
 
 	cbDesc.ByteWidth = sizeof(CB_CAPSULE_LIGHT_PIXEL);
-	Check(device->CreateBuffer(&cbDesc, NULL, &CapsuleLightPixelCB));
+	Check(device->CreateBuffer(&cbDesc, nullptr, &CapsuleLightPixelCB));
 	//DXUT_SetDebugName( pCapsuleLightPixelCB, "Capsule Light Pixel CB");
 
 	cbDesc.ByteWidth = sizeof(Matrix);
-	Check(device->CreateBuffer(&cbDesc, NULL, &SpotShadowGenVertexCB));
+	Check(device->CreateBuffer(&cbDesc, nullptr, &SpotShadowGenVertexCB));
 	//DXUT_SetDebugName( pSpotShadowGenVertexCB, "Spot Shadow Gen Vertex CB");
 
 	cbDesc.ByteWidth = 6 * sizeof(Matrix);
-	Check(device->CreateBuffer(&cbDesc, NULL, &PointShadowGenGeometryCB));
+	Check(device->CreateBuffer(&cbDesc, nullptr, &PointShadowGenGeometryCB));
 	//DXUT_SetDebugName( pPointShadowGenGeometryCB, "Point Shadow Gen Geometry CB");
 
 	cbDesc.ByteWidth = 3 * sizeof(Matrix);
-	Check(device->CreateBuffer(&cbDesc, NULL, &CascadedShadowGenGeometryCB));
+	Check(device->CreateBuffer(&cbDesc, nullptr, &CascadedShadowGenGeometryCB));
 	//DXUT_SetDebugName( pCascadedShadowGenGeometryCB, "Point Shadow Gen Geometry CB");
 }
 
@@ -677,7 +651,7 @@ void LightManager::DoLighting(ID3D11DeviceContext * context)
 	context->OMGetDepthStencilState(&PrevDepthState, &PrevStencil);
 
 	// Set the depth state for the directional light
-	//context->OMSetDepthStencilState( NoDepthWriteLessStencilMaskState, SceneStencilFlag);
+	context->OMSetDepthStencilState( NoDepthWriteLessStencilMaskState, SceneStencilFlag);
 
 	// Set the GBuffer views
 	
@@ -702,28 +676,32 @@ void LightManager::DoLighting(ID3D11DeviceContext * context)
 	context->RSSetState(NoDepthClipFrontRS);
 
 	// Do the rest of the lights
-	for (auto& light:arrLights)
+	for (auto& light : pointLights)
 	{
-		if (light.eLightType == TYPE_POINT)
-		{
-			PointLight(context, light.Position, light.Range, light.Color, light.iShadowmapIdx, false);
-		}
-		else if (light.eLightType == TYPE_SPOT)
-		{
-			SpotLight(context, light.Position, light.Direction, light.Range, light.InnerAngle,
-				light.OuterAngle, light.Color, light.iShadowmapIdx, false);
-		}
-		else if (light.eLightType == TYPE_CAPSULE)
-		{
-			CapsuleLight(context, light.Position, light.Direction, light.Range, light.Length, light.Color, false);
-		}
+
+		PointLight(context, light.Position, light.Range, light.Color, light.Intencity, light.iShadowmapIdx, false);
 	}
+	for (auto& light : spotLights)
+	{
+
+
+		SpotLight(context, light.Position, light.Direction, light.Range, light.InnerAngle,
+			light.OuterAngle, light.Color, light.iShadowmapIdx, false);
+
+	}
+	for (auto& light : capsuleLights)
+	{
+
+		CapsuleLight(context, light.Position, light.Direction, light.Range, light.Length, light.Color, false);
+
+	}
+	
 
 	// Cleanup
-	context->VSSetShader(NULL, NULL, 0);
-	context->HSSetShader(NULL, NULL, 0);
-	context->DSSetShader(NULL, NULL, 0);
-	context->PSSetShader(NULL, NULL, 0);
+	context->VSSetShader(nullptr, nullptr, 0);
+	context->HSSetShader(nullptr, nullptr, 0);
+	context->DSSetShader(nullptr, nullptr, 0);
+	context->PSSetShader(nullptr, nullptr, 0);
 
 	// Restore the states
 	context->OMSetBlendState(pPrevBlendState, prevBlendFactor, prevSampleMask);
@@ -750,28 +728,32 @@ void LightManager::DoDebugLightVolume(ID3D11DeviceContext * context)
 	context->RSGetState(&PrevRSState);
 	context->RSSetState( WireframeRS);
 
-	for (auto& light : arrLights)
+	for (auto& light : pointLights)
 	{
-		if (light.eLightType == TYPE_POINT)
-		{
-			PointLight(context, light.Position, light.Range, light.Color, light.iShadowmapIdx, true);
-		}
-		else if (light.eLightType == TYPE_SPOT)
-		{
-			SpotLight(context, light.Position, light.Direction, light.Range, light.InnerAngle,
-				light.OuterAngle, light.Color, light.iShadowmapIdx, true);
-		}
-		else if (light.eLightType == TYPE_CAPSULE)
-		{
-			CapsuleLight(context, light.Position, light.Direction, light.Range, light.Length, light.Color, true);
-		}
+		
+		PointLight(context, light.Position, light.Range, light.Color, light.Intencity, light.iShadowmapIdx, true);
+	}
+	for (auto& light : spotLights)
+	{
+
+		
+		SpotLight(context, light.Position, light.Direction, light.Range, light.InnerAngle,
+			light.OuterAngle, light.Color, light.iShadowmapIdx, true);
+		
+	}
+	for (auto& light : capsuleLights)
+	{
+
+		CapsuleLight(context, light.Position, light.Direction, light.Range, light.Length, light.Color, true);
+
 	}
 
+
 	// Cleanup
-	context->VSSetShader(NULL, NULL, 0);
-	context->HSSetShader(NULL, NULL, 0);
-	context->DSSetShader(NULL, NULL, 0);
-	context->PSSetShader(NULL, NULL, 0);
+	context->VSSetShader(nullptr, nullptr, 0);
+	context->HSSetShader(nullptr, nullptr, 0);
+	context->DSSetShader(nullptr, nullptr, 0);
+	context->PSSetShader(nullptr, nullptr, 0);
 
 	// Restore the states
 	context->RSSetState(PrevRSState);
@@ -800,22 +782,22 @@ void LightManager::DoDebugCascadedShadows(ID3D11DeviceContext * context)
 	context->PSSetShaderResources(0, 1, arrViews);
 
 	// Primitive settings
-	context->IASetInputLayout(NULL);
-	context->IASetVertexBuffers(0, 0, NULL, NULL, NULL);
+	context->IASetInputLayout(nullptr);
+	context->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
 	context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
 	// Set the shaders
-	context->VSSetShader( DirLightVertexShader, NULL, 0);
-	context->GSSetShader(NULL, NULL, 0);
-	context->PSSetShader( DebugCascadesPixelShader, NULL, 0);
+	context->VSSetShader( DirLightVertexShader, nullptr, 0);
+	context->GSSetShader(nullptr, nullptr, 0);
+	context->PSSetShader( DebugCascadesPixelShader, nullptr, 0);
 
 	context->Draw(4, 0);
 
 	// Cleanup
-	arrViews[0] = NULL;
+	arrViews[0] = nullptr;
 	context->PSSetShaderResources(0, 1, arrViews);
-	context->VSSetShader(NULL, NULL, 0);
-	context->PSSetShader(NULL, NULL, 0);
+	context->VSSetShader(nullptr, nullptr, 0);
+	context->PSSetShader(nullptr, nullptr, 0);
 	context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	context->OMSetBlendState(PrevBlendState, prevBlendFactor, prevSampleMask);
@@ -854,7 +836,7 @@ void LightManager::CreateCascadedShadowBuffers(const Vector2 & size)
 		0//UINT MiscFlags;    
 	};
 
-	Check(device->CreateTexture2D(&dtd, NULL, &CascadedDepthStencilRT));
+	Check(device->CreateTexture2D(&dtd, nullptr, &CascadedDepthStencilRT));
 
 	D3D11_DEPTH_STENCIL_VIEW_DESC descDepthView;
 	ZeroMemory(&descDepthView, sizeof(descDepthView));
@@ -919,13 +901,13 @@ void LightManager::DirectionalLight(ID3D11DeviceContext * context)
 	}
 
 	// Primitive settings
-	context->IASetInputLayout(NULL);
-	context->IASetVertexBuffers(0, 0, NULL, NULL, NULL);
+	context->IASetInputLayout(nullptr);
+	context->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
 	context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
 	// Set the shaders
-	context->VSSetShader( DirLightVertexShader, NULL, 0);
-	context->GSSetShader(NULL, NULL, 0);
+	context->VSSetShader( DirLightVertexShader, nullptr, 0);
+	context->GSSetShader(nullptr, nullptr, 0);
 
 	static bool bAo = true;
 	if (Keyboard::Get()->Down('G'))
@@ -933,7 +915,7 @@ void LightManager::DirectionalLight(ID3D11DeviceContext * context)
 		bAo == true ? bAo = false : bAo = true;
 	}
 	if (bAo)
-		context->PSSetShader(DirLightPixelShader, NULL, 0);
+		context->PSSetShader(DirLightPixelShader, nullptr, 0);
 	else
 		context->PSSetShader(NOAOps, nullptr, 0);
 
@@ -942,15 +924,64 @@ void LightManager::DirectionalLight(ID3D11DeviceContext * context)
 	context->Draw(4, 0);
 
 	// Cleanup
-	ID3D11ShaderResourceView *arrRV[1] = { NULL };
+	ID3D11ShaderResourceView *arrRV[1] = { nullptr };
 	context->PSSetShaderResources(4, 1, arrRV);
-	context->VSSetShader(NULL, NULL, 0);
-	context->PSSetShader(NULL, NULL, 0);
+	context->VSSetShader(nullptr, nullptr, 0);
+	context->PSSetShader(nullptr, nullptr, 0);
 	context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
-void LightManager::PointLight(ID3D11DeviceContext * context, const Vector3 & Pos, float Range, const Vector3 & Color, int iShadowmapIdx, bool bWireframe)
+void LightManager::PointLight(ID3D11DeviceContext * context, const Vector3 & Pos, float Range, const Vector3 & Color, float Intencity,int iShadowmapIdx, bool bWireframe)
 {
+
+
+	D3DXMatrixScaling(&LightWorldScale, Range, Range, Range);
+	
+	D3DXMatrixTranslation(&LightWorldTrans, Pos.x, Pos.y, Pos.z);
+	WorldViewProjection = LightWorldScale * LightWorldTrans * GlobalData::GetVP();
+
+
+	
+	
+	
+	{
+		D3DXMatrixTranspose(&PointLightDomainDesc.WolrdViewProj, &WorldViewProjection);
+		D3D11_MAPPED_SUBRESOURCE MappedResource;
+		context->Map(PointLightDomainCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+		memcpy(MappedResource.pData, &PointLightDomainDesc, sizeof(PointLightDomainDesc));
+		context->Unmap(PointLightDomainCB, 0);
+	
+	}
+	context->DSSetConstantBuffers(0, 1, &PointLightDomainCB);
+
+	{
+		PointLightPixelDesc.PointLightPos = Pos;
+		PointLightPixelDesc.PointLightRangeRcp =Range;
+		PointLightPixelDesc.PointColor = Color;
+		PointLightPixelDesc.Intencity = Intencity;
+		D3D11_MAPPED_SUBRESOURCE MappedResource;
+		context->Map(PointLightPixelCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+		memcpy(MappedResource.pData, &PointLightPixelDesc, sizeof(PointLightPixelDesc));
+		context->Unmap(PointLightPixelCB, 0);
+
+	}
+	context->PSSetConstantBuffers(1, 1, &PointLightPixelCB);
+
+
+
+
+	context->IASetInputLayout(NULL);
+	context->IASetVertexBuffers(0, 0, NULL, NULL, NULL);
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST);
+
+	// Set the shaders
+	context->VSSetShader(PointLightVertexShader, NULL, 0);
+	context->HSSetShader(PointLightHullShader, NULL, 0);
+	context->DSSetShader(PointLightDomainShader, NULL, 0);
+	context->GSSetShader(NULL, NULL, 0);
+	context->PSSetShader( PointLightPixelShader, NULL, 0);
+
+	context->Draw(2, 0);
 }
 
 void LightManager::SpotLight(ID3D11DeviceContext * context, const Vector3 & Pos, const Vector3 & Dir, float Range, float InnerAngle, float OuterAngle, const Vector3 & Color, int iShadowmapIdx, bool bWireframe)
@@ -961,11 +992,11 @@ void LightManager::CapsuleLight(ID3D11DeviceContext * context, const Vector3 & P
 {
 }
 
-void LightManager::SpotShadowGen(ID3D11DeviceContext * context, const LIGHT & light)
+void LightManager::SpotShadowGen(ID3D11DeviceContext * context, const SpotLights & light)
 {
 }
 
-void LightManager::PointShadowGen(ID3D11DeviceContext * context, const LIGHT & light)
+void LightManager::PointShadowGen(ID3D11DeviceContext * context, const PointLights & light)
 {
 }
 
@@ -978,7 +1009,7 @@ void LightManager::CascadedShadowsGen(ID3D11DeviceContext * context)
 		context->RSSetViewports(3, shadowVP);
 
 		// Set the depth target
-		ID3D11RenderTargetView* nullRT = NULL;
+		ID3D11RenderTargetView* nullRT = nullptr;
 		context->OMSetRenderTargets(1, &nullRT, CascadedDepthStencilDSV);
 
 		// Clear the depth stencil
@@ -1000,6 +1031,6 @@ void LightManager::CascadedShadowsGen(ID3D11DeviceContext * context)
 
 
 	// Set the shadow generation shaders
-	context->GSSetShader( CascadedShadowGenGeometryShader, NULL, 0);
-	context->PSSetShader(NULL, NULL, 0);
+	context->GSSetShader( CascadedShadowGenGeometryShader, nullptr, 0);
+	context->PSSetShader(nullptr, nullptr, 0);
 }

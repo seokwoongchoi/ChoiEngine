@@ -18,7 +18,7 @@ enum class GizmoMode :uint
 };
 class ActorEditor
 {
-
+	
 private:
 	EditMode mode;
 public:
@@ -31,6 +31,11 @@ public:
 
 	class Editor* editor;
 	class Engine* engine;
+	void Save(BinaryWriter* w);
+	void Load(BinaryReader* r);
+private:
+	void Save();
+	
 public:
 	void Render(ID3D11DeviceContext* context);
 public:
@@ -39,7 +44,7 @@ public:
 
 	bool IsMove() { return bMove; }
 public:
-	void ActorIndex(const uint& actorIndex){this->actorIndex = actorIndex;}
+	
 	const uint& ActorIndex(){return  actorIndex;}
 	
 	const ReadMeshType& MeshType() { return meshType; }
@@ -64,7 +69,7 @@ private:
 	void StaticGizmo(ImGuizmo::MODE mode, ImGuizmo::OPERATION operation);
 	void ColliderGizmo(ImGuizmo::MODE mode, ImGuizmo::OPERATION operation,const int& colliderIndex);
 	
-	uint gizmoColliderIndex;
+	int gizmoColliderIndex;
 private:
 	void ShowTransfomrs();
 private:
@@ -75,6 +80,7 @@ private:
 	void ShowComponents(const ImVec2 & size);
 	void ShowComponentPopUp();
 	void ShowComponentListPopUp(const string& componentName);
+
 	vector<string>componentList; 
 	string componentName = "N/A";
 private:
@@ -113,8 +119,7 @@ private:
 	ID3D11DepthStencilView* dsv;
 	D3D11_VIEWPORT viewport;
 private:
-	int boxIndex;
-	uint colliderIndex[MAX_ACTOR_BONECOLLIDER];
+	
 	bool bActive;
 	bool bEditing;
 	bool bFirst;
@@ -126,6 +131,8 @@ private:
 	bool bCompiled;
 	bool bMove;
 	bool bHasEffect;
+	bool bBindedTree;
+	
 	ReadMeshType meshType;
 private:
 	uint actorIndex;

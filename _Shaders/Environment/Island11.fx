@@ -240,7 +240,7 @@ float CalculateWaterCausticIntensity(float3 worldpos)
     float cc = 0;
     float k = 0.15;
     float water_depth = 0.5 - worldpos.y;
-
+    
     float3 pixel_to_light_vector = normalize(LightPosition - worldpos);
 
     worldpos.xz -= worldpos.y * pixel_to_light_vector.xz;
@@ -574,7 +574,7 @@ PS_GBUFFER_OUT HeightFieldPatchPacking(PSIn_Diffuse input)
     color.rgb *= (1.0 + max(0, 0.4 + 0.6 * dot(pixel_to_light_vector, microbump_normal)) * input.positionWS.a * (0.4 + 0.6 * shadow_factor));
 
 	
-    return PackGBuffer(color.rgb,  microbump_normal,  2.0f, 0.1f, 0);
+    return PackGBuffer(color.rgb,  microbump_normal,  0, 0.8, 0);
 }
 
 //--------------------------------------------------------------------------------------
@@ -745,7 +745,7 @@ PS_GBUFFER_OUT WaterPatchPS(PSIn_DiffuseWater input)
 	// getting reflection and refraction color at disturbed texture coordinates
     reflection_color = ReflectionTexture.SampleLevel(SamplerLinearClamp, float2(input.position.x * ScreenSizeInv.x, 1.0 - input.position.y * ScreenSizeInv.y) + reflection_disturbance, 0);
     refraction_color = RefractionTexture.SampleLevel(SamplerLinearClamp, input.position.xy * ScreenSizeInv + refraction_disturbance, 0);
-
+ 
 	// calculating water surface color and applying atmospheric fog to it
     water_color = diffuse_factor * float4(WaterDeepColor, 1);
   
@@ -761,7 +761,7 @@ PS_GBUFFER_OUT WaterPatchPS(PSIn_DiffuseWater input)
     color.rgb +=WaterSpecularIntensity * specular_factor * WaterSpecularColor * fresnel_factor;
     color.rgb += WaterScatterColor * scatter_factor;
     color.a = 1;
-     return PackGBuffer(color.rgb*1.8, microbump_normal, 1, 1, 0);
+     return PackGBuffer(color.rgb*1.8, microbump_normal, 0.4, 0, 0);
    // return color;
    
 }
@@ -804,7 +804,7 @@ PSIn_Quad FullScreenQuadVS(uint VertexId : SV_VertexID)
 
 float RefractionDepthManualResolvePS1(PSIn_Quad input) : SV_Target
 {
-    return RefractionDepthTextureMS1.Load(input.position.xy, 0, int2(0, 0)).r;
+    return RefractionDepthTextureMS1.Load(input.position.xy, 0, int2(0, 0));
 }
 
 
@@ -825,11 +825,7 @@ technique11 T0//Refraction
         SetGeometryShader(NULL);
         SetPixelShader(CompileShader(ps_5_0, RefractionDepthManualResolvePS1()));
     }
-}
-  
-technique11 T1
-{
-    pass P0 //WaterNormalMapComnine
+    pass P1 //WaterNormalMapComnine
     {
         SetRasterizerState(NoCullMS);
         SetDepthStencilState(NoDepthStencil, 0);
@@ -840,10 +836,7 @@ technique11 T1
         SetGeometryShader(NULL);
         SetPixelShader(CompileShader(ps_5_0, WaterNormalmapCombinePS()));
     }
-}
-technique11 T2
-{
-    pass P0 //Terrain reflection
+    pass P2 //Terrain reflection
     {
         SetRasterizerState(CullBackMS);
         SetDepthStencilState(DepthNormal, 0);
@@ -854,14 +847,7 @@ technique11 T2
         SetGeometryShader(NULL);
         SetPixelShader(CompileShader(ps_5_0, HeightFieldPatchPS()));
     }
-
-  
-}
-
- 
-technique11 T3
-{
-    pass P0 //water
+    pass P3 //water
     {
         SetRasterizerState(CullBackMS);
         // SetDepthStencilState(DepthNormal, 0);
@@ -873,12 +859,7 @@ technique11 T3
         SetGeometryShader(NULL);
         SetPixelShader(CompileShader(ps_5_0, WaterPatchPS()));
     }
-}
-technique11 T4
-{
-
-
-    pass P0 //TerrainPacking
+    pass P4 //TerrainPacking
     {
         SetRasterizerState(CullBackMS);
        // SetDepthStencilState(DepthNormal, 0);
@@ -890,3 +871,25 @@ technique11 T4
         SetPixelShader(CompileShader(ps_5_0, HeightFieldPatchPacking()));
     }
 }
+  
+//technique11 T1
+//{
+ 
+//}
+//technique11 T2
+//{
+   
+  
+//}
+
+ 
+//technique11 T3
+//{
+  
+//}
+//technique11 T4
+//{
+
+
+   
+//}

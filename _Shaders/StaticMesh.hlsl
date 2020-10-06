@@ -51,6 +51,8 @@ struct VertexStatic
 };
 
 
+
+
 ///////////////////////////////////////////////////////////////////////////////
 
 
@@ -75,4 +77,25 @@ VertexModelOutput VS(VertexStatic input)
     //output.Cull.w = dot(float4(worldPosition - ViewPosition(), 1.0f), -FrustumNormals[3]);
     return output;
 }
+const static float4 plane = float4(0, 1, 0, 0.1);
+VertexModelOutputReflection ReflectionVS(VertexStatic input)
+{
+    VertexModelOutputReflection output;
 
+   
+    SetModelWorld(input.InstID);
+  
+    output.Position = WorldPosition(input.Position);
+   
+    output.Cull = dot(output.Position, plane);
+    
+    output.Position = ViewProjection(output.Position);
+    output.Normal = WorldNormal(input.Normal);
+    output.Tangent = WorldTangent(input.Tangent);
+    
+    output.Uv = input.Uv;
+    
+  
+  
+    return output;
+}

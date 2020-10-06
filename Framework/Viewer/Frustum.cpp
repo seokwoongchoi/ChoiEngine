@@ -16,8 +16,8 @@ void Frustum::Update()
 	V = GlobalData::GetView();
 	P = GlobalData::GetProj();
 	//perspective->GetMatrix(&P);
-	//P._22 -= 0.3f;
-	//P._11 -= 0.3f;
+	P._22 -= 0.5f;
+	P._11 -= 0.5f;
 
 	/*static float t = -1.0f;
 	ImGui::InputFloat("fov", (float*)&t, -2.0f, 2.0f);
@@ -117,10 +117,44 @@ bool Frustum::ContainRect(float xCenter, float yCenter, float zCenter, float xSi
 	return true;
 }
 
-bool Frustum::ContainRect(Vector3 center, Vector3 size)
+bool Frustum::ContainRect(const Vector3 & center, const Vector3 & size)
 {
-	return ContainRect(center.x, center.y, center.z, size.x, size.y, size.z);
+	for (int i = 0; i < 6; i++)
+	{
+		if (D3DXPlaneDotCoord(&planes[i], &Vector3((center.x - size.x), (center.y - size.y), (center.z - size.z))) >= 0.0f)
+			continue;
+
+		if (D3DXPlaneDotCoord(&planes[i], &Vector3((center.x + size.x), (center.y - size.y), (center.z - size.z))) >= 0.0f)
+			continue;
+
+		if (D3DXPlaneDotCoord(&planes[i], &Vector3((center.x - size.x), (center.y + size.y), (center.z - size.z))) >= 0.0f)
+			continue;
+
+		if (D3DXPlaneDotCoord(&planes[i], &Vector3((center.x - size.x), (center.y - size.y), (center.z + size.z))) >= 0.0f)
+			continue;
+
+		if (D3DXPlaneDotCoord(&planes[i], &Vector3((center.x + size.x), (center.y + size.y), (center.z - size.z))) >= 0.0f)
+			continue;
+
+		if (D3DXPlaneDotCoord(&planes[i], &Vector3((center.x + size.x), (center.y - size.y), (center.z + size.z))) >= 0.0f)
+			continue;
+
+		if (D3DXPlaneDotCoord(&planes[i], &Vector3((center.x - size.x), (center.y + size.y), (center.z + size.z))) >= 0.0f)
+			continue;
+
+		if (D3DXPlaneDotCoord(&planes[i], &Vector3((center.x + size.x), (center.y + size.y), (center.z + size.z))) >= 0.0f)
+			continue;
+
+		return false;
+	}
+
+	return true;
 }
+
+//bool Frustum::ContainRect(Vector3 center, Vector3 size)
+//{
+//	return ContainRect(center.x, center.y, center.z, size.x, size.y, size.z);
+//}
 
 bool Frustum::ContainCube(Vector3 & center, float radius)
 {

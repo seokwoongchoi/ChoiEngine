@@ -1,19 +1,72 @@
 #include "Framework.h"
 #include "QuadTree.h"
-
+//#include "../Editor/Debug/DebugLine.h"
 
 QuadTree::QuadTree()
-	:org(0,0,0),dir(0,0,0),pos(0,0,0)
+	:org(0,0,0),dir(0,0,0),pos(0,0,0), height(512.0f),width(512.0f)
 {
 	D3DXMatrixIdentity(&W);
 	root = make_shared< QuadTreeNode>();
-	CreateQuadTree(root, Vector2(-256.0f, -256.0f), Vector2(256.0f, 256.0f));
+
 }
 
 
 QuadTree::~QuadTree()
 {
 }
+
+void QuadTree::BoxRender()
+{
+	BoxRender(root);
+}
+
+void QuadTree::BoxRender(shared_ptr<QuadTreeNode> node)
+{
+	//D3DXVECTOR3 dest[8];
+
+	////cout << "boundsMax.y:";
+	////cout << node->boundsMax.y << endl;
+
+	//dest[0] = Vector3(node->boundsMin.x, node->boundsMin.y, node->boundsMax.z);
+	//dest[1] = Vector3(node->boundsMax.x, node->boundsMin.y, node->boundsMax.z);
+	//dest[2] = Vector3(node->boundsMin.x, node->boundsMax.y, node->boundsMax.z);
+	//dest[3] = Vector3(node->boundsMax.x, node->boundsMax.y, node->boundsMax.z);
+	//dest[4] = Vector3(node->boundsMin);
+	//dest[5] = Vector3(node->boundsMax.x, node->boundsMin.y, node->boundsMin.z);
+	//dest[6] = Vector3(node->boundsMin.x, node->boundsMax.y, node->boundsMin.z);
+	//dest[7] = Vector3(node->boundsMax.x, node->boundsMax.y, node->boundsMin.z);
+
+	////
+	////D3DXMATRIX world = transform->World();
+	//////D3DXMatrixTranspose(&world, &transform->World());
+	////for (UINT i = 0; i < 8; i++)
+	////	D3DXVec3TransformCoord(&dest[i], &dest[i], &world);
+
+	//Color color = node->hitted ? Color(1, 0, 0, 1) : Color(0, 0, 1, 1);
+	////Front
+	//DebugLine::Get()->RenderLine(dest[0], dest[1], color);
+	//DebugLine::Get()->RenderLine(dest[1], dest[3], color);
+	//DebugLine::Get()->RenderLine(dest[3], dest[2], color);
+	//DebugLine::Get()->RenderLine(dest[2], dest[0], color);
+
+	////Backward
+	//DebugLine::Get()->RenderLine(dest[4], dest[5], color);
+	//DebugLine::Get()->RenderLine(dest[5], dest[7], color);
+	//DebugLine::Get()->RenderLine(dest[7], dest[6], color);
+	//DebugLine::Get()->RenderLine(dest[6], dest[4], color);
+
+	////Side
+	//DebugLine::Get()->RenderLine(dest[0], dest[4], color);
+	//DebugLine::Get()->RenderLine(dest[1], dest[5], color);
+	//DebugLine::Get()->RenderLine(dest[2], dest[6], color);
+	//DebugLine::Get()->RenderLine(dest[3], dest[7], color);
+
+	//for (auto& child : node->childs)
+	//{
+	//	BoxRender(child);
+	//}
+}
+
 bool QuadTree::Intersection(Vector3 & Pos)
 {
 	V = GlobalData::GetView();
@@ -32,56 +85,83 @@ bool QuadTree::Intersection(Vector3 & Pos)
 
 	return true;
 }
-void QuadTree::CreateQuadTree(shared_ptr<QuadTreeNode> node, Vector2 leftTop, Vector2 rightBottom)
+void QuadTree::Intersection(Matrix * matrix)
 {
-	static const float TileSize = 2;
+	Vector3 actorPos;
+	if (!root->Intersection(Vector3(matrix->_41, matrix->_42+5, matrix->_43), Vector3(-0.0f, -1.0f, -0.000001f), actorPos))
+	{
+		return;
+	}
+	
+	Vector3 lerp;
+	D3DXVec3Lerp(&lerp, &Vector3(0, matrix->_42, 0), &actorPos, Time::Delta()*5.0f);
+	matrix->_42 = lerp.y;
+}
+bool QuadTree::InBounds(uint row, uint col)
+{
+	return row >= 0 && row < height && col >= 0 && col < width;
+}
+void QuadTree::CreateQuadTree(Vector2 lt, Vector2 rb, bool calcHeight)
+{
+	CreateQuadTree(root, lt, rb,calcHeight);
+}
+
+void QuadTree::CreateQuadTree(shared_ptr<QuadTreeNode> node, Vector2 leftTop, Vector2 rightBottom,bool calHeight)
+{
+	static const float TileSize = 2.0f;
 	static const float  tolerance = 0.01f;
-	static const float  width = 512.0f;
-	static const float  height = 512.0f;
-
-	// convert the heightmap index bounds into world-space coordinates
-	/*minX = leftTop.x * CellsPerPatch - Width / 2;
-	maxX = rightBottom.x * CellsPerPatch - Width / 2;
-	minZ = -leftTop.y * CellsPerPatch + Depth / 2;
-	maxZ = -rightBottom.y * CellsPerPatch + Depth / 2;*/
-	node->minX = leftTop.x + width / 2;
-	node->maxX = rightBottom.x + width / 2;
-
-
-
-	node->minZ = -leftTop.y  + height/2 ;
-	node->maxZ = -rightBottom.y+ height/2;
-
-	//cout << node->minX << endl;
-
-	/*node->minX = leftTop.x ;
+	
+	
+	node->minX = leftTop.x ;
 	node->maxX = rightBottom.x;
+
+
+
 	node->minZ = leftTop.y ;
 	node->maxZ = rightBottom.y;
-*/
-// adjust the bounds to get a very slight overlap of the bounding boxes
+
+	
 	node->minX -= tolerance;
 	node->maxX += tolerance;
 	node->minZ += tolerance;
 	node->maxZ -= tolerance;
-	//UINT patchID = leftTop.x * (patchVertexCols - 1) + leftTop.y;
 
-	node->minMaxY = Vector2(0.0f,0.0f);
+	if (calHeight == true)
+	{
+		float minY = FLT_MAX;
+		float maxY = -FLT_MAX;
+
+		
+		uint lt = ((uint)leftTop.y-512)*-1;
+		uint rb =((uint)rightBottom.y-512)*-1;
+			for (uint x = (uint)leftTop.x; x < (uint)rightBottom.x; x++)
+			for (uint y = rb; y < lt; y++)
+            {
+             
+             
+            		float data = 0.0f;
+             
+            		data = heightMap[x][y];
+             
+            		minY = min(minY, data);
+            		maxY = max(maxY, data);
+            		
+            	
+            }
+                
+		node->minMaxY = Vector2(minY, maxY);
+		
+	}
+	else
+	{
+		node->minMaxY = Vector2(0.0f, 0.0f);
+	}
 
 
 
 	node->boundsMin = Vector3(node->minX, node->minMaxY.x, node->minZ);
 	node->boundsMax = Vector3(node->maxX, node->minMaxY.y, node->maxZ);
-	/*
-	Matrix world = D3DXMATRIX(
-		0, 0, 1, 0,
-		0, 1, 0, 0,
-		1, 0, 0, 0,
-		0, 0, 0, 1);
-
-	D3DXVec3TransformCoord(&node->boundsMin, &Vector3(node->minX, node->minMaxY.x, node->minZ), &world);
-	D3DXVec3TransformCoord(&node->boundsMax, &Vector3(node->maxX, node->minMaxY.y, node->maxZ), &world);*/
-	// construct the new node and assign the world-space bounds of the terrain region
+	
 
 
 
@@ -105,10 +185,10 @@ void QuadTree::CreateQuadTree(shared_ptr<QuadTreeNode> node, Vector2 leftTop, Ve
 		node->childs.emplace_back(child4);
 
 
-		CreateQuadTree(node->childs[0],  leftTop, Vector2(leftTop.x + nodeWidth, leftTop.y + nodeDepth));
-		CreateQuadTree(node->childs[1],  Vector2(leftTop.x + nodeWidth, leftTop.y), Vector2(rightBottom.x, leftTop.y + nodeDepth));
-		CreateQuadTree(node->childs[2],  Vector2(leftTop.x, leftTop.y + nodeDepth), Vector2(leftTop.x + nodeDepth, rightBottom.y));
-		CreateQuadTree(node->childs[3],  Vector2(leftTop.x + nodeWidth, leftTop.y + nodeDepth), rightBottom);
+		CreateQuadTree(node->childs[0],  leftTop, Vector2(leftTop.x + nodeWidth, leftTop.y + nodeDepth), calHeight);
+		CreateQuadTree(node->childs[1],  Vector2(leftTop.x + nodeWidth, leftTop.y), Vector2(rightBottom.x, leftTop.y + nodeDepth), calHeight);
+		CreateQuadTree(node->childs[2],  Vector2(leftTop.x, leftTop.y + nodeDepth), Vector2(leftTop.x + nodeDepth, rightBottom.y), calHeight);
+		CreateQuadTree(node->childs[3],  Vector2(leftTop.x + nodeWidth, leftTop.y + nodeDepth), rightBottom, calHeight);
 
 
 
@@ -155,10 +235,11 @@ void QuadTree::GetRay(OUT Vector3 * position, OUT Vector3 * direction, const Mat
 		D3DXVec3TransformCoord(position, position, &invWorld);
 	}
 }
-bool Compare(shared_ptr<QuadTreeNode> a, shared_ptr<QuadTreeNode> b)
+bool Compare(shared_ptr<QuadTreeNode>& a, shared_ptr<QuadTreeNode>& b)
 {
 	return a->dist > b->dist;
 }
+
 bool QuadTreeNode::Intersection(const Vector3 & org, const Vector3 & dir, Vector3 & Pos)
 {
 	Pos = Vector3(FLT_MAX, FLT_MAX, FLT_MAX);

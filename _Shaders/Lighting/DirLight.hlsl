@@ -133,7 +133,7 @@ float CascadedShadow(float3 position)
     float sum = 0.0f;
     float totalweight = 0.0f;
 
-     float3 uv = 0.0f;
+  
     
     Gaussianblur(totalweight, sum, UVD, bestCascade);
   
@@ -164,12 +164,12 @@ float3 IBL(Material material, float3 eye, float3 specular)
     float NdotV = saturate(dot(material.normal, eye));
 
     float3 reflectionVector = normalize(reflect(-eye, material.normal));
-    float smoothness = 1.0f - material.roughness;
+    float smoothness = 1.0f - material.Factors.x;
     float mipLevel = (1.0 - smoothness * smoothness) * 10.0f;
    
     float4 cs = skyIR.SampleLevel(LinearSampler, reflectionVector, mipLevel);
  
-    float3 result = pow(cs.xyz, 2.2f) * RadianceIBLIntegration(NdotV, material.roughness, specular);
+    float3 result = pow(cs.xyz, 2.2f) * RadianceIBLIntegration(NdotV, material.Factors.x, specular);
 
     float3 diffuseDominantDirection = material.normal;
     float diffuseLowMip = 9.6f;
@@ -193,7 +193,7 @@ float3 CalcDirectional(float3 position, Material mat)
     float3 normal = mat.normal.rgb;
     float ndotl = NdotL(normal, DirToLight);
   
-    float metallic = mat.metallic;
+    float metallic = mat.Factors.y;
 
     float3 viewDir = EyePosition - position;
    
@@ -210,7 +210,7 @@ float3 CalcDirectional(float3 position, Material mat)
     
 
     float3 f0 = F0(diffusecolor, metallic);
-    float roughness = mat.roughness;
+    float roughness = mat.Factors.x;
   
     float alpha = Alpha(roughness);
     
@@ -228,31 +228,67 @@ float3 CalcDirectional(float3 position, Material mat)
     
     return float4(finalColor, 1.0f);
 }
+float3 GammaToLinear(float3 color)
+{
+    return float3(color.x * color.x, color.y * color.y, color.z * color.z);
 
+}
+float3 Ambient(float bumpY, float3 diffuse)
+{
+    
+    //float3 g_vAmbientLowerColor = GammaToLinear(float3(0.4f, 0.4f, 0.4f));
+    //float3 g_vAmbientUpperColor = GammaToLinear(float3(0.53f, 0.53f, 0.6f));
+    float3 AmbientLowerColor = GammaToLinear(float3(0.4f, 0.4f, 0.3f));
+    float3 AmbientUpperColor = GammaToLinear(float3(0.53f, 0.53f, 0.6f));
+  
+  
+    float3 AmbientRange = AmbientUpperColor - AmbientLowerColor;
+   
+    // Normalize the vertical axis
+    float up = bumpY * 0.5 + 0.5;
+
+	// Calcualte the ambient light
+    float3 ambient = AmbientLowerColor + up * AmbientRange;
+    ambient *= diffuse;
+    ambient *= AmbientUpperColor;
+    
+    return ambient;
+}
 float4 DirLightPS( VS_OUTPUT In) : SV_TARGET
 {
     Material mat = UnpackGBuffer(In.Position.xy);
-   // return float4(mat.normal.rgb, 1.0f);
-    float3 position = CalcWorldPos(In.cpPos, mat.LinearDepth);
-    float ao = SsaoTexture.GatherRed(LinearSampler, In.UV).r;
+  
  
+    float3 position = CalcWorldPos(In.cpPos, mat.LinearDepth);
+    float ao = SsaoTexture.Sample(LinearSampler, In.UV).r;
+    //ao *= 2.0;
+   // float3 ambient = Ambient(mat.normal.y, mat.diffuseColor.rgb);
+   
     float shadow = CascadedShadow(position);
     float lightFactor = LightFactor(DirToLight.y);
     float3 finalColor = 0;
-    [branch]
-    if (mat.TerrainMask==0)
+    [flatten]
+    if (mat.TerrainMask<1)
     {
-        finalColor = mat.diffuseColor.rgb * ao * shadow * lightFactor;
-        return float4(finalColor, 1.0f);
-    }
+        finalColor = mat.diffuseColor.rgb;
       
-    finalColor = CalcDirectional(position, mat) * ao * shadow * lightFactor;
+        finalColor *= ao;
+        finalColor *= shadow;
+        finalColor *= lightFactor;
+        return float4(finalColor, 1.0);
+    }
    
+      
+    finalColor = CalcDirectional(position, mat);
+  
+    finalColor *= ao;
+    finalColor *= shadow;
+    finalColor *= lightFactor;
     
     
      //// Apply the fog to the final color
-     //float3 eyeToPixel = position - EyePosition;
-     //finalColor = ApplyFog(finalColor, EyePosition.y, eyeToPixel);
+   // float3 eyeToPixel = position - EyePosition;
+   // finalColor = ApplyFog(finalColor, EyePosition.y, eyeToPixel); 
 
     
   
@@ -260,30 +296,30 @@ float4 DirLightPS( VS_OUTPUT In) : SV_TARGET
 }
 float4 DirLightNOAOPS(VS_OUTPUT In) : SV_TARGET
 {
-    float ao = SsaoTexture.GatherRed(LinearSampler, In.UV).r;
-    return float4(ao, ao, ao, 1.0f);
-    Material mat = UnpackGBuffer(In.Position.xy);
-  //  return float4(mat.normal.rgb, 1.0f);
-    float3 position = CalcWorldPos(In.cpPos, mat.LinearDepth);
+   float ao = SsaoTexture.GatherRed(LinearSampler, In.UV).r;
+   return float4(ao, ao, ao, 1.0f);
+   Material mat = UnpackGBuffer(In.Position.xy);
+  
+   float3 position = CalcWorldPos(In.cpPos, mat.LinearDepth);
+  
+  
+   float shadow = CascadedShadow(position);
+   float lightFactor = LightFactor(DirToLight.y);
+   [branch]
+   if (mat.TerrainMask == 0)
+   {
+       return float4(mat.diffuseColor.rgb *  shadow * lightFactor, 1.0f);
+   }
    
- 
-    float shadow = CascadedShadow(position);
-    float lightFactor = LightFactor(DirToLight.y);
-    [branch]
-    if (mat.TerrainMask == 0)
-    {
-        return float4(mat.diffuseColor.rgb *  shadow * lightFactor, 1.0f);
-    }
-      
-    float3 finalColor = CalcDirectional(position, mat) *  shadow * lightFactor;
-   
-    
-    
-     //// Apply the fog to the final color
-     //float3 eyeToPixel = position - EyePosition;
-     //finalColor = ApplyFog(finalColor, EyePosition.y, eyeToPixel);
+   float3 finalColor = CalcDirectional(position, mat) *  shadow * lightFactor;
+  
+  
+  
+    //// Apply the fog to the final color
+    //float3 eyeToPixel = position - EyePosition;
+    //finalColor = ApplyFog(finalColor, EyePosition.y, eyeToPixel);
 
-    
+ 
   
     return float4(finalColor.xyz, 1.0);
 }

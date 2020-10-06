@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Materials xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <Material>
+        <Name>Material1</Name>
+        <DiffuseFile>Bitmap2Material_3_Base_Color.png</DiffuseFile>
+        <NormalFile>Bitmap2Material_3_Normal.png</NormalFile>
+        <RoughnessFile>Bitmap2Material_3_Roughness.png</RoughnessFile>
+        <MetallicFile>internal_ground_ao_texture.jpeg</MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+</Materials>

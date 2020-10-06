@@ -9,28 +9,40 @@
 #include "PostEffects/HDR.h"
 #include "PostEffects/SSLR.h"
 #include "PostEffects/SSAO.h"
-#include "EventSystems/Renderer.h"
+#include "Utility/QuadTree.h"
+#include "Viewer/Freedom.h"
+#include "Viewer/Orbit.h"
+
+//Event
 #include "EventSystems/ColliderSystem.h"
 #include "EventSystems/Animator.h"
-#include "Utility/QuadTree.h"
-
+#include "EventSystems/Renderer.h"
+#include "EventSystems/PhysicsSystem.h"
+//Particle
+#include "ParticleEditor/ParticleEditor.h"
+//Lights
+#include "LightEditor/LightEditor.h"
+#include "BehaviorTreeEditor.h"
+#include "EventSystems/ActorController.h"
 
 Editor::Editor()
 	:bStart(false), flags(0), IsPushed(false), pushedActorIndex(-1), pushedMeshType(ReadMeshType::Default),
-	staticActorCount(0),skeletalActorCount(0), bShowCollider(false)
+	staticActorCount(0),skeletalActorCount(0), bShowCollider(false), mainCamera(nullptr)
 {
     engine= new Engine();
 
-
+	mainCamera = new Freedom();
+	
+	static_cast<Freedom*>(mainCamera)->Speed(2.5f, 0.1f);
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+	/*io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 	io.ConfigWindowsResizeFromEdges = true;
-    io.ConfigViewportsNoTaskBarIcon = true;
+    io.ConfigViewportsNoTaskBarIcon = true;*/
 
 	ImGui_ImplWin32_Init(D3D::GetDesc().Handle);
 
@@ -51,10 +63,25 @@ Editor::Editor()
 		buttonTextures[2]->Load(engine->device, L"stopButton.png");
 	}
 	tree = new QuadTree();
-
+	tree->CreateQuadTree(Vector2(0.0f,0.0f),Vector2(512.0f,512.0f));
 	DebugLine::Get()->Initiallize(engine->device);
 	
 	D3DXMatrixIdentity(&identity);
+
+	Vector3 boneBoxMin = Vector3(-0.5f, -0.5f, -0.5f);
+	Vector3 boneBoxMax = Vector3(0.5f, 0.5f, 0.5f);
+
+	boneBoxCollider[0] = Vector3(boneBoxMin.x, boneBoxMin.y, boneBoxMax.z);
+	boneBoxCollider[1] = Vector3(boneBoxMax.x, boneBoxMin.y, boneBoxMax.z);
+	boneBoxCollider[2] = Vector3(boneBoxMin.x, boneBoxMax.y, boneBoxMax.z);
+	boneBoxCollider[3] = Vector3(boneBoxMax);
+	boneBoxCollider[4] = Vector3(boneBoxMin);
+	boneBoxCollider[5] = Vector3(boneBoxMax.x, boneBoxMin.y, boneBoxMin.z);
+	boneBoxCollider[6] = Vector3(boneBoxMin.x, boneBoxMax.y, boneBoxMin.z);
+	boneBoxCollider[7] = Vector3(boneBoxMax.x, boneBoxMax.y, boneBoxMin.z);
+
+	lights = make_shared<LightEditor>(engine->device,this);
+	
 }
 
 Editor::~Editor()
@@ -64,7 +91,7 @@ Editor::~Editor()
 	ImGui_ImplDX11_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
-
+	SafeDelete(mainCamera);
   
 }
 
@@ -78,18 +105,18 @@ void Editor::Resize(const uint & width, const uint & height)
 
 void Editor::Update()
 {
-	
 
 	if (!ImGui::IsAnyWindowHovered() && !ImGui::IsAnyItemHovered())
 	{
 		Keyboard::Get()->Update();
 		Mouse::Get()->Update();
 	}
-
-
+	
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
+
+
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2(static_cast<float>(D3D::Width()), static_cast<float>(D3D::Height())));
 
@@ -112,6 +139,19 @@ void Editor::Update()
 		ImGuiWindowFlags_NoNavFocus
 	);
 
+	for (GuiTexture gTexture : textures)
+	{
+		ImVec2 position = ImVec2(gTexture.Position.x, gTexture.Position.y);
+		ImVec2 size = ImVec2(gTexture.scale.x, gTexture.scale.y);
+		ImColor color = ImColor(gTexture.color.r, gTexture.color.g, gTexture.color.b, gTexture.color.a);
+
+
+		ImGui::GetWindowDrawList()->AddImage(gTexture.texture ? gTexture.texture->SRV() : nullptr, ImVec2(position.x - size.x / 2, position.y - size.y / 2),
+			ImVec2(position.x + size.x / 2, position.y + size.y / 2), ImVec2(0, 0), ImVec2(1, 1), color);
+
+
+	}
+	textures.clear();
 	if (IsPushed)
 	{
 		static ImGuizmo::OPERATION operation(ImGuizmo::TRANSLATE);
@@ -144,30 +184,38 @@ void Editor::Update()
 			{
 				isMove = true;
 			}
-			Vector3 ScaleLenth = Vector3(gizmoDelta._11 - 1.0f, gizmoDelta._22 - 1.0f, gizmoDelta._33 - 1.0f);
-			float scaleL = D3DXVec3Length(&ScaleLenth);
-			if (Math::Abs(scaleL) > 0.5f)
-			{
-				isMove = false;
-			}
+			
 			if (isMove)
 			{
 				engine->collider->SetInstMatrix(pushedActorIndex,gizmo);
+				engine->collider->CreateInstTransformSRV();
 			}
 			
 		}
 		break;
 		case ReadMeshType::SkeletalMesh:
 		{
-			/*auto& renderer = engine->skeletalRenderer[pushedActorIndex];
-			Matrix temp;
-			D3DXMatrixTranspose(&temp, &renderer.RenderWorld());
+			Matrix gizmo = engine->animator->GetInstMatrix(pushedActorIndex);
+			Matrix gizmoDelta;
+			D3DXMatrixIdentity(&gizmoDelta);
+
 			const	ImGuiIO& io = ImGui::GetIO();
 			ImGuizmo::SetDrawlist();
 			ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
 			ImGuizmo::Manipulate(GlobalData::GetView(), GlobalData::GetProj(), operation, mode,
-				temp, nullptr, nullptr);
-			renderer.RenderWorld(temp);*/
+				gizmo, gizmoDelta, nullptr);
+
+			bool isMove = false;
+			if (gizmoDelta != identity)
+			{
+				isMove = true;
+			}
+		
+			if (isMove)
+			{
+				engine->animator->SetInstMatrix(pushedActorIndex, gizmo);
+			}
+
 		}
 		break;
 	
@@ -177,12 +225,25 @@ void Editor::Update()
 	}
 	
 	ImGui::End();
+
+	
 	if (!bStart&&tree->Intersection(pos))
 	{
 		AddTrasform(pos);
+		
 	}
 
-	engine->Update();
+	if (!bStart)
+	{
+		lights->Update(pos);
+		mainCamera->Update();
+	}
+	
+	
+
+	
+	
+	engine->Update(bStart);
 
 	
 	
@@ -193,22 +254,31 @@ void Editor::Render()
 	engine->Begin();
 	engine->Render();
 	
+
+	if (bShowCollider)
+		DebugRender();
+
+
 	MenuBar();
 	ToolBar();
 	for (auto& actor : actors)
 	{
 		actor->Render(engine->deferredContext[4]);
 	}
+	for (auto& particle : particles)
+	{
+		particle->PreviewRender(engine->deferredContext[4]);
+	}
 	engine->deferredContext[4]->FinishCommandList(false, &engine->commadList[4]);
 	engine->immediateContext->ExecuteCommandList(engine->commadList[4], true);
 	SafeRelease(engine->commadList[4]);
 	
 	PostEffects();
+	BehaviorTreeAsset();
+	ParticleAsset();
 	ActorAsset();
-
-	if(bShowCollider)
-	DebugRender();
 	
+
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 	engine->Present();
@@ -256,6 +326,93 @@ void Editor::PostEffects()
 		
 	}
 	ImGui::End();
+
+
+
+	lights->ImageButton();
+}
+
+void Editor::Save(const wstring & fileName)
+{
+	BinaryWriter* w = new BinaryWriter();
+
+	auto ext = ".Level";
+	string sname = String::ToString(fileName);
+	if (String::Contain(String::ToString(fileName), ext))
+	{
+		auto lastIndex = fileName.find_last_of('.');
+		sname = String::ToString(fileName).substr(0, lastIndex);
+	}
+
+	w->Open(String::ToWString(sname + ext));
+	w->UInt(actors.size());
+	for (auto& actor : actors)
+	{
+		actor->Save(w);
+	}
+	w->UInt(particles.size());
+	for (auto& particle : particles)
+	{
+		particle->Save(w);
+	}
+	w->UInt(behaviorTrees.size());
+	for (auto& tree : behaviorTrees)
+	{
+		tree->Save(w);
+	}
+
+	lights->Save(w);
+
+	w->Close();
+	SafeDelete(w);
+}
+
+void Editor::Load(const wstring & fileName)
+{
+	BinaryReader* r = new BinaryReader();
+
+
+	r->Open(fileName);
+	
+	uint count = r->UInt();
+	if (count > 0)
+	{
+		for (uint i = 0; i < count; i++)
+		{
+			auto& actor = make_shared<ActorEditor>(engine->device, engine, this);
+			actor->Load(r);
+			actors.emplace_back(actor);
+		}
+	}
+
+
+	//for (auto& particle : particles)
+	//{
+
+	//}
+
+	//for (auto& tree : behaviorTrees)
+	//{
+
+	//}
+
+	//lights;
+
+	r->Close();
+	SafeDelete(r);
+}
+
+
+void Editor::RenderTexture(Vector2 position, Vector2 scale, Color color, Texture * texture)
+{
+	GuiTexture gTexture;
+	gTexture.Position = position;
+	gTexture.scale = scale;
+	gTexture.color = color;
+	gTexture.texture = texture;
+
+
+	textures.emplace_back(gTexture);
 }
 
 void Editor::ActorAsset()
@@ -323,12 +480,93 @@ void Editor::ActorAsset()
 			if (ImGui::MenuItem("Add Actor"))
 			{
 				auto& actor = make_shared<ActorEditor>(engine->device,engine,this);
-				
-				
-     			actors.emplace_back(actor);
+				actors.emplace_back(actor);
 
 			}
 		
+
+			ImGui::EndPopup();
+		}
+
+
+	}
+	ImGui::End();
+}
+
+void Editor::ParticleAsset()
+{
+	if (bStart)return;
+	
+	ImGui::Begin("ParticleAsset", 0, flags);
+	{
+
+		for (auto& particle : particles)
+		{
+			particle->ImageButton();
+		}
+		ImGui::SameLine();
+
+		if (ImGui::IsWindowHovered())
+		{
+			if (ImGui::GetIO().MouseDown[1])
+				ImGui::OpenPopup("ParticlePopup");
+		}
+		if (ImGui::BeginPopup("ParticlePopup"))
+		{
+			if (ImGui::MenuItem("Copy")) {}
+			if (ImGui::MenuItem("Delete")){}
+
+			ImGui::Separator();
+
+			if (ImGui::MenuItem("Add Particle"))
+			{
+				auto& particle = make_shared<ParticleEditor>(engine->device,engine,this,particles.size());
+				particles.emplace_back(particle);
+
+			}
+
+
+			ImGui::EndPopup();
+		}
+
+
+	}
+	ImGui::End();
+
+}
+
+void Editor::BehaviorTreeAsset()
+{
+	if (bStart)return;
+
+	ImGui::Begin("BehaviorTreeAsset", 0);
+	{
+
+		for (auto& tree : behaviorTrees)
+		{
+			tree->ImageButton();
+		}
+		ImGui::SameLine();
+
+		if (ImGui::IsWindowHovered())
+		{
+			if (ImGui::GetIO().MouseDown[1])
+				ImGui::OpenPopup("TreePopup");
+		}
+		if (ImGui::BeginPopup("TreePopup"))
+		{
+			if (ImGui::MenuItem("Copy")) {}
+			if (ImGui::MenuItem("Delete")) {}
+
+			ImGui::Separator();
+
+			if (ImGui::MenuItem("Add BehaviorTree"))
+			{
+				auto& tree = make_shared<BehaviorTreeEditor>(engine->device);
+				behaviorTrees.emplace_back(tree);
+
+			}
+
 
 			ImGui::EndPopup();
 		}
@@ -348,19 +586,22 @@ void Editor::MenuBar()
 		{
 			if (ImGui::MenuItem("Load"))
 			{
-				//HWND hWnd = NULL;
-				//function<void(wstring)> f = bind(&Editor::Load, this, placeholders::_1);
-			    //Path::OpenFileDialog(L"", Path::LevelFilter, L"../../_Levels/", f, hWnd);
+				HWND hWnd = NULL;
+				function<void(wstring)> f = bind(&Editor::Load, this, placeholders::_1);
+			    Path::OpenFileDialog(L"", Path::LevelFilter, L"../_Levels/", f, hWnd);
 			}
 
 			ImGui::Separator();
 
-			if (ImGui::MenuItem("Save")) {}
+			if (ImGui::MenuItem("Save")) 
+			{
+				ShellExecute(D3D::GetDesc().Handle, L"open", L"../Game/Game.exe",nullptr , nullptr, SW_SHOWNORMAL);
+			}
 			if (ImGui::MenuItem("Save as..."))
 			{
-				//HWND hWnd = NULL;
-				//function<void(wstring)> f = bind(&Editor::Save, this, placeholders::_1);
-				//Path::SaveFileDialog(L"", Path::LevelFilter, L"../../_Levels/", f, hWnd);
+				HWND hWnd = NULL;
+				function<void(wstring)> f = bind(&Editor::Save, this, placeholders::_1);
+				Path::SaveFileDialog(L"", Path::LevelFilter, L"../_Levels/", f, hWnd);
 			}
 
 			ImGui::EndMenu();
@@ -384,6 +625,7 @@ void Editor::ToolBar()
 	{
 		if (ImGui::ImageButton(buttonTextures[0]->SRV(), ImVec2(20.0f, 20.0f)))//play
 		{
+			engine->actorController->Start();
 			bStart = true;
 			if (Time::Get()->Stopped())
 			{
@@ -393,6 +635,7 @@ void Editor::ToolBar()
 	    ImGui::SameLine();
 		if (ImGui::ImageButton(buttonTextures[1]->SRV(), ImVec2(20.0f, 20.0f)))//pause
 		{
+			engine->actorController->Stop();
 			bStart = false;
 			
 		}
@@ -456,11 +699,12 @@ void Editor::DebugRender()
 	uint renderedStaticActorCount = engine->collider->ActorCount();
 	uint renderedSkeletalActorCount = engine->animator->ActorCount();
 
+
 	Color color = Color(0, 1, 0, 1);
 	for (uint i = 0; i < renderedStaticActorCount; i++)
 	{
-		uint darCount = engine->collider->DrawCount(i);
-		for (uint d = 0; d < darCount; d++)
+		uint drawCount = engine->collider->DrawCount(i);
+		for (uint d = 0; d < drawCount; d++)
 		{
 			Vector3* dest = engine->collider->GetBoxMinMax(i, d);
 			//Front
@@ -485,8 +729,8 @@ void Editor::DebugRender()
 
 	for (uint i = 0; i < renderedSkeletalActorCount; i++)
 	{
-		uint darCount = engine->animator->DrawCount(i);
-		for (uint d = 0; d < darCount; d++)
+		uint drawCount = engine->animator->DrawCount(i);
+		for (uint d = 0; d < drawCount; d++)
 		{
 			Vector3* dest = engine->animator->GetBoxMinMax(i, d);
 			//Front
@@ -506,10 +750,133 @@ void Editor::DebugRender()
 			DebugLine::Get()->RenderLine(dest[1], dest[5], color);
 			DebugLine::Get()->RenderLine(dest[2], dest[6], color);
 			DebugLine::Get()->RenderLine(dest[3], dest[7], color);
+
+
 		}
+
+
 	}
+
+	//engine->animator->BoxRender();
+	lights->GridPointLight();
 	DebugLine::Get()->Render(engine->immediateContext);
 
+
+
+
+
+
+	
+	{
+	
+		const uint& stackCount = 30;
+		const float& thetaStep = 2.0f * Math::PI / stackCount;
+		const Vector3& start = Vector3(0, 0, 0);
+		const Vector3& dir = Vector3(0, 1, 0);
+		const Vector3& end = dir * 1;
+		const float& radius = 0.5f;
+
+		Vector3 axis;
+		D3DXVec3Cross(&axis, &Vector3(0, 0, 1), &dir);
+		float radian = D3DXVec3Dot(&Vector3(0, 0, 1), &dir) - Math::PI*0.5f;
+
+		Matrix R;
+		D3DXMatrixRotationAxis(&R, &axis, radian);
+		vector<Vector3> v, v2, v3;
+		vector<Vector3> e, e2, e3;
+		for (UINT s = 0; s <= stackCount; s++)
+		{
+			float theta = s * thetaStep;
+
+			Vector3 p = Vector3
+			(
+				(radius * cosf(theta)),
+				0,
+				(radius * sinf(theta))
+			);
+			Vector3 p2 = Vector3
+			(
+				0,
+				(radius * cosf(theta)),
+				(radius * sinf(theta))
+			);
+			Vector3 p3 = Vector3
+			(
+				(radius * cosf(theta)),
+				(radius * sinf(theta)),
+				0
+			);
+			D3DXVec3TransformCoord(&p, &p, &R);
+			D3DXVec3TransformCoord(&p2, &p2, &R);
+			D3DXVec3TransformCoord(&p3, &p3, &R);
+			p += start;
+			p2 += start;
+			p3 += start;
+			v.emplace_back(p);
+			v2.emplace_back(p2);
+			v3.emplace_back(p3);
+
+			p += end;
+			p2 += end;
+			p3 += end;
+			e.emplace_back(p);
+			e2.emplace_back(p2);
+			e3.emplace_back(p3);
+		}
+		uint drawCount= engine->animator->TotalCount();
+		
+		for (uint i = 0; i < drawCount; i++)
+		{
+			for (UINT s = 0; s < stackCount; s++)
+			{
+				if (s <= stackCount / 2)
+				{
+					DebugLine::Get()->RenderLine(v[s], v[s + 1], i);
+					DebugLine::Get()->RenderLine(v2[s], v2[s + 1], i);
+				}
+				DebugLine::Get()->RenderLine(v3[s], v3[s + 1], i);
+			}
+			DebugLine::Get()->RenderLine(v3[stackCount / 4], e3[stackCount / 4], i);
+			DebugLine::Get()->RenderLine(v3[stackCount / 2], e3[stackCount / 2], i);
+			DebugLine::Get()->RenderLine(v3[stackCount * 3 / 4], e3[stackCount * 3 / 4], i);
+			DebugLine::Get()->RenderLine(v3[stackCount], e3[stackCount], i);
+
+			for (UINT s = 0; s < stackCount; s++)
+			{
+				if (s >= stackCount / 2)
+				{
+					DebugLine::Get()->RenderLine(e[s], e[s + 1], i);
+					DebugLine::Get()->RenderLine(e2[s], e2[s + 1], i);
+				}
+				DebugLine::Get()->RenderLine(e3[s], e3[s + 1], i);
+			}
+
+			//DebugLine::Get()->RenderLine(boneBoxCollider[0], boneBoxCollider[1], color, i);
+			//DebugLine::Get()->RenderLine(boneBoxCollider[1], boneBoxCollider[3], color, i);
+			//DebugLine::Get()->RenderLine(boneBoxCollider[3], boneBoxCollider[2], color, i);
+			//DebugLine::Get()->RenderLine(boneBoxCollider[2], boneBoxCollider[0], color, i);
+
+			////Backward																  
+			//DebugLine::Get()->RenderLine(boneBoxCollider[4], boneBoxCollider[5], color, i);
+			//DebugLine::Get()->RenderLine(boneBoxCollider[5], boneBoxCollider[7], color, i);
+			//DebugLine::Get()->RenderLine(boneBoxCollider[7], boneBoxCollider[6], color, i);
+			//DebugLine::Get()->RenderLine(boneBoxCollider[6], boneBoxCollider[4], color, i);
+
+			////Side																	  
+			//DebugLine::Get()->RenderLine(boneBoxCollider[0], boneBoxCollider[4], color, i);
+			//DebugLine::Get()->RenderLine(boneBoxCollider[1], boneBoxCollider[5], color, i);
+			//DebugLine::Get()->RenderLine(boneBoxCollider[2], boneBoxCollider[6], color, i);
+			//DebugLine::Get()->RenderLine(boneBoxCollider[3], boneBoxCollider[7], color, i);
+
+
+		}
+	}
+
+	
+	DebugLine::Get()->BoneBoxRender(engine->immediateContext,engine->physics->modelData_StructuredBufferSRV);
+
+
+	
 }
 
 void Editor::ApplyStyle()

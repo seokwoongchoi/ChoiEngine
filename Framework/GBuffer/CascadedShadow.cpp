@@ -2,7 +2,7 @@
 #include "CascadedShadow.h"
 
 CascadedShadow::CascadedShadow()
-	: arrCascadeRanges{ 0,0,0,0 }, bAntiFlickerOn(true), CascadeTotalRange(50.0f), ShadowMapSize(Vector2(1280.0f,720.0f)), ShadowBoundCenter(Vector3(0,0,0)), ShadowBoundRadius(0),	  arrCascadeBoundCenter{ Vector3 (0,0,0), Vector3(0,0,0) , Vector3(0,0,0) },
+	: arrCascadeRanges{ 0,0,0,0 }, bAntiFlickerOn(true), CascadeTotalRange(150.0f), ShadowMapSize(Vector2(1280.0f,720.0f)), ShadowBoundCenter(Vector3(0,0,0)), ShadowBoundRadius(0),	  arrCascadeBoundCenter{ Vector3 (0,0,0), Vector3(0,0,0) , Vector3(0,0,0) },
 	arrCascadeBoundRadius{ 0,0,0 },	arrFrustumPoints{ Vector3(0,0,0) , Vector3(0,0,0) , Vector3(0,0,0) , Vector3(0,0,0) , Vector3(0,0,0) , Vector3(0,0,0) , Vector3(0,0,0) , Vector3(0,0,0) },
 	camPos(Vector3(0, 0, 0)),camForward(Vector3(0, 0, 0)),camUp(Vector3(0, 0, 0)),camRight(Vector3(0, 0, 0)),worldCenter(Vector3(0, 0, 0)),pos(Vector3(0, 0, 0)),
 	lookAt(Vector3(0, 0, 0)),right(Vector3(0, 0, 0)),up(Vector3(0, 0, 0)), newCenter(Vector3(0, 0, 0)), offset(Vector3(0, 0, 0)), cascadeCenterShadowSpace(Vector3(0, 0, 0)),
@@ -27,8 +27,8 @@ void CascadedShadow::Init(Vector2 iShadowMapSize)
 
 	// Set the range values
 	 arrCascadeRanges[0] = 0.1f;
-	 arrCascadeRanges[1] = 10.0f;
-	 arrCascadeRanges[2] = 25.0f;
+	 arrCascadeRanges[1] = 3.0f;
+	 arrCascadeRanges[2] = 10.0f;
 	 arrCascadeRanges[3] = CascadeTotalRange;
 
 	for (int i = 0; i <  TotalCascades; i++)
@@ -46,13 +46,8 @@ void CascadedShadow::SetShadowMapSize(Vector2 iShadowMapSize)
 void CascadedShadow::Update(const Vector3 & vDirectionalDir)
 {
 	view = GlobalData::GetView();
-	Matrix viewInv;
-	D3DXMatrixInverse(&viewInv, nullptr,&view);
 	camPos = GlobalData::Position();
 	camForward = GlobalData::Forward();
-	camUp = Vector3(viewInv._21, viewInv._22, viewInv._23);
-	camRight = Vector3(viewInv._11, viewInv._12, viewInv._13);
-	
 	worldCenter = camPos + camForward *  CascadeTotalRange * 0.5f;
 	pos = worldCenter;
 	lookAt = worldCenter + vDirectionalDir * 1000.0f;
@@ -175,6 +170,12 @@ void CascadedShadow::ExtractFrustumPoints(float fNear, float fFar, Vector3 * arr
 
 void CascadedShadow::ExtractFrustumBoundSphere(float fNear, float fFar, Vector3 & vBoundCenter, float & fBoundRadius)
 {
+	Matrix viewInv;
+	D3DXMatrixInverse(&viewInv, nullptr, &view);
+
+	camUp = Vector3(viewInv._21, viewInv._22, viewInv._23);
+	camRight = Vector3(viewInv._11, viewInv._12, viewInv._13);
+
 	const float& aspectRatio =static_cast<float>( D3D::Width()) / static_cast<float>(D3D::Height());
 	
 	const float& fTanFOVX = tanf(aspectRatio * Math::PI*0.25f);

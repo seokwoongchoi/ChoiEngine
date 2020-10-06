@@ -13,10 +13,11 @@ public:
 	Mesh();
 	~Mesh();
 
-	void CreateBuffer(ID3D11Device* device, const uint& actorIndex);
-	void ApplyPipeline(ID3D11DeviceContext* context, const uint& prevDrawCount);
-	void ApplyPipelineNoMaterial(ID3D11DeviceContext* context, const uint& prevDrawCount);
-	void ApplyPipelineReflectionMaterial(ID3D11DeviceContext* context, const uint& prevDrawCount);
+	void CreateBuffer(ID3D11Device* device);
+	void ApplyPipeline(ID3D11DeviceContext* context);
+	void ApplyPipeline(ID3D11DeviceContext* context, const uint& prevDrawCount, const uint& actorIndex);
+	void ApplyPipelineNoMaterial(ID3D11DeviceContext* context, const uint& prevDrawCount, const uint& actorIndex);
+	void ApplyPipelineReflectionMaterial(ID3D11DeviceContext* context, const uint& prevDrawCount, const uint& actorIndex);
 	void ClearPipeline(ID3D11DeviceContext* context);
 	void ClearPipelineMaterial(ID3D11DeviceContext* context);
 	void ClearPipelineReflection(ID3D11DeviceContext* context);
@@ -73,16 +74,19 @@ public:
 		
 	}
 
-	int BoneIndex() { return index; }
-	int ParentIndex() { return parentIndex; }
+	inline int BoneIndex() { return index; }
+	inline int ParentIndex() { return parentIndex; }
 	shared_ptr<ModelBone> Parent() { return parent; }
 	string Name() { return name; }
 public:
 	const Matrix& Transform() { return transform; }
 	void Transform(const Matrix& matrix) { transform = matrix; }
 public:
-	vector<shared_ptr<ModelBone>> GetChilds() { return childs; }
-	shared_ptr<ModelBone>* ChildsData() { return childs.data(); }
+	inline const vector<shared_ptr<ModelBone>>& GetChilds() {return childs;}
+	inline shared_ptr<ModelBone>* ChildsData() { 
+		if (!childs.data()) return nullptr;
+
+		return childs.data(); }
 	
 protected:
 	int index;
@@ -133,6 +137,7 @@ public:
 public:
 	float Duration() { return duration; }
 	inline float FrameRate() { return frameRate; }
+	
 	inline const uint& FrameCount() { return frameCount; }
 
 	inline shared_ptr<ModelKeyframe> Keyframe(const string& name)
@@ -149,6 +154,7 @@ private:
 
 	float duration;
 	float frameRate;
+	
 	UINT frameCount;
 
 	unordered_map<string, shared_ptr<ModelKeyframe>> keyframeMap;

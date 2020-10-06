@@ -6,6 +6,14 @@ enum class ReadMeshType:uint
 	SkeletalMesh,
 };
 
+enum class ReadParticleType :uint
+{
+	Default,
+	Spark,
+	Blood,
+	Smoke
+};
+
 struct GlobalViewData
 {
 	Matrix view;

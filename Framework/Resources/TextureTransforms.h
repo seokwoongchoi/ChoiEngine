@@ -1,19 +1,10 @@
 #pragma once
 
 #define MAX_BONE_TRANSFORMS 100
-#define MAX_ACTOR_COUNT 10
-#define MAX_MODEL_INSTANCE 20
+#define MAX_ACTOR_COUNT 3
+#define MAX_MODEL_INSTANCE 10
 
-class InstTransform
-{
-public:
-	InstTransform() = default;
-	~InstTransform() = default;
 
-	
-	Matrix instTransforms[MAX_ACTOR_COUNT][MAX_MODEL_INSTANCE];
-	
-};
 class BoneTransform
 {
 public:

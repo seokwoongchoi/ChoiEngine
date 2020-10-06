@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Materials xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <Material>
+        <Name>Armor</Name>
+        <DiffuseFile>Armor_Albedo.png</DiffuseFile>
+        <NormalFile>Armor_Normals.png</NormalFile>
+        <RoughnessFile>Armor_AO.png</RoughnessFile>
+        <MetallicFile>Armor_Metal.png</MetallicFile>
+        <Diffuse R="0.98790324" G="0.98789334" B="0.98789334" A="0.99400002"/>
+        <PBR Roughness="0.99400002" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Skin</Name>
+        <DiffuseFile>Skin_ALbedo.png</DiffuseFile>
+        <NormalFile>Skin_Normals.png</NormalFile>
+        <RoughnessFile>Skin_AO.png</RoughnessFile>
+        <MetallicFile>Skin_Metal.png</MetallicFile>
+        <Diffuse R="1" G="0.99998999" B="0.99998999" A="0.99400002"/>
+        <PBR Roughness="0.99400002" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Skin</Name>
+        <DiffuseFile>Skin_ALbedo.png</DiffuseFile>
+        <NormalFile>Skin_Normals.png</NormalFile>
+        <RoughnessFile>Skin_AO.png</RoughnessFile>
+        <MetallicFile>Skin_Metal.png</MetallicFile>
+        <Diffuse R="1" G="0.99998999" B="0.99998999" A="0.99400002"/>
+        <PBR Roughness="0.99400002" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Skin</Name>
+        <DiffuseFile>Skin_ALbedo.png</DiffuseFile>
+        <NormalFile>Skin_Normals.png</NormalFile>
+        <RoughnessFile>Skin_AO.png</RoughnessFile>
+        <MetallicFile>Skin_Metal.png</MetallicFile>
+        <Diffuse R="1" G="0.99998999" B="0.99998999" A="0.99400002"/>
+        <PBR Roughness="0.99400002" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Skin</Name>
+        <DiffuseFile>Skin_ALbedo.png</DiffuseFile>
+        <NormalFile>Skin_Normals.png</NormalFile>
+        <RoughnessFile>Skin_AO.png</RoughnessFile>
+        <MetallicFile>Skin_Metal.png</MetallicFile>
+        <Diffuse R="1" G="0.99998999" B="0.99998999" A="0.99400002"/>
+        <PBR Roughness="0.99400002" Metallic="1"/>
+    </Material>
+</Materials>

@@ -1,11 +1,12 @@
 #pragma once
+
 class SSAO
 {
 public:
 	explicit	SSAO(ID3D11Device* device, uint width=1280,uint height=720);
 	~SSAO();
-
-	
+	SSAO(const SSAO &) = delete;
+	SSAO & operator= (const SSAO &) = delete;
 	void Compute(ID3D11DeviceContext* DC, ID3D11ShaderResourceView* DepthSRV, ID3D11ShaderResourceView* NormalsSRV);
 	
 	inline ID3D11ShaderResourceView* GetSSAOSRV() { return SSAO_SRV; }

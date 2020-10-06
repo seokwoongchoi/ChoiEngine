@@ -1,5 +1,5 @@
 #include "common.hlsl"
-
+#include "PBR.hlsl"
 TextureCube<float> PointShadowMapTexture : register( t4 );
 
 /////////////////////////////////////////////////////////////////////////////
@@ -15,6 +15,7 @@ cbuffer cbPointLightPixel : register( b1 )
 	float3 PointLightPos			: packoffset( c0 );
 	float PointLightRangeRcp		: packoffset( c0.w );
 	float3 PointColor				: packoffset( c1 );
+    float PointIntencity            : packoffset( c1.w);
 	float2 LightPerspectiveValues	: packoffset( c2 );
 }
 
@@ -115,55 +116,95 @@ float PointShadowPCF(float3 ToPixel)
 	return PointShadowMapTexture.SampleCmpLevelZero(PCFSampler, ToPixel, Depth);
 }
 
-float3 CalcPoint(float3 position, Material material, bool bUseShadow)
+float3 CalcPointPBR(float3 position, Material mat)
 {
-   float3 ToLight = PointLightPos - position;
-   float3 ToEye = EyePosition - position;
-   float DistToLight = length(ToLight);
+    
+    
+    float3 diffusecolor = mat.diffuseColor.rgb;
+    float3 normal = mat.normal.rgb;
+    
+    
+    float3 lightDir = PointLightPos - position;
+    float3 viewDir = EyePosition - position;
+    
+  
+    float metallic = mat.Factors.y;
+    float roughness = mat.Factors.x;
+    
+ 
    
-   // Phong diffuse
-   ToLight /= DistToLight; // Normalize
-   float NDotL = saturate(dot(ToLight, material.normal));
-   float3 finalColor = material.diffuseColor.rgb * NDotL;
+    float DistToLight = length(lightDir);
+      
+    lightDir /= DistToLight; // Normalize
+    
+    float3 H = normalize(viewDir + lightDir);
+    //float3 R = normalize(reflect(-viewDir, mat.normal));
    
-   // Blinn specular
-   ToEye = normalize(ToEye);
-   float3 HalfWay = normalize(ToEye + ToLight);
-   float NDotH = saturate(dot(HalfWay, material.normal));
-   finalColor += pow(NDotH, 20) ;
-
-	float shadowAtt;
-	if(bUseShadow)
-	{
-		// Find the shadow attenuation for the pixels world position
-		shadowAtt = PointShadowPCF(position - PointLightPos);
-	}
-	else
-	{
-		// No shadow attenuation
-		shadowAtt = 1.0;
-	}
-
-   // Attenuation
-   float DistToLightNorm = 1.0 - saturate(DistToLight * PointLightRangeRcp);
-   float Attn = DistToLightNorm * DistToLightNorm;
-   finalColor *= PointColor.rgb * Attn * shadowAtt;
+    float3 realAlbedo = RealAlbedo(diffusecolor, metallic);
+    float3 realSpecularColor = RealSpecularColor(diffusecolor, metallic);
+    
+    float ndotl = NdotL(normal, lightDir);
+    float ndoth = NdotH(normal, H);
+    float ndotv = NdotV(normal, viewDir);
+    float vdoth = VdotH(H, viewDir);
+    float ldoth = LdotH(H, lightDir);
+    
+    float3 f0 = F0(diffusecolor, metallic);
    
-   return finalColor;
+  
+    float alpha = Alpha(roughness);
+      
+ 
+    float3 diffuse = ndotl * Disney(ndotl, ldoth, ndotv, alpha) * PointColor.rgb;
+    float3 specular = ndotl * GGX(ndotl, ndoth, ndotv, vdoth, ldoth, alpha, f0) * PointColor.rgb;
+      
+    float3 finalColor = realAlbedo * diffuse.rgb + (specular.rgb);
+    finalColor = FinalGamma(finalColor);
+       
+    // Attenuation
+    float DistToLightNorm = 1.0 - saturate(DistToLight / PointLightRangeRcp);
+    float Attn = DistToLightNorm * DistToLightNorm;
+    
+    finalColor *= Attn;
+    finalColor *= PointIntencity;
+ 
+    return finalColor;
 }
+
 
 float4 PointLightCommonPS(DS_OUTPUT In, bool bUseShadow) : SV_TARGET
 {
     Material mat = UnpackGBuffer(In.Position.xy);
-
+   
+    
 	// Reconstruct the world position
 	float3 position = CalcWorldPos(In.PositionXYW.xy / In.PositionXYW.z, mat.LinearDepth);
-
+     [flatten]
+    if (mat.TerrainMask == 0)
+    {
+        float3 lightDir = PointLightPos - position;
+         
+        float DistToLight = length(lightDir);
+        float3 finalColor = mat.diffuseColor.rgb * PointColor.rgb;
+      //  finalColor = FinalGamma(finalColor);
+       
+    // Attenuation
+        float DistToLightNorm = 1.0 - saturate(DistToLight / PointLightRangeRcp);
+        float Attn = DistToLightNorm * DistToLightNorm;
+       
+          
+        finalColor *= Attn;
+        finalColor *= PointIntencity;
+        
+        return float4(finalColor, 1.0f);
+    }
+      
 	// Calculate the light contribution
-	float3 finalColor = CalcPoint(position, mat, bUseShadow);
+    float3 finalColor = CalcPointPBR(position, mat);
 
 	// return the final color
-	return float4(finalColor, 1.0);
+   
+    return float4(finalColor * PointIntencity, 1.0);
 }
 
 float4 PointLightPS(DS_OUTPUT In) : SV_TARGET

@@ -17,6 +17,7 @@ public:
     inline bool Up(DWORD key) { return keyMap[key] == KEY_INPUT_STATUS_UP; }
 	inline bool Press(DWORD key) { return keyMap[key] == KEY_INPUT_STATUS_PRESS; }
 
+
 private:
 	Keyboard();
 	~Keyboard();

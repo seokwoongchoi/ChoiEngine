@@ -18,6 +18,7 @@ public:
 	inline operator  ID3D11ShaderResourceView*() { return view; }
 
 
+	inline ID3D11ShaderResourceView* SRV() { return view; }
 	wstring GetFile() { return file; }
 
 	UINT GetWidth() { return metaData.width; }
@@ -31,7 +32,7 @@ public:
 		*data = metaData;
 	}
 
-	inline ID3D11ShaderResourceView* SRV() { return view; }
+	
 	//ID3D11Texture2D* GetTexture();
 
 private:

@@ -1,5 +1,5 @@
 #pragma once
-
+#define terrain_gridpoints					512
 struct QuadTreeNode
 {
 	float minX;
@@ -32,11 +32,17 @@ public:
 	QuadTree();
 	~QuadTree();
 
-
+	void BoxRender();
+	void BoxRender(shared_ptr<QuadTreeNode> node);
 	bool Intersection(Vector3& Pos);
+	void Intersection(Matrix* matrix);
+	bool InBounds(uint row, uint col);
+	void CreateQuadTree(Vector2 lt,Vector2 rb,bool calcHeight=false);
 
+public:
+	float				heightMap[terrain_gridpoints + 1][terrain_gridpoints + 1];
 private:
-	void CreateQuadTree(shared_ptr< QuadTreeNode> node, Vector2 leftTop, Vector2 rightBottom);
+	void CreateQuadTree(shared_ptr< QuadTreeNode> node, Vector2 leftTop, Vector2 rightBottom, bool calHeight=false);
 
 private:
 	void GetRay(OUT Vector3* position, OUT Vector3* direction, const Matrix& w, const Matrix& v, const Matrix& p);
@@ -47,5 +53,8 @@ private:
 	Matrix P;
 	Matrix W;
 	Vector3 pos;
+
+	float height;
+	float width;
 };
 

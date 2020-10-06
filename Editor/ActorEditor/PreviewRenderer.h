@@ -1,6 +1,16 @@
 #pragma once
 
+	struct ColliderBoxData
+	{
+		Matrix matrix;
+		Matrix  R, T;
+		Vector3 scale, position;
+		Quaternion q;
+		Matrix ColliderBoxWorld;
+		Matrix result;
+		int Index=-1;
 
+	};
 class PreviewRenderer
 {
 		friend class ActorEditor;
@@ -15,14 +25,15 @@ public:
 
 private:
 	void BoxRender(ID3D11DeviceContext * context,const Matrix& matrix, const Vector3& min, const Vector3& max, const Color& color);
+	void CapsuleRender(ID3D11DeviceContext * context, const Matrix& matrix,  const Color& color);
 	void DebugRender(ID3D11DeviceContext* context);
 public:
 	void SaveMeshFile(const wstring& name, const ReadMeshType& meshType);
 	void SaveMaterialFile(const wstring& name);
 public:
 	void CreateSahders(const string& file);
-	void ReadMesh(const wstring& file, const ReadMeshType& meshType);
-	void ReadEditedMesh(const wstring& file, const ReadMeshType& meshType);
+	void ReadMesh(const wstring& file, const wstring & modelName, const ReadMeshType& meshType);
+	void ReadEditedMesh(const wstring& file, const wstring & modelName, const ReadMeshType& meshType);
 	void ReadMaterial(const wstring& name);
 	void ReadEditedMaterial(const wstring& name);
 	void ReadClip(const wstring& name);
@@ -40,6 +51,8 @@ private:
 	void BindingSkeletalMesh();
 	void BindingMaterialBone();
 
+
+	
 private:
 	ReadMeshType  meshType;
 	ID3D11Device * device;
@@ -205,20 +218,15 @@ private:
 	UINT pageSize;
 	void* p;
 protected:
-	struct ColliderBoxData
-	{
-		Matrix matrix;
-		Matrix  R, T;
-		Vector3 scale, position;
-		Quaternion q;
-		Matrix ColliderBoxWorld;
-		Matrix result;
-		uint Index;
 
-	};
 	uint boxCount;
 
 	ColliderBoxData colliderBoxData[3];
+protected:
+
+	int behaviorTreeIndex;
+	private:
+		bool bHasCam;
 };
 
 

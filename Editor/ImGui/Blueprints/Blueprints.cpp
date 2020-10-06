@@ -7,10 +7,20 @@
 #include "ax/Builders.h"
 #include "ax/Widgets.h"
 
-#define IMGUI_DEFINE_MATH_OPERATORS
+
 #include "ImGui/Source/imgui_internal.h"
 //#include "Utilities/Xml.h"
 #include "ProgressBar/ProgressReport.h"
+
+static inline ImVec2 operator+(const ImVec2& lhs, const ImVec2& rhs)
+{
+	return ImVec2(lhs.x + rhs.x, lhs.y + rhs.y);
+}
+
+static inline ImVec2 operator-(const ImVec2& lhs, const ImVec2& rhs)
+{
+	return ImVec2(lhs.x - rhs.x, lhs.y - rhs.y);
+}
 inline ImRect ImGui_GetItemRect()
 {
 	return ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
@@ -25,6 +35,7 @@ static inline ImRect ImRect_Expanded(const ImRect& rect, float x, float y)
 	result.Max.y += y;
 	return result;
 }
+
 
 namespace ed = ax::NodeEditor;
 namespace util = ax::NodeEditor::Utilities;
@@ -83,9 +94,11 @@ enum class BehaviorTreeType
 	Condition1,
 	Condition2,
 	Condition3,
+	Condition4,
 	Action1,
 	Action2,
 	Action3,
+	Action4,
 };
 
 struct Node;
@@ -146,7 +159,7 @@ struct Link
 
 	ImColor Color;
 	bool IsChecked = false;
-	
+
 
 	Link(ed::LinkId id, ed::PinId startPinId, ed::PinId endPinId) :
 		ID(id), StartPinID(startPinId), EndPinID(endPinId), Color(255, 255, 255)
@@ -449,7 +462,7 @@ static Node* SpawnTreeRootNode()
 	s_Nodes.back().Type = NodeType::Tree;
 	s_Nodes.back().Outputs.emplace_back(GetNextId(), "", PinType::Flow);
 	lastNode = s_Nodes.back().Name;
-	
+
 	BuildNode(&s_Nodes.back());
 
 	return &s_Nodes.back();
@@ -534,6 +547,18 @@ static Node* SpawnTreeTask3Node()
 
 	return &s_Nodes.back();
 }
+static Node* SpawnTreeTask4Node()
+{
+	s_Nodes.emplace_back(GetNextId(), "Strafe");
+	s_Nodes.back().bType = BehaviorTreeType::Action4;
+	s_Nodes.back().Type = NodeType::Tree;
+	s_Nodes.back().Inputs.emplace_back(GetNextId(), "", PinType::Flow);
+	lastNode = s_Nodes.back().Name;
+	s_Nodes.back().index = s_Nodes.size() - 1;
+	BuildNode(&s_Nodes.back());
+
+	return &s_Nodes.back();
+}
 
 static Node* SpawnTreeCondition1Node()
 {
@@ -573,7 +598,18 @@ static Node* SpawnTreeCondition3Node()
 
 	return &s_Nodes.back();
 }
+static Node* SpawnTreeCondition4Node()
+{
+	s_Nodes.emplace_back(GetNextId(), "IsInRange");
+	s_Nodes.back().bType = BehaviorTreeType::Condition4;
+	s_Nodes.back().Type = NodeType::Tree;
+	s_Nodes.back().Inputs.emplace_back(GetNextId(), "", PinType::Flow);
+	lastNode = s_Nodes.back().Name;
+	s_Nodes.back().index = s_Nodes.size() - 1;
+	BuildNode(&s_Nodes.back());
 
+	return &s_Nodes.back();
+}
 
 static Node* SpawnComment()
 {
@@ -620,7 +656,7 @@ const char* Application_GetName()
 	return "Blueprints";
 }
 
-void Application_Initialize()
+void Application_Initialize(ID3D11Device* device)
 {
 	ed::Config config;
 
@@ -685,13 +721,17 @@ void Application_Initialize()
 
 	//s_Links.push_back(Link(GetNextLinkId(), s_Nodes[14].Outputs[0].ID, s_Nodes[15].Inputs[0].ID));
 
-	
-	t_HeaderBackground = new Texture(L"BlueprintBackground.png");
+
+	t_HeaderBackground = new Texture();
+	t_HeaderBackground->Load(device, L"BlueprintBackground.png");
+
 	//s_HeaderBackground = t_HeaderBackground->SRV();
 	/*s_SaveIcon = Application_LoadTexture("Data/ic_save_white_24dp.png");
 	s_RestoreIcon = Application_LoadTexture("Data/ic_restore_white_24dp.png");*/
-	s_SaveIcon = new Texture(L"ic_save_white_24dp.png");
-	s_RestoreIcon = new Texture(L"ic_restore_white_24dp.png");
+	s_SaveIcon = new Texture(); 
+	s_SaveIcon->Load(device, L"ic_save_white_24dp.png");
+	s_RestoreIcon = new Texture();
+	s_RestoreIcon->Load(device, L"ic_restore_white_24dp.png");
 	//auto& io = ImGui::GetIO();
 }
 
@@ -840,7 +880,7 @@ void ShowStyleEditor(bool* show = nullptr)
 
 	ImGui::End();
 }
-void ReadNodeData(Node* node,bool IsEnd=false)
+void ReadNodeData(Node* node, BinaryWriter* w,bool IsEnd = false)
 {
 
 	//if (node->ID.Get() > 0&&node->Outputs)
@@ -859,57 +899,67 @@ void ReadNodeData(Node* node,bool IsEnd=false)
 	//}
 	//
 	if (!node) return;
-	
+
 	switch (node->bType)
 	{
-	
+
 	case BehaviorTreeType::Selector:
-		EventSystem::Get()->ActiveSelector();
-		//cout << "Builder->ActiveSelector()" << endl;
+		w->String("Selector");
+		
 		break;
 	case BehaviorTreeType::Sequence:
-		EventSystem::Get()->Sequence();
+		w->String("Sequence");
 		//cout << "Builder->Sequence()" << endl;
 		break;
 	case BehaviorTreeType::SimpleParallel:
-		EventSystem::Get()->SimpleParallel();
+		w->String("SimpleParallel");
 		//cout << "Builder->Parallel(BT::EPolicy::RequireAll, BT::EPolicy::RequireOne)" << endl;
 		break;
 	case BehaviorTreeType::Condition1:
-		EventSystem::Get()->Condition(0, false);
+		w->String("Condition1");
 		//cout << "Builder->Condition(BT::EConditionMode::IsSeeEnemy, false)" << endl;
 		break;
 	case BehaviorTreeType::Condition2:
-		EventSystem::Get()->Condition(1, false);
+		w->String("Condition2");
 		//cout << "Builder->Condition(BT::EConditionMode::IsHealthLow, false)" << endl;
 		break;
 	case BehaviorTreeType::Condition3:
-		EventSystem::Get()->Condition(2, true);
+		w->String("Condition3");
+		//cout << "Builder->Condition(BT::EConditionMode::IsEnemyDead, false)" << endl;
+		break;
+	case BehaviorTreeType::Condition4:
+		w->String("Condition4");
 		//cout << "Builder->Condition(BT::EConditionMode::IsEnemyDead, false)" << endl;
 		break;
 	case BehaviorTreeType::Action1:
-		EventSystem::Get()->Action(0);
+		w->String("Action1");
 		//cout << "Builder->Action(BT::EActionMode::Attack)" << endl;
-		
+
 		break;
 	case BehaviorTreeType::Action2:
-		EventSystem::Get()->Action(1);
-		
+		w->String("Action2");
 		//cout << "Builder->Action(BT::EActionMode::Patrol)" << endl;
 		break;
 	case BehaviorTreeType::Action3:
 		//ut << "Builder->Action(BT::EActionMode::Runaway)" << endl;
-		EventSystem::Get()->Action(2);
-		
+		w->String("Action3");
+		break;
+	case BehaviorTreeType::Action4:
+		//ut << "Builder->Action(BT::EActionMode::Runaway)" << endl;
+		w->String("Action4");
+
 		break;
 
 	}
-	
-	if (IsEnd)
-	{
-		EventSystem::Get()->End();
-	}
-	
+
+
+	ImVec2 temp=ed::GetNodePosition(node->ID);
+	w->Float(temp.x);
+	w->Float(temp.y);
+	w->UInt(node->Parent->index);
+
+
+
 }
 
 
@@ -920,33 +970,33 @@ void  BulidBehaviorTree(Node* node)
 	uint outputIndex = 0;
 	uint startPinId = 0;
 	if (!node) return;
-	if(!node->Outputs.empty())
-	 startPinId = node->Outputs[0].ID.Get();
+	if (!node->Outputs.empty())
+		startPinId = node->Outputs[0].ID.Get();
 
 	else if (node->Outputs.empty())
 	{
-		
+
 		BulidBehaviorTree(node->Parent);
 	}
-	
+
 
 	for (auto& link : s_Links)
 	{
 		if (link.IsChecked)
 		{
-			
+
 			continue;
 		}
-		
+
 
 		if (link.StartPinID.Get() == startPinId)
 		{
-			
+
 			for (auto& n : s_Nodes)
 			{
 				if (!n.Inputs.empty())
 				{
-					
+
 
 					if (n.Inputs[0].ID.Get() == link.EndPinID.Get())
 					{
@@ -956,9 +1006,9 @@ void  BulidBehaviorTree(Node* node)
 						link.IsChecked = true;
 						BulidBehaviorTree(FindNode(outputIndex));
 					}
-					
+
 				}
-				
+
 			}
 		}
 	}
@@ -971,15 +1021,15 @@ void  BulidBehaviorTree(Node* node)
 }
 
 
-bool  RecursiveFunction(Node* node)
+bool  RecursiveFunction(Node* node, BinaryWriter* w)
 {
 	uint outputIndex = 0;
-	
+
 	if (!node) return false;
-	
+
 	if (node->IsSecondTime == true)
 	{
-		
+
 		for (uint i = 0; i < node->Childs.size(); i++)
 		{
 			if (node->Childs[i]->IsSecondTime == true)
@@ -988,45 +1038,47 @@ bool  RecursiveFunction(Node* node)
 			}
 			outputIndex = i;
 		}
-		if (outputIndex == 0 )
+		if (outputIndex == 0)
 		{
-			EventSystem::Get()->Back();
+			w->String("Back");
 			
-			RecursiveFunction(node->Parent);
+			RecursiveFunction(node->Parent,w);
 			return false;
-			
+
 		}
 	}
 	else if (node->Childs.empty())
 	{
-		
+
 		node->IsSecondTime = true;
-		EventSystem::Get()->Back();
-		RecursiveFunction(node->Parent);
+		w->String("Back");
+		RecursiveFunction(node->Parent,w);
 		return false;
 
 	}
-	
-	
+
+
 	node->IsSecondTime = true;
+
+
 	
 	if (node->Childs[outputIndex]->Name != lastNode)
 	{
-		ReadNodeData(node->Childs[outputIndex]);
-		RecursiveFunction(node->Childs[outputIndex]);
+		ReadNodeData(node->Childs[outputIndex],w);
+		RecursiveFunction(node->Childs[outputIndex],w);
 	}
-		
+
 	else
 	{
-		ReadNodeData(node->Childs[outputIndex],true);
+		ReadNodeData(node->Childs[outputIndex], w,true);
 		return false;
 	}
-		
+
 	return false;
-		
-	
-		
-	
+
+
+
+
 
 
 }
@@ -1034,13 +1086,16 @@ void BehaviorTree()
 {
 	BulidBehaviorTree(&s_Nodes[0]);
 
-	
 
-	RecursiveFunction(&s_Nodes.front());
-	
-	
-	EventSystem::Get()->CreateBuilder();
-	
+	BinaryWriter* w = new BinaryWriter();
+	w->Open(L"../_BehaviorTreeDatas/BehaviorTree0.behaviortree");
+	w->UInt(s_Nodes.size() - 1);
+	RecursiveFunction(&s_Nodes.front(),w);
+
+
+	//EventSystem::Get()->CreateBuilder();
+	w->Close();
+	SafeDelete(w);
 }
 
 void ShowLeftPane(float paneWidth)
@@ -1082,9 +1137,16 @@ void ShowLeftPane(float paneWidth)
 		for (auto& link : s_Links)
 			ed::Flow(link.ID);
 	}
-	ImGui::Spring();
+	ImGui::Spring(0.0f);
+	if (ImGui::Button("Load"))
+	{
+		HWND hWnd = NULL;
+		function<void(wstring)> f = LoadAllNodes;
+		Path::OpenFileDialog(L"", Path::EveryFilter, L"../_BehaviorTreeDatas/", f, hWnd);
 
-		//showStyleEditor = true;
+	}
+	ImGui::Spring(0.0f);
+	//showStyleEditor = true;
 	if (ImGui::Button("Compile"))
 	{
 		bCompiled = true;
@@ -1097,7 +1159,7 @@ void ShowLeftPane(float paneWidth)
 		BehaviorTree();
 		bCompiled = false;
 	}
-	/*	
+	/*
 	if (showStyleEditor)
 		ShowStyleEditor(&showStyleEditor);
 */
@@ -1116,7 +1178,7 @@ void ShowLeftPane(float paneWidth)
 	int saveIconHeight = s_SaveIcon->GetHeight();
 	int restoreIconWidth = s_RestoreIcon->GetWidth();
 	int restoreIconHeight = s_RestoreIcon->GetHeight();
-	
+
 
 	ImGui::GetWindowDrawList()->AddRectFilled(
 		ImGui::GetCursorScreenPos(),
@@ -1294,7 +1356,7 @@ void Application_Frame(bool* show)
 	ed::Begin("Node editor");
 	{
 		auto cursorTopLeft = ImGui::GetCursorScreenPos();
-		
+
 		util::BlueprintNodeBuilder builder(t_HeaderBackground->SRV(), t_HeaderBackground->GetWidth(), t_HeaderBackground->GetHeight());
 
 		for (auto& node : s_Nodes)
@@ -1434,7 +1496,7 @@ void Application_Frame(bool* show)
 
 			builder.End();
 		}
-		
+
 		for (auto& node : s_Nodes)
 		{
 			if (node.Type != NodeType::Tree)
@@ -2059,6 +2121,8 @@ void Application_Frame(bool* show)
 			node = SpawnTreeTask2Node();
 		if (ImGui::MenuItem("Runaway"))
 			node = SpawnTreeTask3Node();
+		if (ImGui::MenuItem("Strafe"))
+			node = SpawnTreeTask4Node();
 
 		if (ImGui::MenuItem("IsSeeEnemy"))
 			node = SpawnTreeCondition1Node();
@@ -2066,7 +2130,9 @@ void Application_Frame(bool* show)
 			node = SpawnTreeCondition2Node();
 		if (ImGui::MenuItem("IsEnemyDead"))
 			node = SpawnTreeCondition3Node();
-////////////////////////////////////////////////////////////////////////
+		if (ImGui::MenuItem("IsInRange"))
+			node = SpawnTreeCondition4Node();
+		////////////////////////////////////////////////////////////////////////
 		ImGui::Separator();
 		if (ImGui::MenuItem("Message"))
 			node = SpawnMessageNode();
@@ -2098,7 +2164,7 @@ void Application_Frame(bool* show)
 						s_Links.back().Color = GetIconColor(startPin->Type);
 						break;
 					}
-					
+
 				}
 			}
 		}
@@ -2137,7 +2203,7 @@ void Application_Frame(bool* show)
 	ed::End();
 
 	ImGui::End();
-	
+
 	//if (Keyboard::Get()->Down('H'))
 	//{
 	//	BulidBehaviorTree(&s_Nodes[0]);
@@ -2150,222 +2216,115 @@ void Application_Frame(bool* show)
 }
 //Xml::XMLElement* element = NULL;
 
- 
-
-bool  RecursiveFunctionForSave(Node* node)
-{
-	uint outputIndex = 0;
-
-	
-	if (!node) return false;
-
-	
-	if (node->IsSaved  == true)
-	{
-
-		for (uint i = 0; i < node->Childs.size(); i++)
-		{
-			if (node->Childs[i]->IsSaved == true)
-			{
-				continue;
-			}
-			outputIndex = i;
-		}
-		if (outputIndex == 0)
-		{
-			EventSystem::Get()->Writer()->String("Back");
-			//element = EventSystem::Get()->GetDoc()->NewElement("NodeName");
-			//element->SetText("Back");
-			//EventSystem::Get()->SetElemnet(element);
-			RecursiveFunctionForSave(node->Parent);
-			return false;
-
-		}
-	}
-	else if (node->Childs.empty())
-	{
-
-		node->IsSaved = true;
-		EventSystem::Get()->Writer()->String("Back");
-		/*element = EventSystem::Get()->GetDoc()->NewElement("NodeName");
-		element->SetText("Back");
-		EventSystem::Get()->SetElemnet(element);*/
-		
-		RecursiveFunctionForSave(node->Parent);
-		return false;
-
-	}
 
 
-	node->IsSaved = true;
-	EventSystem::Get()->Writer()->String(node->Childs[outputIndex]->Name);
-	
-
-	
-		string state = node->Childs[outputIndex]->SavedState;
-
-		string save;
-		
-		
-		for (uint i = 0; i < state.length(); i++)
-		{
-
-			if (state.at(i) == '-')
-			{
-				save.push_back(state.at(i));
-			}
-
-			if (isdigit(state.at(i)) > 0)
-			{
-				save.push_back(state.at(i));
-			}
-
-			if (state.at(i) == 'y')
-			{
-				save.push_back(',');
-			}
-			
-
-		}
-
-
-	auto lastIndex = save.find_last_of(',');
-	auto intactFileName = save.substr(0, lastIndex);
-	float xvalue=atoi(intactFileName.c_str());
-	auto lastName = save.substr(lastIndex+1, save.length());
-	float yvalue = atoi(lastName.c_str());
-		
-	
-	EventSystem::Get()->Writer()->Float(xvalue);
-	EventSystem::Get()->Writer()->Float(yvalue);
-	EventSystem::Get()->Writer()->UInt(node->index);
-	if (node->Childs[outputIndex]->Name != lastNode)
-	{
-		
-		RecursiveFunctionForSave(node->Childs[outputIndex]);
-	}
-	else
-	{
-		
-	   return false;
-	}
-
-	return false;
-
-
-
-
-	
-
-
-}
-void SaveAllNodes()
-{
-	for (auto& node : s_Nodes)
-	{
-		node.IsSaved = false;
-	}
-	EventSystem::Get()->Writer()->UInt(s_Nodes.size()-1);
-	RecursiveFunctionForSave(&s_Nodes[0]);
-	
-}
-
-void LoadAllNodes()
+void LoadAllNodes(const wstring & file)
 {
 	s_NextId = 1;
 	s_Nodes.clear();
 	s_Nodes.shrink_to_fit();
 	s_Links.clear();
 	s_Links.shrink_to_fit();
-	
-	Node* node = SpawnTreeRootNode();     
+
+	Node* node = SpawnTreeRootNode();
 	ed::SetNodePosition(node->ID, ImVec2(-252, 220));
 	ed::NavigateToContent();
 
 	BuildNodes();
-	uint count = EventSystem::Get()->Reader()->UInt();
-	ProgressReport::Get().IncrementJobsDone(ProgressReport::Model);
-	
+	BinaryReader * r = new BinaryReader();
+	r->Open(file);
+
+	uint count = r->UInt();
+
 	uint endPin = 1;
-	
+
 	for (uint i = 0; i < count; i++)
 	{
-		auto currNode = EventSystem::Get()->Reader()->String();
+		
+		auto currNode = r->String();
 		if (currNode == "Back")
 		{
 			count++;
 			continue;
 
 		}
-		
-			
+		float x = r->Float();
+		float y = r->Float();
+		ImVec2 pos = ImVec2(x, y);
+		uint parentIndex = r->UInt();
 
-			
-			ImVec2 pos = ImVec2(EventSystem::Get()->Reader()->Float(), EventSystem::Get()->Reader()->Float());
-			uint parentIndex = EventSystem::Get()->Reader()->UInt();
-			
-			if (currNode == "Selector")
-			{
-				node = SpawnTreeSelectorNode();
-				
-			}
-			else if (currNode == "Sequence")
-			{
-				node = SpawnTreeSequenceNode();
-				
-			}
-			else if (currNode == "SimpleParallel")
-			{
-				node = SpawnTreeParallelNode();
-				
-			}
-			else if (currNode == "IsSeeEnemy")
-			{
-				node = SpawnTreeCondition1Node();
-				
-			}
-			else if (currNode == "IsHealthLow")
-			{
-				node = SpawnTreeCondition2Node();
-				
-			}
-			else if (currNode == "IsEnemyDead")
-			{
-				node = SpawnTreeCondition3Node();
-				
-			}
-			else if (currNode == "Attack")
-			{
-				node = SpawnTreeTaskNode();
-				
-			}
-			else if (currNode == "Patrol")
-			{
-				node = SpawnTreeTask2Node();
-				
-			}
-			else if (currNode == "Runaway")
-			{
-				node = SpawnTreeTask3Node();
-				
-			}
+		if (currNode == "Selector")
+		{
+			node = SpawnTreeSelectorNode();
+
+		}
+		else if (currNode == "Sequence")
+		{
+			node = SpawnTreeSequenceNode();
+
+		}
+		else if (currNode == "SimpleParallel")
+		{
+			node = SpawnTreeParallelNode();
+
+		}
+		else if (currNode == "Condition1")
+		{
+			node = SpawnTreeCondition1Node();
+
+		}
+		else if (currNode == "Condition2")
+		{
+			node = SpawnTreeCondition2Node();
+
+		}
+		else if (currNode == "Condition3")
+		{
+			node = SpawnTreeCondition3Node();
+
+		}
+		else if (currNode == "Condition4")
+		{
+			node = SpawnTreeCondition4Node();
+
+		}
+		else if (currNode == "Action1")
+		{
+			node = SpawnTreeTaskNode();
+
+		}
+		else if (currNode == "Action2")
+		{
+			node = SpawnTreeTask2Node();
+
+		}
+		else if (currNode == "Action3")
+		{
+			node = SpawnTreeTask3Node();
+
+		}
+		else if (currNode == "Action4")
+		{
+			node = SpawnTreeTask4Node();
+
+		}
+
+		ed::SetNodePosition(node->ID, pos);
 		
-			ed::SetNodePosition(node->ID, pos);
-			
-			s_Links.emplace_back(Link(GetNextLinkId(), s_Nodes[parentIndex].Outputs[0].ID, s_Nodes[endPin].Inputs[0].ID));
-			s_Links.back().Color = GetIconColor(s_Nodes[endPin].Inputs[0].Type);
-			
-			endPin++;
-			
-		
-		
-		
+		s_Links.emplace_back(Link(GetNextLinkId(), s_Nodes[parentIndex].Outputs[0].ID, s_Nodes[endPin].Inputs[0].ID));
+		s_Links.back().Color = GetIconColor(s_Nodes[endPin].Inputs[0].Type);
+
+		endPin++;
+
+
+
+
 	}
-
-	BehaviorTree();
+	r->Close();
+	SafeDelete(r);
+	
 	ProgressReport::Get().IncrementJobsDone(ProgressReport::Model);
 }
 
 
 
-								

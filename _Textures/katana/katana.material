@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Materials xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <Material>
+        <Name>Tachi_Sword_SG</Name>
+        <DiffuseFile>Metal07_col.jpg</DiffuseFile>
+        <NormalFile>Metal07_nrm.jpg</NormalFile>
+        <RoughnessFile>Metal07_rgh.jpg</RoughnessFile>
+        <MetallicFile>Metal07_met.jpg</MetallicFile>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+</Materials>

@@ -112,8 +112,47 @@ void DebugLine::Render(ID3D11DeviceContext* context)
 	context->PSSetShader(nullptr, nullptr, 0);
 }
 
+void DebugLine::BoneBoxRender(ID3D11DeviceContext * context, ID3D11ShaderResourceView * srv)
+{
+	context->VSSetShader(BoneBoxVS, nullptr, 0);
+	context->PSSetShader(DebugPS, nullptr, 0);
+	{
+		Matrix temp;
+		D3DXMatrixTranspose(&temp, &(GlobalData::GetVP()));
+		D3D11_MAPPED_SUBRESOURCE MappedResource;
+		context->Map(debugBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+		memcpy(MappedResource.pData, &(temp), sizeof(Matrix));
+		context->Unmap(debugBuffer, 0);
+		context->VSSetConstantBuffers(0, 1, &debugBuffer);
+	}
+	D3D11_MAPPED_SUBRESOURCE subResource;
+	context->Map(DebugVertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &subResource);
+	{
+		memcpy(subResource.pData, vertices.data(), sizeof(VertexColor) * MAX_LINE_VERTEX);
+	}
+	context->Unmap(DebugVertexBuffer, 0);
+
+	context->VSSetShaderResources(0, 1, &srv);
+
+	context->IASetInputLayout(*debugInputLayout);
+	uint debugSlot = 0;
+	uint debugOffset = 0;
+	uint debugStride = sizeof(VertexColor);
+	context->IASetVertexBuffers(debugSlot, 1, &DebugVertexBuffer, &debugStride, &debugOffset);
+
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+
+	context->DrawInstanced(drawCount * 2,3, 0,0);
+
+	drawCount = 0;
+	ZeroMemory(vertices.data(), sizeof(VertexColor) * MAX_LINE_VERTEX);
+	context->VSSetShader(nullptr, nullptr, 0);
+	context->PSSetShader(nullptr, nullptr, 0);
+}
+
 DebugLine::DebugLine()
-	: drawCount(0), DebugVS(nullptr), DebugPS(nullptr), debugInputLayout(nullptr), debugBuffer(nullptr), DebugVertexBuffer(nullptr)
+	: drawCount(0), DebugVS(nullptr), DebugPS(nullptr), debugInputLayout(nullptr), debugBuffer(nullptr), DebugVertexBuffer(nullptr),
+	BoneBoxVS(nullptr)
 
 {
 
@@ -158,11 +197,35 @@ void DebugLine::Initiallize(ID3D11Device * device)
 		&DebugVS
 	));
 
-	debugInputLayout = new InputLayout();
-	debugInputLayout->Create(device, ShaderBlob);
+	
 	SafeRelease(ShaderBlob);
 
 
+	
+	 entryPoint = "BoneBoxVS";
+	
+
+	Check(D3D11_Helper::CompileShader
+	(
+		path,
+		entryPoint,
+		shaderModel,
+		nullptr,
+		&ShaderBlob
+	));
+
+
+
+	Check(device->CreateVertexShader
+	(
+		ShaderBlob->GetBufferPointer(),
+		ShaderBlob->GetBufferSize(),
+		nullptr,
+		&BoneBoxVS
+	));
+	debugInputLayout = new InputLayout();
+	debugInputLayout->Create(device, ShaderBlob);
+	SafeRelease(ShaderBlob);
 	//////////////////////////////////////////////////////////////////////////
 	entryPoint = "DebugPS";
 	shaderModel = "ps_5_0";

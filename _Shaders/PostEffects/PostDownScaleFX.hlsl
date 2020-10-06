@@ -25,19 +25,20 @@ static const float4 LUM_FACTOR = float4(0.299, 0.587, 0.114, 0);
 void DownScaleFirstPass(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID,
     uint3 dispatchThreadId : SV_DispatchThreadID)
 {
+   
     uint2 CurPixel = uint2(dispatchThreadId.x % Res.x, dispatchThreadId.x / Res.x);
 
 	// Skip out of bound pixels
     float avgLum = 0.0;
-     [branch]
+     
     if (CurPixel.y < Res.y)
     {
         int3 nFullResPos = int3(CurPixel * 4, 0);
         float4 downScaled = float4(0.0, 0.0, 0.0, 0.0);
-		[unroll]
+		[unroll(4)]
         for (int i = 0; i < 4; i++)
         {
-			[unroll]
+			[unroll(4)]
             for (int j = 0; j < 4; j++)
             {
                 downScaled += HDRTex.Load(nFullResPos, int2(j, i));
@@ -52,7 +53,7 @@ void DownScaleFirstPass(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_Gro
     GroupMemoryBarrierWithGroupSync(); // Sync before next step
 
 	// Down scale from 1024 to 256
-     [branch]
+     
     if (groupThreadId.x % 4 == 0)
     {
 		// Calculate the luminance sum for this step
@@ -69,7 +70,7 @@ void DownScaleFirstPass(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_Gro
     GroupMemoryBarrierWithGroupSync(); // Sync before next step
 
 	// Downscale from 256 to 64
-     [branch]
+     
     if (groupThreadId.x % 16 == 0)
     {
 		// Calculate the luminance sum for this step
@@ -86,7 +87,7 @@ void DownScaleFirstPass(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_Gro
     GroupMemoryBarrierWithGroupSync(); // Sync before next step
 
 	// Downscale from 64 to 16
-    [branch]
+    
     if (groupThreadId.x % 64 == 0)
     {
 		// Calculate the luminance sum for this step
@@ -103,7 +104,7 @@ void DownScaleFirstPass(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_Gro
     GroupMemoryBarrierWithGroupSync(); // Sync before next step
 
 	// Downscale from 16 to 4
-     [branch]
+     
     if (groupThreadId.x % 256 == 0)
     {
 		// Calculate the luminance sum for this step
@@ -120,7 +121,7 @@ void DownScaleFirstPass(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_Gro
     GroupMemoryBarrierWithGroupSync(); // Sync before next step
 
 	// Downscale from 4 to 1
-     [branch]
+     
     if (groupThreadId.x == 0)
     {
 		// Calculate the average lumenance for this thread group
@@ -149,7 +150,7 @@ void DownScaleSecondPass(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_Gr
 {
 	// Fill the shared memory with the 1D values
     float avgLum = 0.0;
-     [branch]
+     
     if (dispatchThreadId.x < GroupSize)
     {
         avgLum = AverageValues1D[dispatchThreadId.x];
@@ -159,7 +160,7 @@ void DownScaleSecondPass(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_Gr
     GroupMemoryBarrierWithGroupSync(); // Sync before next step
 
 	// Downscale from 64 to 16
-     [branch]
+     
     if (dispatchThreadId.x % 4 == 0)
     {
 		// Calculate the luminance sum for this step
@@ -176,7 +177,7 @@ void DownScaleSecondPass(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_Gr
     GroupMemoryBarrierWithGroupSync(); // Sync before next step
 
 	// Downscale from 16 to 4
-     [branch]
+     
     if (dispatchThreadId.x % 16 == 0)
     {
 		// Calculate the luminance sum for this step
@@ -193,7 +194,7 @@ void DownScaleSecondPass(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_Gr
     GroupMemoryBarrierWithGroupSync(); // Sync before next step
 
 	// Downscale from 4 to 1
-     [branch]
+     
     if (dispatchThreadId.x == 0)
     {
 		// Calculate the average luminace
@@ -226,7 +227,7 @@ void BloomReveal(uint3 dispatchThreadId : SV_DispatchThreadID)
     uint2 CurPixel = uint2(dispatchThreadId.x % Res.x, dispatchThreadId.x / Res.x);
 
 	// Skip out of bound pixels
-     [branch]
+     
     if (CurPixel.y < Res.y)
     {
         float4 color = HDRDownScaleTex.Load(int3(CurPixel, 0));

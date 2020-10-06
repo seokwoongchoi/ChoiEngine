@@ -7,7 +7,7 @@ SSAO::SSAO(ID3D11Device* device, uint width, uint height)
 	MiniDepthBuffer(NULL), MiniDepthUAV(NULL), MiniDepthSRV(NULL),
 	DepthDownscaleCS(NULL), ComputeCS(NULL), DownscaleDesc{}, Params{}
 {
-	Params.Radius = 0.8f;
+	Params.Radius = 0.2f;
 	Params.SSAOSampRadius = 0.9f;
 
 	this->width = width / 2;

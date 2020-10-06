@@ -4,7 +4,8 @@ class HDR
 public:
 	explicit HDR(ID3D11Device* device, uint width = 1280, uint height = 720);
 	~HDR();
-
+	HDR(const HDR &) = delete;
+	HDR & operator= (const HDR &) = delete;
 	void Pass(UINT val) { pass = val; }
 	void PostProcessing(ID3D11DeviceContext* DC, ID3D11ShaderResourceView* pHDRSRV, ID3D11RenderTargetView * oldTarget, ID3D11ShaderResourceView* dsv);
 	void DownScale(ID3D11DeviceContext* DC,ID3D11ShaderResourceView* srv);

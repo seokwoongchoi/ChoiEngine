@@ -18,6 +18,30 @@ struct VertexOutput
  
 };
 
+Texture2D<float4> Input : register(t0);
+VertexOutput BoneBoxVS(VertexColor input, uint InstID:SV_InstanceID)
+{
+  
+    VertexOutput output;
+    //mul : Çà·Ä°öÀÌÀÚ º¤ÅÍ°ö
+    uint index = input.Color.a;
+  
+    matrix World;
+    World._11_12_13_14 = Input[int2(0 + (4 * InstID), index)];
+    World._21_22_23_24 = Input[int2(1 + (4 * InstID), index)];
+    World._31_32_33_34 = Input[int2(2 + (4 * InstID), index)];
+    World._41_42_43_44 = Input[int2(3 + (4 * InstID), index)];
+    //output.Position = mul(input.Position, Input[input.Color.a].Bone);
+    output.Position = mul(input.Position, World);
+    output.Position = mul(output.Position, WVP);
+    output.Color = input.Color;
+   // output.Color = Input[input.Color.a].BoneColor;
+   
+    
+    return output;
+}
+
+
 VertexOutput DebugVS(VertexColor input)
 {
    

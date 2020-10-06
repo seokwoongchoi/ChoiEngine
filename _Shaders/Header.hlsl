@@ -43,6 +43,16 @@ struct VertexModelOutput
    
    // float4 Cull : SV_CullDistance0;
 };
+
+struct VertexModelOutputReflection
+{
+    float4 Position : SV_Position0;
+    float2 Uv : Uv0;
+    float3 Normal : Normal0;
+    float3 Tangent : Tangent0;
+   
+    float4 Cull : SV_CullDistance0;
+};
 Texture2D<float4> InstTransforms : register(t0);
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -135,6 +145,7 @@ PS_GBUFFER_OUT PS(VertexModelOutput In)
 float4 ReflectionPS(VertexModelOutput In) : SV_Target
 {
   
+  
     float3 DiffuseColor = DiffuseMap.Sample(LinearSampler, In.Uv).rgb;
     float3 bump = 0;
     GetBumpMapCoord(In.Uv, In.Normal, In.Tangent, bump);
@@ -151,8 +162,16 @@ float4 ReflectionPS(VertexModelOutput In) : SV_Target
 
 float4 ForwardPS(VertexModelOutput In) : SV_Target
 {
-    //clip(In.Position.y +0.6f);
+ 
     float3 DiffuseColor = DiffuseMap.Sample(LinearSampler, In.Uv).rgb;
-  
+    float3 bump = 0;
+    GetBumpMapCoord(In.Uv, In.Normal, In.Tangent, bump);
+    DiffuseColor *= DiffuseFactor.xyz;
+    
+     
+    float3 lightDir = -LightDir.xyz;
+    float ndotl = dot(bump, lightDir);
+    
+    float3 finalColor = DiffuseColor * ndotl;
     return float4(DiffuseColor, 1.0f);
 }

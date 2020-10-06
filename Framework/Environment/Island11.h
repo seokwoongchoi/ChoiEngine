@@ -4,7 +4,7 @@
 
 #define terrain_gridpoints					512
 #define terrain_numpatches_1d				64
-#define terrain_geometry_scale				2.0f
+#define terrain_geometry_scale				1.0f
 #define terrain_maxheight					30.0f 
 #define terrain_minheight					-30.0f 
 #define terrain_fractalfactor				0.68f;
@@ -49,7 +49,7 @@ struct VertexIsland
 class Island11
 {
 public:
-	explicit Island11(ID3D11Device* device);
+	explicit Island11(ID3D11Device* devicem,class QuadTree* tree);
 	~Island11();
 	Island11(const Island11&) = delete;
 	Island11& operator=(const Island11&) = delete;
@@ -62,7 +62,7 @@ public:
 	void Refraction(ID3D11DeviceContext* context,ID3D11ShaderResourceView* srv, ID3D11Texture2D* texture);
 	void Water(ID3D11DeviceContext* context);
 private:
-	void CreateTerrain();
+	void CreateTerrain(QuadTree* tree);
 	void ReCreateBuffers();
 	void LoadTextures();
 private:
@@ -145,7 +145,7 @@ private:
 
 
 private:
-	float				height[terrain_gridpoints + 1][terrain_gridpoints + 1];
+	
 	D3DXVECTOR3			normal[terrain_gridpoints + 1][terrain_gridpoints + 1];
 	D3DXVECTOR3			tangent[terrain_gridpoints + 1][terrain_gridpoints + 1];
 	D3DXVECTOR3			binormal[terrain_gridpoints + 1][terrain_gridpoints + 1];

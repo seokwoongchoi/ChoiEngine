@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Materials xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <Material>
+        <Name>Material</Name>
+        <DiffuseFile>Old_lantern_UV_Diffuse.png</DiffuseFile>
+        <NormalFile>Old_lantern_UV_Normal.png</NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile>Old_lantern_UV_SPecular.png</MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+</Materials>

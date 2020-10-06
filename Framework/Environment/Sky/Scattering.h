@@ -47,7 +47,7 @@ private:
 	uint stride = sizeof(VertexTexture);
 
 private:
-	ID3D11DepthStencilState*  NoDepth;
+	ID3D11DepthStencilState*  depthStencilState;
 	
 };
 
