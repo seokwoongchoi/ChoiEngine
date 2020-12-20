@@ -23,7 +23,6 @@ struct QuadTreeNode
 	float dist = -1.0f;
 
 
-
 };
 
 class QuadTree
@@ -38,6 +37,11 @@ public:
 	void Intersection(Matrix* matrix);
 	bool InBounds(uint row, uint col);
 	void CreateQuadTree(Vector2 lt,Vector2 rb,bool calcHeight=false);
+
+	shared_ptr<QuadTreeNode> GetRoot()
+	{
+		return root;
+	}
 
 public:
 	float				heightMap[terrain_gridpoints + 1][terrain_gridpoints + 1];

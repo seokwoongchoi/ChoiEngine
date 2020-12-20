@@ -42,6 +42,7 @@ VertexOutput BoneBoxVS(VertexColor input, uint InstID:SV_InstanceID)
 }
 
 
+
 VertexOutput DebugVS(VertexColor input)
 {
    

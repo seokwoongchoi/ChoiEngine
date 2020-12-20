@@ -176,7 +176,9 @@ copy /Y "$(SolutionDir)Debug\Framework.pdb" "$(SolutionDir)Editor\</Command>
     <ClCompile Include="Environment\Sky\Cloud.cpp" />
     <ClCompile Include="Environment\Sky\Scattering.cpp" />
     <ClCompile Include="Environment\Sky\Sky.cpp" />
+    <ClCompile Include="EventSystems\Renderers\ShadowRenderer.cpp" />
     <ClCompile Include="Particles\ParticleSimulation.cpp" />
+    <ClCompile Include="Particles\SoftParticle.cpp" />
     <ClCompile Include="Particles\Sparks.cpp" />
     <ClCompile Include="EventSystems\Transforms.cpp" />
     <ClCompile Include="Particles\Smoke.cpp" />
@@ -202,7 +204,7 @@ copy /Y "$(SolutionDir)Debug\Framework.pdb" "$(SolutionDir)Editor\</Command>
     <ClCompile Include="Utility\Path.cpp" />
     <ClCompile Include="Utility\String.cpp" />
     <ClCompile Include="Utility\Xml.cpp" />
-    <ClCompile Include="EventSystems\Renderer.cpp" />
+    <ClCompile Include="EventSystems\Renderers\Renderer.cpp" />
     <ClCompile Include="Resources\Material.cpp" />
     <ClCompile Include="Core\Engine.cpp" />
     <ClCompile Include="Framework.cpp">
@@ -223,7 +225,9 @@ copy /Y "$(SolutionDir)Debug\Framework.pdb" "$(SolutionDir)Editor\</Command>
     <ClInclude Include="BehaviorTree\BehaviorTree.h" />
     <ClInclude Include="EventSystems\EventSystem.h" />
     <ClInclude Include="EventSystems\EffectSystem.h" />
+    <ClInclude Include="EventSystems\Renderers\ShadowRenderer.h" />
     <ClInclude Include="Particles\ParticleSimulation.h" />
+    <ClInclude Include="Particles\SoftParticle.h" />
     <ClInclude Include="Particles\Sparks.h" />
     <ClInclude Include="EventSystems\Transforms.h" />
     <ClInclude Include="Particles\Smoke.h" />
@@ -258,7 +262,7 @@ copy /Y "$(SolutionDir)Debug\Framework.pdb" "$(SolutionDir)Editor\</Command>
     <ClInclude Include="Utility\Xml.h" />
     <ClInclude Include="GlobalDatas\GlobalData.h" />
     <ClInclude Include="Viewer\Camera.h" />
-    <ClInclude Include="EventSystems\Renderer.h" />
+    <ClInclude Include="EventSystems\Renderers\Renderer.h" />
     <ClInclude Include="Resources\Material.h" />
     <ClInclude Include="Core\Engine.h" />
     <ClInclude Include="Framework.h" />

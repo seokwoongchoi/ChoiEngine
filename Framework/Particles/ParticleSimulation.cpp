@@ -8,7 +8,8 @@ ParticleSimulation::ParticleSimulation(ID3D11Device * device):
 	StructuredBufferSRV(nullptr),
 	StructuredBufferUAV(nullptr),
 	updateCS(nullptr),
-	VS(nullptr), GS(nullptr), PS(nullptr), sampler(nullptr), particleTexture(nullptr), preivewVS(nullptr)
+	VS(nullptr), GS(nullptr), PS(nullptr), sampler(nullptr), particleTexture(nullptr), preivewVS(nullptr), maintainVS(nullptr)
+	
 {
 
 	SafeRelease(sampler);

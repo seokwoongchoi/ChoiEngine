@@ -254,7 +254,7 @@ void ParticleEditor::SelectParticleType(const ImVec2 & size)
 			    ImGui::SliderFloat("velocityScale", &spark->velocityScale, 0.1f, 10.0f);
 				ImGui::SliderFloat("clusterScale", &spark->clusterScale, 0.1f, 10.0f);
 			
-				ImGui::SliderFloat("Intensity", &spark->wvpDesc.intensity, 0.1, 2.0f);
+				ImGui::SliderFloat("Intensity", &spark->wvpDesc.intensity, 0.1f, 2.0f);
 				ImGui::SliderFloat("pontSize", &spark->wvpDesc.pontSize,0.1f,5.0f);
 				ImGui::SliderFloat("Time", &spark->simulateDesc.timer,0.0,2.0f);
 			}
@@ -291,29 +291,29 @@ void ParticleEditor::SelectParticleType(const ImVec2 & size)
 			{
 
 				HWND hWnd = NULL;
-				function<void(wstring)> f = bind(&ParticleEditor::Load, this, placeholders::_1);
-				Path::OpenFileDialog(L"", Path::EveryFilter, L"../_ParticleDatas/", f, hWnd);
+				function<void(wstring,bool)> f = bind(&ParticleEditor::Load, this, placeholders::_1, placeholders::_2);
+				Path::OpenFileDialog(L"", Path::EveryFilter, L"../_ParticleDatas/",false, f, hWnd);
 
 			}
 			ImGui::Text("Sword Hit:");
 			ImGui::SameLine();
 			
 			const char* BoneColliers[] = { "BodyCollider" ,"HeadCollider", "SwordCollider" };
-			static const char* BoneCollier = BoneColliers[0];
-			if (ImGui::BeginCombo("##BoneCollider", BoneCollier))
+			
+			if (ImGui::BeginCombo("##BoneCollider", BoneCollider.c_str()))
 			{
 				for (uint i = 0; i < IM_ARRAYSIZE(BoneColliers); i++)
 				{
-					bool bSelected = BoneCollier == BoneColliers[i];
+					bool bSelected = BoneCollider == BoneColliers[i];
 					if (ImGui::Selectable(BoneColliers[i], bSelected))
 					{
-						BoneCollier = BoneColliers[i];
-						/*if (BoneCollier == "BodyCollider")
-							brushDesc.BrushShape = 0;
-						else if (brushShape == "Square")
-							brushDesc.BrushShape = 1;
-						else if (brushShape == "Circle")
-							brushDesc.BrushShape = 2;*/
+						BoneCollider = BoneColliers[i];
+						if (BoneCollider == "BodyCollider")
+							BindEffectBone = 0;
+						else if (BoneCollider == "HeadCollider")
+							BindEffectBone = 1;
+						else if (BoneCollider == "SwordCollider")
+							BindEffectBone = 2;
 
 					}
 
@@ -407,7 +407,7 @@ void ParticleEditor::Compile()
 	if (spark)
 	{
 		BinaryWriter* w = new BinaryWriter();
-		 path = L"../_ParticleDatas/Sparks"+to_wstring(ID)+L".particle";
+		 path = L"../_ParticleDatas/Sparks"+to_wstring(BindEffectBone)+L".particle";
 		w->Open(path);
 		w->UInt(spark->simulateDesc.numParticles);
 		w->Float(spark->simulateDesc.softeningSquared);
@@ -419,6 +419,7 @@ void ParticleEditor::Compile()
 		w->Float(spark->simulateDesc.timer);
 		string temp = String::ToString(textureName);
 		w->String(temp);
+		w->Int(BindEffectBone);
 		w->Close();
 		SafeDelete(w);
 	
@@ -426,7 +427,7 @@ void ParticleEditor::Compile()
 	}
 }
 
-void ParticleEditor::Load(const wstring & file)
+void ParticleEditor::Load(const wstring & file, bool IsLevel)
 {
 	auto fileName = Path::GetFileNameWithoutExtension(file);
 	auto temp = fileName.substr(0, fileName.length()-1);
@@ -461,12 +462,28 @@ void ParticleEditor::Load(const wstring & file)
 			particleTexture->Load(device, String::ToWString(temp));
 			textureName = String::ToWString(temp);
 		}
-
+		BindEffectBone=r->Int();
+		switch (BindEffectBone)
+		{
+		case 0:
+			BoneCollider = "BodyCollider";
+			break;
+		case 1:
+			BoneCollider = "HeadCollider";
+			break;
+		case 2:
+			BoneCollider = "SwordCollider";
+			break;
+		}
 		r->Close();
 
 		SafeDelete(r);
 	}
 	
+	if (IsLevel)
+	{
+		Compile();
+	}
 
 	
 }

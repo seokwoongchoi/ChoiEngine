@@ -13,7 +13,12 @@ enum class ReadParticleType :uint
 	Blood,
 	Smoke
 };
-
+struct shadowDesc
+{
+	Vector3 Position;
+	Vector4 Indices;
+	Vector4 Weights;
+};
 struct GlobalViewData
 {
 	Matrix view;

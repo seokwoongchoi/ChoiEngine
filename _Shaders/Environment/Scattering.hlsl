@@ -210,12 +210,12 @@ struct PS_GBUFFER_OUT
 PS_GBUFFER_OUT PackGBuffer(float3 BaseColor, float3 Normal, float metallic, float roughness, float terrainMask = 1)
 {
     PS_GBUFFER_OUT Out;
-    Out.ColorSpecInt = float4(BaseColor.rgb, metallic);
-    Out.Specular = float4(0.0, 0.0, 0.0, terrainMask);
-    Out.Normal = float4(Normal.rgb, roughness);
+    Out.ColorSpecInt = float4(BaseColor.rgb, terrainMask);
+    Out.Specular = float4(roughness, metallic, 0.0, 0.0);
+    Out.Normal = float4(Normal.rgb * 0.5 + 0.5, 0.0);
     return Out;
 }
-float4 PS_Dome(VertexOutput_Dome input) :SV_Target
+PS_GBUFFER_OUT PS_Dome(VertexOutput_Dome input) : SV_Target
 {
     float3 sunDirection = -normalize(LightDir);
 
@@ -240,8 +240,13 @@ float4 PS_Dome(VertexOutput_Dome input) :SV_Target
     color += max(0, (1 - color.rgb)) * float3(0.05f, 0.05f, 0.1f);
     float3 finalColor = color + StarMap.Sample(LinearSampler, input.Uv).rgb * saturate(-sunDirection.y);
 
+    PS_GBUFFER_OUT Out;
+    Out.ColorSpecInt = float4(finalColor.rgb, 0.0f);
+   // Out.Specular = float4(0, 0, 0.0, 0.0);
+   // Out.Normal = float4(0,0,0, 0.0);
+    return Out;
   //  return PackGBuffer(finalColor, float3(input.oPosition), 0, 0, 0);
-    return float4(finalColor, 1);
+    //return float4(finalColor, 1);
    
 
 }

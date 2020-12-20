@@ -1084,6 +1084,8 @@ bool  RecursiveFunction(Node* node, BinaryWriter* w)
 }
 void BehaviorTree()
 {
+	if (s_Nodes.size() < 2)
+		return;
 	BulidBehaviorTree(&s_Nodes[0]);
 
 
@@ -1150,7 +1152,7 @@ void ShowLeftPane(float paneWidth)
 	if (ImGui::Button("Compile"))
 	{
 		bCompiled = true;
-
+	
 	}
 
 	ImGui::EndHorizontal();
@@ -2324,6 +2326,12 @@ void LoadAllNodes(const wstring & file)
 	SafeDelete(r);
 	
 	ProgressReport::Get().IncrementJobsDone(ProgressReport::Model);
+}
+
+void Compile()
+{
+	BehaviorTree();
+
 }
 
 

@@ -1,5 +1,5 @@
 #pragma once
-#define MAX_MODEL_TEXTURE 4
+#define MAX_MODEL_TEXTURE 5
 class Material
 {
 public:
@@ -49,29 +49,38 @@ public:
 		metallicFile = Path::GetFileName(file);
 		textures[3].Load(device,file,nullptr, isInclude); 
 	}
+
+	/*void HeightMap(wstring& file, bool isInclude = false)
+	{
+		heightFile = Path::GetFileName(file);
+		textures[4].Load(device, file, nullptr, isInclude);
+	}*/
 	
 
 	Texture& DiffuseMap() const { return  textures[0]; }
 	Texture& NormalMap() const { return  textures[1]; }
 	Texture& RoughnessMap() const { return textures[2]; }
 	Texture& MetallicMap()const { return textures[3]; }
+	//Texture& HeightMap()const { return textures[4]; }
 	
 	wstring& DiffuseFile()  { return  diffuseFile; }
 	wstring& NormalFile()  { return normalFile; }
 	wstring& RoughnessFile()  { return roughnessFile; }
 	wstring& MetallicFile() { return metallicFile; }
+	//wstring& HeightFile() { return heightFile; }
 private:
 	wstring name;
 private:
 	ID3D11Device* device;
 	Texture* textures;
-	ID3D11ShaderResourceView* arrSRV[5];
+	ID3D11ShaderResourceView* arrSRV[4];
 	ID3D11ShaderResourceView* srvArray[2];
 
 	wstring diffuseFile;
 	wstring normalFile;
 	wstring roughnessFile;
 	wstring metallicFile;
+	//wstring heightFile;
 
 private:
 	struct ColorDesc
@@ -79,6 +88,7 @@ private:
 		
 		Color Diffuse = Color(1, 1, 1, 1);
 	    Color Specular = Color(1, 1, 1, 1);
+	
 
 	
 	} colorDesc;

@@ -1,13 +1,18 @@
 #include "Framework.h"
 #include "ActorController.h"
 #include "Viewer/Orbit.h"
-#include "Animator.h"
+
 
 ActorController::ActorController(Animator* animator)
 	:animator(animator), bStart(false), bPause(false), bAttack(false), bNextCombo(false), ComboCount(0)
 {
 	orbit = new Orbit();
 	desc = D3D::GetDesc();
+
+	keys.emplace_back('A');
+	keys.emplace_back('D');
+	keys.emplace_back('W');
+	keys.emplace_back('S');
 }
 
 ActorController::~ActorController()
@@ -41,125 +46,143 @@ void ActorController::Update()
 		orbit->SetMoveValue(Vector2(0.0f, 0.0f));
 		return;
 	}
-	const Matrix& temp = animator->GetInstMatrix(0, 0);
-
-	Forward = Vector3(temp._31, temp._32, temp._33);
-	Right = Vector3(temp._11, temp._12, temp._13);
-
-	{
-		POINT point;
-		GetCursorPos(&point);
-
-		moveValue.x = static_cast<float>(point.x - m_pt.x);
-		moveValue.y = static_cast<float>(point.y - m_pt.y);
-		orbit->SetMoveValue(moveValue);
-		rotation.y += (moveValue.x*0.15f)*0.04f;
-
-		SetCursorPos(m_pt.x, m_pt.y);
-	}
 	
-
-
-	D3DXMatrixDecompose(&s, &q, &p, &temp);
+	animator->GetInstMatrix(&instMatrix,0, 0);
+	animator->GetFoward(&Forward, 0, 0);
+	tweenDesc = animator->tweenDesc[0];
+	D3DXMatrixDecompose(&s, &q, &position, &instMatrix);
 	D3DXMatrixScaling(&S, s.x, s.y, s.z);
-	D3DXMatrixRotationY(&R, rotation.y);
+	prevPosition = position;
+	prevRotation = rotation.y;
 
-	prevPosition = p;
-	position = p;
-	bool bMoveSide = false;
 	
+
+
 	bool bJump = false;
 	
-
-	
-	if (Keyboard::Get()->Press('W'))
+	bool walking = false;
+	float direction = -1.0f;
+	if (Keyboard::Get()->Press(&keys[0]))
 	{
-
-		position -= 200.0f*Forward* Time::Delta();
-
+		speed += Time::Delta()*100.0f;
+		walking = true;
 	}
-	else if (Keyboard::Get()->Press('S'))
+	if (speed > 400.0f)
+		speed = 400.0f;
+	if (Keyboard::Get()->Press('S'))
 	{
-
-		position += 200.0f*Forward* Time::Delta();
-
+		direction = 1.0f;
+		
 	}
 
 	if (Keyboard::Get()->Press('A'))
 	{
 
-
-		position += 200.0f*Right* Time::Delta();
-		bMoveSide = true;
-
+		count++;
+		if (count < 50)
+		{
+			rotation.y -= Time::Delta()*7.0f;
+		}
 	}
 	else if (Keyboard::Get()->Press('D'))
 	{
-
-		position -= 200.0f*Right* Time::Delta();
-
-		bMoveSide = true;
+		count++;
+		if (count <50)
+		{
+			rotation.y += Time::Delta()*7.0f;
+		}
+		
 	}	
-
-
+	if (walking)
+	{
+		
+		position += (direction*speed * Forward* Time::Delta());
+	}
 	
+
+	velocity = D3DXVec3Length(&(position - prevPosition));
+	if (velocity > 0.0f && !bAttack && !bJump)
+	{
+		tweenDesc.state = ActorState::Move;
+		if(speed>300.0f)
+			tweenDesc.state = ActorState::Run;
+	}
+
 	if (Keyboard::Get()->Press(0x20))
 	{
-		animator->tweenData[0].speed = 1.1f;
-		animator->tweenDesc[0].state = ActorState::Jump;
+		animator->tweenData[0].speed = 1.5f;
+		tweenDesc.state = ActorState::Jump;
+
+	/*	float height= animator->tweenDesc[0].Curr.CurrFrame<10?
+			1.0f*Time::Delta() :-1.0f*Time::Delta();
+		position.y += height;*/
+		
 		bJump = true;
 	}
 
 	
-	if (Keyboard::Get()->Up('W')|| Keyboard::Get()->Up('S')|| Keyboard::Get()->Up('A')|| Keyboard::Get()->Up('D'))
-	{
-		animator->tweenDesc[0].state = ActorState::Idle;
-	}
-
-
-	velocity = D3DXVec3Length(&(position - prevPosition));
-
+	
 	
 	if (Mouse::Get()->Down(0))
 	{
-		animator->tweenData[0].speed = 1.5f;
-		animator->tweenDesc[0].state = ActorState::Attack;
-		bAttack = true;
-		//Attacking();
-		//OnCheckCombo();
-
-		//OnEndAttack();
+		
+		Attacking();
+		
 	}
-
-	//if(!animator->IsAtacking(0))
-	//{
-	//	OnFinishCombo();
-	//	animator->tweenData[0].speed = 1.0f;
-	//}
-
-
-
-	if (velocity > 0.0f && !bAttack &&!bJump)
+	else if (Mouse::Get()->Down(1))
 	{
-		animator->tweenDesc[0].state = ActorState::Move;
-		if(bMoveSide)
-			animator->tweenDesc[0].state = ActorState::MoveSide;
-
+		
+		tweenDesc.state = ActorState::MoveSide;
 		
 	}
 
-	bAttack = false;
-	
-	
+	/*thread worker1([&]() {
+		AttackNotify1();
+		AttackNotify2();
+		AttackNotify3(); });
 
-	orbit->SetTargetPosition(Vector3(position.x, position.y+2 , position.z));
-	D3DXMatrixTranslation(&T, position.x, position.y, position.z);
-	const Matrix& result = S * R*T;
+	worker1.join();*/
 
-	if(Math::Abs(moveValue.x)>0||Math::Abs( moveValue.y)>0||velocity>0)
-	animator->SetInstMatrix(0, 0, result);
-	orbit->Update();
 	
+	{
+		POINT point;
+		GetCursorPos(&point);
+		Vector2 moveValue;
+		moveValue.x = static_cast<float>(point.x - m_pt.x);
+		moveValue.y = static_cast<float>(point.y - m_pt.y);
+		orbit->SetMoveValue(moveValue);
+		orbit->SetTargetPosition(Vector3(position.x, position.y + 2, position.z));
+		orbit->Update();
+		//rotation.y += (moveValue.x*0.15f)*delta;
+     	SetCursorPos(m_pt.x, m_pt.y);
+	}
+	
+	if (velocity > 0.0f || rotation.y != prevRotation)
+	{
+		D3DXMatrixRotationY(&R, rotation.y);
+		D3DXMatrixTranslation(&T, position.x, position.y, position.z);
+		 result = S * R*T;
+		animator->SetInstMatrix(&result,0, 0);
+	}
+
+	if (Keyboard::Get()->Up('A') || Keyboard::Get()->Up('D'))
+	{
+		count = 0;
+	}
+	if (!Keyboard::Get()->Press('W')&&Keyboard::Get()->Up(&keys[0]))
+	{
+		tweenDesc.state = ActorState::Idle;
+		speed = 200.0f;
+	}
+	if (tweenDesc.state == ActorState::Idle)
+	{
+		bAttack = false;
+		bNextCombo = false;
+
+		ComboCount = 0;
+
+	}
+	animator->tweenDesc[0].state = tweenDesc.state;
 }
 
 void ActorController::Stop()
@@ -179,52 +202,46 @@ void ActorController::Attacking()
 
 
 	bAttack = true;
-	switch (ComboCount)
+	
+	if (ComboCount < 1)
+	{
+		animator->tweenData[0].speed = 2.0f;
+		tweenDesc.state = ActorState::Attack;
+	}
+	//else if( ComboCount < 2)
+	//{
+	//	animator->tweenData[0].bContinue = true;
+	//	//animator->tweenData[0].farmeDelta = 20;
+	//	animator->tweenData[0].speed = 1.5f;
+	//	tweenDesc.state = ActorState::Attack2;
+	//}
+ //
+	//else 
+	//{
+	//	animator->tweenData[0].bContinue = true;
+	//	animator->tweenData[0].farmeDelta =20;
+	//	animator->tweenData[0].speed = 2.0f;
+	//	tweenDesc.state = ActorState::Attack3;
+	//}
+	/*switch (ComboCount)
 	{
 	case 0:
 	{
-		animator->tweenData[0].speed = 1.5f;
-		animator->tweenDesc[0].state = ActorState::Attack;
+		
 	}
 		
 		break;
 	case 1:
 	{
-		animator->tweenData[0].bContinue = true;
-		animator->tweenData[0].speed = 1.2f;
-		//animator->tweenDesc[0].state = ActorState::Attack2;
+		
 	}
 	
 		break;
 	case 2:
-		//animator->tweenDesc[0].state = ActorState::Attack3;
+		animator->tweenData[0].bContinue = true;
+		animator->tweenData[0].speed = 1.2f;
+		tweenDesc.state = ActorState::Attack3;
 		break;
-	}
+	}*/
 }
 
-void ActorController::OnEndAttack()
-{
-	bAttack = false;
-	if (bNextCombo)
-	{
-
-		Attacking();
-		bNextCombo = false;
-	}
-	else
-		ComboCount = 0;
-}
-
-void ActorController::OnCheckCombo()
-{
-	if (bNextCombo)
-		ComboCount++;
-}
-
-void ActorController::OnFinishCombo()
-{
-	bAttack = false;
-	bNextCombo = false;
-
-	ComboCount = 0;
-}

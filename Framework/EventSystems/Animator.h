@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ColliderSystem.h"
-
+#include "Resources/Mesh.h"
 enum class ActorState
 {
 	Idle,
@@ -10,7 +10,7 @@ enum class ActorState
 	Attack,
 	//Attack2, 
 	//Attack3,
-	//Run,
+	Run,
 	Jump,
 	StandingReaction,
 	Blocking,
@@ -29,9 +29,9 @@ struct KeyframeDesc
 };
 struct TweenDesc
 {
-	float TakeTime = 0.2f;
 	float TweenTime = 0.0f;
-	float ChangeTime = 0.0f;
+	uint  totalCount = 0;
+	uint maxBoneCount = 0;
 	ActorState state = ActorState::Idle;
 
 	KeyframeDesc Curr;
@@ -43,7 +43,7 @@ struct TweenDesc
 		Next.Clip = -1;
 	}
 };
-class Animator:public ColliderSystem
+class Animator :public ColliderSystem
 {
 	friend class Transforms;
 	friend class PhysicsSystem;
@@ -62,10 +62,15 @@ public:
 	explicit Animator(ID3D11Device* device);
 	~Animator();
 private:
-	
+
 	Animator(const Animator &) = delete;
 	Animator & operator= (const Animator &) = delete;
+
+	
 public:
+	inline ID3D11Buffer* TweenBuffer() {
+		return tweenBuffer;
+	}
 	void UpdateInstBuffer(ID3D11DeviceContext* context);
 	bool ComputeBarier(ID3D11DeviceContext * context);
 public:
@@ -75,30 +80,17 @@ public:
 	}
 	void CreateQuadTree();
 public:
-	//inline bool IsAtacking(const uint& index)
-	//{
-	//	if (tweenDesc[index].Curr.Clip != 3 && tweenDesc[index].Curr.Clip != 4)return false;
-	//	auto& curr = tweenDesc[index].Curr;
-	//	const uint& frameCount = clips[curr.Clip]->FrameCount();
-	//
-	//	if (curr.CurrFrame > 10&& curr.CurrFrame<frameCount-5)
-	//	{
-	//		return true;
-
-	//	}
-	//	return false;
-	//}
-	//
+ 
 	 void BoxRender();
 public:
 	const uint& DrawCount(const uint& actorIndex);
 	const uint& PrevDrawCount(const uint& actorIndex);
 private:
 	Matrix temp;
-	void FrustumCulling(const uint& index);
+	uint FrustumCulling(const uint& index);
 public:
 	void BindPipeline(ID3D11DeviceContext* context);
-	void Update(const uint& actorIndex);
+	uint Update(const uint& actorIndex);
 	void Compute(ID3D11DeviceContext* context, ID3D11UnorderedAccessView* physicsUAV);
 	
 public:
@@ -107,14 +99,15 @@ public:
 	void ReadBoneBox(BinaryReader* r, const uint & actorIndex);
 	void ReadBehaviorTree(BinaryReader* r, const uint & actorIndex);
 	void ReadClip(const wstring& name);
-
+public:
+	void IintAnimData();
 private:
 	class QuadTree* tree;
 private:
 	class Transforms* transforms;
 private:
 
-
+	vector<shared_ptr<class ModelClip>> clips;
 
 	inline void PlayNextClip(int instance, int clip, float speed = 1.0f)
 	{
@@ -130,6 +123,7 @@ private:
 		float RunningTime;
 		float speed;
 		bool bContinue;
+		int farmeDelta=0;
 	}tweenData[20];
 
 	vector<TweenDesc> tweenDesc;
@@ -138,6 +132,10 @@ private:
 private:
 	ID3D11Texture2D* texture;
 	ID3D11ShaderResourceView* srv;
+
+	ID3D11Texture2D* outputTexture;
+	ID3D11ShaderResourceView* outputSRV;
+	ID3D11UnorderedAccessView* outputUAV;
 private:
 	ID3D11Device* device;
 
@@ -162,6 +160,8 @@ private:
 	ID3D11Texture2D*          boneBoxTexture;
 	ID3D11ShaderResourceView* boneBoxSrv;
 
-	vector<shared_ptr<class ModelClip>> clips;
+	
+
+	bool bNeedUpdate = true;
 };
 

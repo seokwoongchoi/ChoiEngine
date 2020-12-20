@@ -42,8 +42,8 @@
         <NormalFile>Car Body Normals.png</NormalFile>
         <RoughnessFile>Car body Roughness.png</RoughnessFile>
         <MetallicFile>Car Body Metallic.png</MetallicFile>
-        <Diffuse R="0" G="0.96774197" B="0.9443289" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
+        <Diffuse R="0.10865961" G="0.1653226" B="0.16418898" A="0.58200002"/>
+        <PBR Roughness="0.58200002" Metallic="1.101"/>
     </Material>
     <Material>
         <Name>Tire</Name>
@@ -51,8 +51,8 @@
         <NormalFile>Tire Normals.png</NormalFile>
         <RoughnessFile>Tire Roughness.png</RoughnessFile>
         <MetallicFile>Tire Metallic.png</MetallicFile>
-        <Diffuse R="0.58823532" G="0.58823532" B="0.58823532" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
+        <Diffuse R="1" G="0.99998999" B="0.99998999" A="1"/>
+        <PBR Roughness="1" Metallic="2"/>
     </Material>
     <Material>
         <Name>Car Bottom</Name>

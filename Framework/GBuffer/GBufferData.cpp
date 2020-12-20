@@ -47,6 +47,7 @@ void GBufferData::Destroy()
 	SafeRelease(diffuseSRV);
 	SafeRelease(normalSRV);
 	SafeRelease(specularSRV);
+	
 
 	// Clear the depth stencil state
 	SafeRelease(depthStencilState);
@@ -79,6 +80,7 @@ void GBufferData::PrepareForPacking(ID3D11DeviceContext* context)
 	context->ClearRenderTargetView(diffuseRTV, ClearColor);
 	context->ClearRenderTargetView(specularRTV, ClearColor);
 	context->ClearRenderTargetView(normalRTV, ClearColor);
+
 
 
 	UINT8 SceneStencilFlag = 2;
@@ -158,19 +160,19 @@ void GBufferData::CreateViews()
 	static const DXGI_FORMAT depthStencilTextureFormat = DXGI_FORMAT_R24G8_TYPELESS;
 	static const DXGI_FORMAT basicColorTextureFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
 	static const DXGI_FORMAT normalTextureFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
-	static const DXGI_FORMAT specPowTextureFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
+	static const DXGI_FORMAT specPowTextureFormat = DXGI_FORMAT_R16G16_UNORM;
 
 	// Render view formats
 	static const DXGI_FORMAT depthStencilRenderViewFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	static const DXGI_FORMAT basicColorRenderViewFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
 	static const DXGI_FORMAT normalRenderViewFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
-	static const DXGI_FORMAT specPowRenderViewFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
+	static const DXGI_FORMAT specPowRenderViewFormat = DXGI_FORMAT_R16G16_UNORM;
 
 	// Resource view formats
 	static const DXGI_FORMAT depthStencilResourceViewFormat = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
 	static const DXGI_FORMAT basicColorResourceViewFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
 	static const DXGI_FORMAT normalResourceViewFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
-	static const DXGI_FORMAT specPowResourceViewFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
+	static const DXGI_FORMAT specPowResourceViewFormat = DXGI_FORMAT_R16G16_UNORM;
 
 	// Allocate the depth stencil target
 	D3D11_TEXTURE2D_DESC dtd = {
@@ -206,6 +208,7 @@ void GBufferData::CreateViews()
 	dtd.SampleDesc.Count = 1;
 	dtd.SampleDesc.Quality = 0;
 	Check(device->CreateTexture2D(&dtd, NULL, &diffuseTexture));
+
 	
 	// Create the render target views
 	D3D11_DEPTH_STENCIL_VIEW_DESC dsvd =
@@ -248,7 +251,7 @@ void GBufferData::CreateViews()
 	Check(device->CreateShaderResourceView(depthStencilTexture, &dsrvd, &depthStencilSRV));
 	dsrvd.Format = basicColorResourceViewFormat;
 	Check(device->CreateShaderResourceView(diffuseTexture, &dsrvd, &diffuseSRV));
-
+		
 
 	dsrvd.Format = normalResourceViewFormat;
 	Check(device->CreateShaderResourceView(normalTexture, &dsrvd, &normalSRV));
@@ -256,6 +259,8 @@ void GBufferData::CreateViews()
 	dsrvd.Format = specPowResourceViewFormat;
 	Check(device->CreateShaderResourceView(specularTexture, &dsrvd, &specularSRV));
 	
+
+
 
 	D3D11_DEPTH_STENCIL_DESC descDepth;
 	descDepth.DepthEnable = TRUE;
@@ -267,6 +272,8 @@ void GBufferData::CreateViews()
 	const D3D11_DEPTH_STENCILOP_DESC stencilMarkOp = { D3D11_STENCIL_OP_REPLACE, D3D11_STENCIL_OP_REPLACE, D3D11_STENCIL_OP_REPLACE, D3D11_COMPARISON_ALWAYS };
 	descDepth.FrontFace = stencilMarkOp;
 	descDepth.BackFace = stencilMarkOp;
+
+	
 	Check(device->CreateDepthStencilState(&descDepth, &depthStencilState));
 	
 

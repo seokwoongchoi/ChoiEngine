@@ -1,5 +1,6 @@
 #pragma once
-#include "Renderer.h"
+#include "Renderers/Renderer.h"
+
 class ColliderSystem
 {
 #ifdef EDITORMODE
@@ -22,32 +23,45 @@ private:
 
 
 public:
-	
+	inline ID3D11ShaderResourceView* GetInstBufferSRV() {
+		return InstBufferSRV;
+	}
+	inline ID3D11ShaderResourceView* SRV() {
+		return srv;
+	}
 	//void UpdateInstBuffer();
 
-	void FrustumCulling(const uint& index);
+	uint FrustumCulling(const uint& index);
 public:
 	 Vector3* GetBoxMinMax(const uint& actorIndex, const uint& drawCount);
-	 inline const Matrix& GetInstMatrix(const uint& index)
+	
+	 inline void GetInstMatrix(Matrix* const pointer, const uint& actorIndex)
 	 {
-		 return instTransforms[index][renderers[index]->drawCount - 1];
+		 *pointer = instTransforms[actorIndex][renderDatas[actorIndex].drawCount - 1];
 	 }
-	 inline const Matrix& GetInstMatrix(const uint& actorIndex, const uint& index)
+	 inline void GetInstMatrix(Matrix* const pointer,const uint& actorIndex, const uint& index)
 	 {
-		 return instTransforms[actorIndex][index];
+		 *pointer= instTransforms[actorIndex][index];
 	 }
-	 inline const Vector3& GetPosition(const uint& actorIndex, const uint& index)
+
+	 inline void GetPosition(Vector3* const pointer,const uint& actorIndex, const uint& index)
 	 {
-		 return Vector3(instTransforms[actorIndex][index]._41, instTransforms[actorIndex][index]._42, instTransforms[actorIndex][index]._43);
+		 *pointer = instTransforms[actorIndex][index].m[3];
 	 }
-	 inline void SetInstMatrix(const uint& index, const Matrix& world)
+	 inline void GetFoward( Vector3 * const pointer,const uint& actorIndex, const uint& index)
 	 {
-		 instTransforms[index][renderers[index]->drawCount - 1] = world;
-		// UpdateInstBuffer();
+		*pointer = instTransforms[actorIndex][index].m[2];
 	 }
-	 inline  void SetInstMatrix(const uint& actorIndex, const uint& index, const Matrix& world)
+	
+	 inline void SetInstMatrix(Matrix* const world, const uint& index)
 	 {
-		 instTransforms[actorIndex][index] = world;
+		 memcpy(instTransforms[index][renderDatas[index].drawCount - 1], world, sizeof(Matrix));
+		
+		 // UpdateInstBuffer();
+	 }
+	 inline void SetInstMatrix(Matrix* const world,const uint& actorIndex, const uint& index)
+	 {
+		 memcpy(instTransforms[actorIndex][index], world,sizeof(Matrix));
 		// UpdateInstBuffer();
 	 }
 public:
@@ -58,7 +72,7 @@ public:
 	inline  const uint& TotalCount() { return totalCount; }
 
 	
-	 void RegisterRenderer(class Renderer* renderer, const uint& index);
+	 void RegisterRenderData(const uint& index, class Renderer* renderer);
      void PushDrawCount(const uint& index, const Matrix& world);
 public:
 	void ClearTextureTransforms();
@@ -74,8 +88,18 @@ private:
 	void BindingBone();
 protected:
 	Matrix instTransforms[3][10];
-	unordered_map<uint, class Renderer*>renderers;
-	unordered_map<uint,uint>culledCount;
+	struct RenderData
+	{
+		uint drawCount = 0;
+		uint culledCount = 0;
+		uint prevDrawCount = 0;
+		int btIndex = -1;
+		Vector3 boxMin = Vector3(0, 0, 0);
+		Vector3 boxMax = Vector3(0, 0, 0);
+	};
+	vector<RenderData>renderDatas;
+	//unordered_map<uint, class Renderer*>renderers;
+	//unordered_map<uint,uint>culledCount;
 
 	ID3D11Texture2D			  *InstBuffer;
 	ID3D11ShaderResourceView  *InstBufferSRV;
@@ -110,4 +134,3 @@ protected:
 protected:
 	ID3D11Device* device;
 };
-

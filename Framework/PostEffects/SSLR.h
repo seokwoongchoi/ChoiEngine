@@ -51,7 +51,8 @@ private:
 	{
 		UINT Width;
 		UINT Height;
-		UINT pad[2];
+		float occlusionFlag;
+		UINT pad;
 	}occlusionDesc;
 	
 	struct CB_LIGHT_RAYS

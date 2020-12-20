@@ -50,6 +50,8 @@ DisplayVS_OUTPUT VSMAIN(uint vertexid : SV_VertexID,uint instID:SV_InstanceID)
     Output.uv = float2(intensity, 0.0f);
 	return Output;
 }
+
+
 DisplayVS_OUTPUT PreviewVS(uint vertexid : SV_VertexID)
 {
     DisplayVS_OUTPUT Output;
@@ -96,20 +98,17 @@ void GSMAIN(point DisplayVS_OUTPUT input[1], inout TriangleStream<DisplayVS_OUTP
 float4 PSMAIN(in DisplayVS_OUTPUT input) : SV_Target
 {
     float4 tex = ParticleTexture.Sample(LinearSampler, input.uv);
-	
-   [flatten]
+	 [flatten]
     if (tex.x < 0.05) 
         discard;
    // tex *= input.PointSize;
      [flatten]
-    if (input.PointSize>1.5)
+    if (input.PointSize > 1.5)
     {
         tex.x += 0.8f;
 
     }
-    return tex ;
-   //float Color = float4(1.0, 0, 0, 1.0);
-   //return Color;
+    return tex;
 
 	
 }

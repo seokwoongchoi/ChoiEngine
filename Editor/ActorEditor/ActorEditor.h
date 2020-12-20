@@ -60,6 +60,8 @@ public:
 	void Compile();
 	void Editor();
 	void ShowFrame(const ImVec2 & size);
+
+	void LoadBehaviorTree();
 private:
 	GizmoMode gizmoMode;
 	void ImGizmo();

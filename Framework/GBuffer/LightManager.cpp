@@ -15,7 +15,7 @@ struct CB_DIRECTIONAL
 {
 
 	Vector3 DirToLight;
-	float pad;
+	float Time=0.0f;
 	Vector3 DirectionalColor;
 	float pad2;
 	Matrix ToShadowSpace;
@@ -880,6 +880,7 @@ void LightManager::DirectionalLight(ID3D11DeviceContext * context)
 	
 	{
 		CB_DIRECTIONAL pDirectionalValuesCB;
+		pDirectionalValuesCB.Time += Time::Delta();
 		pDirectionalValuesCB.DirToLight = -GlobalData::LightDirection();
 		pDirectionalValuesCB.DirectionalColor = GlobalData::LightColor();
 		

@@ -10,13 +10,40 @@ class PhysicsSystem
 public:
 	PhysicsSystem(ID3D11Device* device,class Animator* animator,class  EffectSystem* effects);
 	~PhysicsSystem();
-
+	inline void Stop()
+	{
+		if (IsHitted)
+		{
+			Time::Get()->Stop();
+		}
+	}
 	inline ID3D11UnorderedAccessView* UAV()
 	{
 		return modelData_StructuredBufferUAV;
 	}
 	void ComputeEditor(ID3D11DeviceContext* context,ID3D11UnorderedAccessView* effectPositionUAV,  const uint& skeletalCount, const uint& staticCount);
 	void Compute(ID3D11DeviceContext* context, ID3D11UnorderedAccessView* effectPositionUAV, const uint& skeletalCount, const uint& staticCount);
+	void EffectIndex(int index, int effect)
+	{
+		switch (index)
+		{
+		case 0:
+		{
+			bodyEffectIndex = effect;
+		}
+		break;
+		case 1:
+		{
+			headEffectIndex = effect;
+		}
+		break;
+		case 2:
+		{
+			swordEffectIndex = effect;
+		}
+		break;
+		}
+	}
 private:
 	void CreateCopyBuffer(ID3D11Device* device);
 	void CreateAnimBoneBuffer(ID3D11Device* device);
@@ -42,6 +69,7 @@ protected:
 
     Vector4 Input[10];
 protected:
+
 	Vector4 Result[10];
 private:
 	ID3D11Buffer			   *copy_StructuredBuffer ;
@@ -55,9 +83,17 @@ private:
 		uint skeletalCount;
 		uint staticCount;
 		uint pad;
-	}drawDesc;
 
+		
+		
+	}drawDesc;
+	Matrix  T;
+	uint effectCounts[3];
+	int bodyEffectIndex = -1;
+	int headEffectIndex = -1;
+	int swordEffectIndex = -1;
 	ID3D11Buffer* drawBuffer;
 	
+	bool IsHitted;
 };
 

@@ -185,7 +185,8 @@ void ActorEditor::Save(BinaryWriter * w)
 		w->UInt(drawCount);
 		for (uint i = 0; i < drawCount; i++)
 		{
-			Matrix temp = engine->collider->GetInstMatrix(actorIndex,i);
+			Matrix temp;
+			engine->collider->GetInstMatrix(&temp,actorIndex, i);
 			w->Matrix(temp);
 		}
 	}
@@ -197,7 +198,9 @@ void ActorEditor::Save(BinaryWriter * w)
 		w->UInt(drawCount);
 		for (uint i = 0; i < drawCount; i++)
 		{
-			Matrix temp = engine->animator->GetInstMatrix(actorIndex, i);
+			Matrix temp;
+			engine->animator->GetInstMatrix(&temp, actorIndex, i);
+			
 			w->Matrix(temp);
 		}
 	}
@@ -260,7 +263,7 @@ void ActorEditor::Load(BinaryReader * r)
 
 void ActorEditor::Render(ID3D11DeviceContext* context)
 {
-	context->ClearState();
+	
 	if (!bModelLoaded|| !bEditing) return;
 	
 		previewRender->Update(Vector2(size.x,size.y), camSpeed);
@@ -441,6 +444,12 @@ void ActorEditor::ShowFrame(const ImVec2 & size)
 		ImGizmo();
 	}
 	ImGui::EndChild();
+}
+
+void ActorEditor::LoadBehaviorTree()
+{
+	previewRender->behaviorTreeIndex = 0;
+	bBindedTree = true;
 }
 
 void ActorEditor::ImGizmo()
@@ -1148,6 +1157,10 @@ void ActorEditor::SetMaterial(wstring & file, uint textureType, shared_ptr<class
 	{
 		material->MetallicMap(file);
 	}
+	/*case 4:
+	{
+		material->HeightMap(file);
+	}*/
 	break;
 	}
 }
@@ -1218,31 +1231,38 @@ void ActorEditor::ShowMaterial(const ImVec2 & size)
 					//Normal
 					ShowTextureSlot(material->NormalMap(), "Normal", 1);
 					string& normalName = String::ToString(material->NormalFile());
-					ImGui::Text(fileName.c_str());
+					ImGui::Text(normalName.c_str());
 					ImGui::Separator();
 
 					//Roughness
 					ShowTextureSlot(material->RoughnessMap(), "Roughness", 2);
 					string& roughnessName = String::ToString(material->RoughnessFile());
-					ImGui::Text(fileName.c_str());
+					ImGui::Text(roughnessName.c_str());
 
 					ImGui::Text("Factor");
 					ImGui::SameLine(70.0f);
 					float roughness = material->Roughness();
-					ImGui::SliderFloat("##Roughness", &roughness, 0.0f, 1.0f);
+					ImGui::SliderFloat("##Roughness", &roughness, 0.0f, 2.0f);
 					material->Roughness(roughness);
 					ImGui::Separator();
 
 					//Metallic
 					ShowTextureSlot(material->MetallicMap(), "Metallic", 3);
 					string& metaillcName = String::ToString(material->MetallicFile());
-					ImGui::Text(fileName.c_str());
+					ImGui::Text(metaillcName.c_str());
 
 					ImGui::Text("Factor");
 					ImGui::SameLine(70.0f);
 					float metallic = material->Metallic();
-					ImGui::SliderFloat("##Metallic", &metallic, 0.0f, 1.0f);
+					ImGui::SliderFloat("##Metallic", &metallic, 0.0f, 2.0f);
 					material->Metallic(metallic);
+
+					////Height
+					//ShowTextureSlot(material->HeightMap(), "Height", 4);
+					//string& heightName = String::ToString(material->HeightFile());
+					//ImGui::Text(heightName.c_str());
+
+				
 				}
 				ImGui::Separator();
 			}
@@ -1306,7 +1326,7 @@ void ActorEditor::ShowHierarchy()
 
 	ImGui::Begin("Hierarchy", &bEditing, ImGuiWindowFlags_HorizontalScrollbar| ImGuiWindowFlags_NoMove);
 	{
-	//	if (previewRender->bLoaded)
+		if (previewRender->bLoaded)
 		{
 			const auto& bone = previewRender->bones;
 			const uint& count = previewRender->boneCount;

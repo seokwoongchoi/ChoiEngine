@@ -9,7 +9,7 @@ PhysicsSystem::PhysicsSystem(ID3D11Device* device, Animator* animator, EffectSys
 	modelData_StructuredBufferUAV(nullptr),
 	CollisonCS(nullptr), csAnimBoneBoxData(nullptr),
 	copy_StructuredBuffer(nullptr),copy_StructuredBufferUAV(nullptr), copyBuffer(nullptr),
-	drawBuffer(nullptr), animator(animator), effects(effects)
+	drawBuffer(nullptr), animator(animator), effects(effects), IsHitted(false), effectCounts{}
 {
 
 	ID3DBlob* ShaderBlob = nullptr;
@@ -56,15 +56,245 @@ PhysicsSystem::~PhysicsSystem()
 
 void PhysicsSystem::ComputeEditor(ID3D11DeviceContext * context, ID3D11UnorderedAccessView * effectPositionUAV, const uint & skeletalCount, const uint & staticCount)
 {
-	if (skeletalCount < 2 || skeletalCount>10) return;
+	if (IsHitted)
+	{
+		if (Mouse::Get()->Down(0))
+		{
+			if (Time::Get()->Stopped())
+			{
+				Time::Get()->Start();
+				IsHitted = false;
+				return;
+			}
+		}
+		return;
+	}
+	if (skeletalCount < 2 ) return;
 
 	auto& tweenVector = animator->tweenDesc;
-	bool find = all_of(tweenVector.begin(), tweenVector.begin() + skeletalCount, [](const TweenDesc& desc)
+	
+	auto Check = all_of(tweenVector.begin(), tweenVector.begin() + skeletalCount, [](const TweenDesc& desc)
 	{
 		return desc.state != ActorState::Attack;
 	});
 
-	if (find)return;
+	if (Check)
+		return;
+
+	
+		
+		drawDesc.drawCount = skeletalCount + staticCount;
+
+		drawDesc.skeletalCount = skeletalCount;
+		drawDesc.staticCount = staticCount;
+		D3D11_MAPPED_SUBRESOURCE MappedResource;
+		context->Map(drawBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+		memcpy(MappedResource.pData, &drawDesc, sizeof(drawDesc));
+		context->Unmap(drawBuffer, 0);
+		ID3D11Buffer* bufferArray[1] = { drawBuffer };
+		context->CSSetConstantBuffers(0, 1, bufferArray);
+
+		ID3D11ShaderResourceView* srvArray[1] = { modelData_StructuredBufferSRV };
+		context->CSSetShaderResources(0, 1, srvArray);
+
+		ID3D11UnorderedAccessView* uavArray[2] = { copy_StructuredBufferUAV ,effectPositionUAV };
+		context->CSSetUnorderedAccessViews(0, 2, uavArray, nullptr);
+		context->CSSetShader(CollisonCS, nullptr, 0);
+		context->Dispatch(skeletalCount , 1, 1);
+
+		//INT64 currentTime;
+		//QueryPerformanceCounter((LARGE_INTEGER *)&currentTime);
+		//if (chrono::_Is_even<INT64>(currentTime))
+		{
+			
+				context->CopyResource(copyBuffer, copy_StructuredBuffer);
+				D3D11_MAPPED_SUBRESOURCE subResource;
+				context->Map(copyBuffer, 0, D3D11_MAP_READ, 0, &subResource);
+				{
+					memcpy(Result, subResource.pData, sizeof(Vector4) *skeletalCount);
+				}
+				context->Unmap(copyBuffer, 0);
+		}
+
+		ZeroMemory(&bufferArray, sizeof(bufferArray));
+		context->CSSetConstantBuffers(0, 1, bufferArray);
+		context->CSSetShader(nullptr, nullptr, 0);
+		ZeroMemory(srvArray, sizeof(srvArray));
+		context->CSSetShaderResources(0, 1, srvArray);
+		ZeroMemory(uavArray, sizeof(uavArray));
+		context->CSSetUnorderedAccessViews(0, 2, uavArray, nullptr);
+
+	
+
+	
+		
+		static bool bFisrt = true;
+
+		if (bFisrt)
+		{
+			for (uint i = 0; i < 10; i++)
+			{
+				Result[i] = Vector4(-1, -1, -1, -1);
+			}
+			bFisrt = false;
+			return;
+		}
+
+		auto tweenDesc = &animator->tweenDesc[0];
+
+	
+		
+
+		uint index = 0;
+		for (uint i = 0; i < skeletalCount; i++)
+		{
+			if (tweenDesc[i].state == ActorState::Die)
+				continue;
+			if (Result[i].w > -1)
+			{
+				index = static_cast<uint>(Result[i].w);
+				if (tweenDesc[index].state == ActorState::Die)continue;
+
+				tweenDesc[index].state = ActorState::StandingReaction;
+				cout << to_string(i) + " Actor Collison  :" + to_string(index) + " actor" << endl;
+				Vector3 dir;
+				animator->GetFoward(&dir,0, i);
+
+
+
+				animator->GetInstMatrix(&T, 0, index);
+				T._41 -= dir.x*10.4f;
+				T._43 -= dir.z*10.4f;
+
+				animator->SetInstMatrix(&T, 0, index);
+
+				
+			}
+		
+			if (tweenDesc[i].state != ActorState::Attack)continue;
+			
+			if (Result[i].x > -1)
+			{
+				index = static_cast<uint>(Result[i].x);
+				if (tweenDesc[index].state == ActorState::MoveSide || tweenDesc[index].state == ActorState::Die)
+				{
+					continue;
+				}
+			
+				cout << to_string(i) + " Actor Hit the  :" + to_string(index) + " body" << endl;
+				tweenDesc[index].state = ActorState::StandingReaction;
+				if (bodyEffectIndex > -1)
+				effectCounts[bodyEffectIndex]++;
+				
+				Result[i].x = -1;
+			}
+			if (Result[i].y > -1)
+			{
+				index = static_cast<uint>(Result[i].y);
+				if (tweenDesc[index].state == ActorState::MoveSide ||
+					tweenDesc[index].state == ActorState::BlockingReaction
+					)
+				{
+					continue;
+				}
+				cout << to_string(i) + " Actor Hit the  :" + to_string(index) + " head" << endl;
+				
+				tweenDesc[index].state = ActorState::Die;
+				Result[i].y = -1;
+				if (headEffectIndex > -1)
+				effectCounts[headEffectIndex]++;
+				
+				IsHitted = true;
+			}
+		
+			if (Result[i].z > -1)
+			{
+
+				index = static_cast<uint>(Result[i].z);
+				if (tweenDesc[index].state == ActorState::Die || tweenDesc[index].state == ActorState::BlockingReaction)
+				{
+					continue;
+				}
+
+				cout << to_string(i) + " Actor Hit the  :" + to_string(index) + " sword" << endl;
+
+				if (swordEffectIndex > -1)
+					effectCounts[swordEffectIndex]++;
+
+				Result[i].z = -1;
+
+				if (tweenDesc[index].state == ActorState::MoveSide ||
+					tweenDesc[index].state == ActorState::Move)
+				{
+					tweenDesc[index].state = ActorState::BlockingReaction;
+
+					Vector3 dir;
+					animator->GetFoward(&dir, 0, i);
+
+					animator->GetInstMatrix(&T, 0, index);
+					T._41 -= dir.x*10.0f;
+					T._43 -= dir.z*10.0f;
+
+					animator->SetInstMatrix(&T, 0, index);
+
+				}
+				return;
+			}
+		}
+		
+
+		
+		if (bodyEffectIndex > -1 && effectCounts[bodyEffectIndex] > 0)
+		{
+			effects->ResetBodies(bodyEffectIndex, effectCounts[bodyEffectIndex]);
+			effectCounts[bodyEffectIndex] = 0;
+		}
+			
+
+
+		if (swordEffectIndex > -1 && effectCounts[swordEffectIndex] > 0)
+		{
+			effects->ResetBodies(swordEffectIndex, effectCounts[swordEffectIndex]);
+			effectCounts[swordEffectIndex] = 0;
+		}
+		
+		if (headEffectIndex > -1 && effectCounts[headEffectIndex] > 0)
+		{
+			effects->ResetBodies(headEffectIndex, effectCounts[headEffectIndex]);
+			effectCounts[headEffectIndex] = 0;
+		}
+			
+	
+}
+
+void PhysicsSystem::Compute(ID3D11DeviceContext * context, ID3D11UnorderedAccessView* effectPositionUAV, const uint& skeletalCount, const uint& staticCount)
+{
+	if (IsHitted)
+	{
+		if (Mouse::Get()->Down(0))
+		{
+			if (Time::Get()->Stopped())
+			{
+				Time::Get()->Start();
+				IsHitted = false;
+				return;
+			}
+		}
+		return;
+	}
+	if (skeletalCount < 2) return;
+
+	auto& tweenVector = animator->tweenDesc;
+
+	auto Check = all_of(tweenVector.begin(), tweenVector.begin() + skeletalCount, [](const TweenDesc& desc)
+	{
+		return desc.state != ActorState::Attack;
+	});
+
+	if (Check)
+		return;
+
+
 
 	drawDesc.drawCount = skeletalCount + staticCount;
 
@@ -83,23 +313,21 @@ void PhysicsSystem::ComputeEditor(ID3D11DeviceContext * context, ID3D11Unordered
 	ID3D11UnorderedAccessView* uavArray[2] = { copy_StructuredBufferUAV ,effectPositionUAV };
 	context->CSSetUnorderedAccessViews(0, 2, uavArray, nullptr);
 	context->CSSetShader(CollisonCS, nullptr, 0);
-
+	context->Dispatch(skeletalCount, 1, 1);
 
 	//INT64 currentTime;
 	//QueryPerformanceCounter((LARGE_INTEGER *)&currentTime);
 	//if (chrono::_Is_even<INT64>(currentTime))
 	{
-		context->Dispatch(skeletalCount + 1, 1, 1);
-		context->CopyResource(copyBuffer, copy_StructuredBuffer);
-		context->Unmap(copyBuffer, 0);
 
+		context->CopyResource(copyBuffer, copy_StructuredBuffer);
 		D3D11_MAPPED_SUBRESOURCE subResource;
 		context->Map(copyBuffer, 0, D3D11_MAP_READ, 0, &subResource);
 		{
 			memcpy(Result, subResource.pData, sizeof(Vector4) *skeletalCount);
 		}
+		context->Unmap(copyBuffer, 0);
 	}
-
 
 	ZeroMemory(&bufferArray, sizeof(bufferArray));
 	context->CSSetConstantBuffers(0, 1, bufferArray);
@@ -108,6 +336,8 @@ void PhysicsSystem::ComputeEditor(ID3D11DeviceContext * context, ID3D11Unordered
 	context->CSSetShaderResources(0, 1, srvArray);
 	ZeroMemory(uavArray, sizeof(uavArray));
 	context->CSSetUnorderedAccessViews(0, 2, uavArray, nullptr);
+
+
 
 
 
@@ -124,237 +354,128 @@ void PhysicsSystem::ComputeEditor(ID3D11DeviceContext * context, ID3D11Unordered
 	}
 
 	auto tweenDesc = &animator->tweenDesc[0];
-	uint effectCount = 0;
-	uint effectCount2 = 0;
+
+	
+
+	uint index = 0;
 	for (uint i = 0; i < skeletalCount; i++)
 	{
-		/*if (Result[i].w > -1)
+		if (tweenDesc[i].state == ActorState::Die)
+			continue;
+		if (Result[i].w > -1)
 		{
-			Vector3 dir = animator->GetPosition(0, i) - animator->GetPosition(0, static_cast<uint>(Result[i].w));
-			Vector3 nor;
-			D3DXVec3Normalize(&nor, &dir);
-			Matrix  T = animator->GetInstMatrix(0, static_cast<uint>(Result[i].w));
+			index = static_cast<uint>(Result[i].w);
+			if (tweenDesc[index].state == ActorState::Die)continue;
 
-			T._41 -= nor.x*0.4f;
-			T._43 -= nor.z*0.4f;
-			animator->SetInstMatrix(0, static_cast<uint>(Result[i].w), T);
-			cout << to_string(i) + " Actor Collison" + to_string(Result[i].w) + " actor" << endl;
-
-		}*/
-		if (tweenDesc[i].state != ActorState::Attack || tweenDesc[i].state == ActorState::Die) continue;
-		if (Result[i].x > -1)
-		{
+			tweenDesc[index].state = ActorState::StandingReaction;
+			//cout << to_string(i) + " Actor Collison  :" + to_string(index) + " actor" << endl;
+			Vector3 dir;
+			animator->GetFoward(&dir, 0, i);
 
 
 
-			cout << to_string(i) + " Actor Hit the" + to_string(Result[i].x) + " body" << endl;
+			animator->GetInstMatrix(&T, 0, index);
+			T._41 -= dir.x*10.4f;
+			T._43 -= dir.z*10.4f;
 
-			if (tweenDesc[static_cast<uint>(Result[i].x)].state != ActorState::Die)
-			{
-				if (tweenDesc[static_cast<uint>(Result[i].x)].state == ActorState::MoveSide)
-				{
-					continue;
-
-				}
-
-				else
-				{
-					tweenDesc[static_cast<uint>(Result[i].x)].state = ActorState::StandingReaction;
-					effectCount2++;
-				}
-			}
+			animator->SetInstMatrix(&T, 0, index);
 
 
 		}
 
+		if (tweenDesc[i].state != ActorState::Attack)continue;
+
+		if (Result[i].x > -1)
+		{
+			index = static_cast<uint>(Result[i].x);
+			if (tweenDesc[index].state == ActorState::MoveSide || tweenDesc[index].state == ActorState::Die)
+			{
+				continue;
+			}
+
+			//cout << to_string(i) + " Actor Hit the  :" + to_string(index) + " body" << endl;
+			tweenDesc[index].state = ActorState::StandingReaction;
+			if (bodyEffectIndex > -1)
+				effectCounts[bodyEffectIndex]++;
+
+			Result[i].x = -1;
+		}
 		if (Result[i].y > -1)
 		{
+			index = static_cast<uint>(Result[i].y);
+			if (tweenDesc[index].state == ActorState::MoveSide ||
+				tweenDesc[index].state == ActorState::BlockingReaction
+				)
+			{
+				continue;
+			}
+			//cout << to_string(i) + " Actor Hit the  :" + to_string(index) + " head" << endl;
 
-			cout << to_string(i) + " Actor Hit the" + to_string(Result[i].y) + " head" << endl;
+			tweenDesc[index].state = ActorState::Die;
+			Result[i].y = -1;
+			if (headEffectIndex > -1)
+				effectCounts[headEffectIndex]++;
 
-			if (tweenDesc[static_cast<uint>(Result[i].y)].state != ActorState::MoveSide&&Result[i].x < 0 && Result[i].z < 0)
-				tweenDesc[static_cast<uint>(Result[i].y)].state = ActorState::Die;
+			IsHitted = true;
 		}
 
 		if (Result[i].z > -1)
 		{
 
-			cout << to_string(i) + " Actor Hit the" + to_string(Result[i].z) + " sword" << endl;
-
-
-			if (tweenDesc[static_cast<uint>(Result[i].z)].state == ActorState::MoveSide
-				|| tweenDesc[static_cast<uint>(Result[i].z)].state == ActorState::Move)
+			index = static_cast<uint>(Result[i].z);
+			if (tweenDesc[index].state == ActorState::Die || tweenDesc[index].state == ActorState::BlockingReaction)
 			{
-				tweenDesc[static_cast<uint>(Result[i].z)].state = ActorState::BlockingReaction;
-
-
+				continue;
 			}
 
-			effectCount++;
+			//cout << to_string(i) + " Actor Hit the  :" + to_string(index) + " sword" << endl;
 
-		}
+			if (swordEffectIndex > -1)
+				effectCounts[swordEffectIndex]++;
 
+			Result[i].z = -1;
 
-	}
-	if (effectCount > 0)
-	{
-		effects->ResetBodies(0, effectCount);
-	}
-	if (effectCount2 > 0)
-	{
-		effects->ResetBodies(1, effectCount2);
-	}
-}
-
-void PhysicsSystem::Compute(ID3D11DeviceContext * context, ID3D11UnorderedAccessView* effectPositionUAV, const uint& skeletalCount, const uint& staticCount)
-{
-	if (skeletalCount < 2|| skeletalCount>10) return;
-
-	auto& tweenVector = animator->tweenDesc;
-	bool find = all_of(tweenVector.begin(), tweenVector.begin()+ skeletalCount, [](const TweenDesc& desc)
-	{
-		return desc.state != ActorState::Attack;
-	});
-
-	if (find)return;
-
-	drawDesc.drawCount = skeletalCount+ staticCount;
-
-	drawDesc.skeletalCount = skeletalCount;
-	drawDesc.staticCount = staticCount;
-	D3D11_MAPPED_SUBRESOURCE MappedResource;
-	context->Map(drawBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-	memcpy(MappedResource.pData, &drawDesc, sizeof(drawDesc));
-	context->Unmap(drawBuffer, 0);
-	ID3D11Buffer* bufferArray[1] = { drawBuffer };
-	context->CSSetConstantBuffers(0, 1, bufferArray);
-
-	ID3D11ShaderResourceView* srvArray[1] = { modelData_StructuredBufferSRV };
-	context->CSSetShaderResources(0, 1, srvArray);
-
-	ID3D11UnorderedAccessView* uavArray[2] = { copy_StructuredBufferUAV ,effectPositionUAV };
-	context->CSSetUnorderedAccessViews(0, 2, uavArray, nullptr);
-	context->CSSetShader(CollisonCS, nullptr, 0);
-
-	
-	//INT64 currentTime;
-	//QueryPerformanceCounter((LARGE_INTEGER *)&currentTime);
-	//if (chrono::_Is_even<INT64>(currentTime))
-	{
-		context->Dispatch(skeletalCount+1, 1, 1);
-		context->CopyResource(copyBuffer, copy_StructuredBuffer);
-		context->Unmap(copyBuffer, 0);
-
-		D3D11_MAPPED_SUBRESOURCE subResource;
-		context->Map(copyBuffer, 0, D3D11_MAP_READ, 0, &subResource);
-		{
-			memcpy(Result, subResource.pData, sizeof(Vector4) *skeletalCount);
-		}
-    }
-	
-	
-	ZeroMemory(&bufferArray, sizeof(bufferArray));
-	context->CSSetConstantBuffers(0, 1, bufferArray);
-	context->CSSetShader(nullptr, nullptr, 0);
-	ZeroMemory(srvArray, sizeof(srvArray));
-	context->CSSetShaderResources(0, 1, srvArray);
-	ZeroMemory(uavArray, sizeof(uavArray));
-	context->CSSetUnorderedAccessViews(0, 2, uavArray, nullptr);
-
-
-
-	static bool bFisrt = true;
-
-	if (bFisrt)
-	{
-		for (uint i = 0; i < 10; i++)
-		{
-			Result[i] = Vector4(-1, -1, -1, -1);
-		}
-		bFisrt = false;
-		return;
-	}
-
-	auto tweenDesc = &animator->tweenDesc[0];
-	uint effectCount = 0;
-	uint effectCount2= 0;
-	for (uint i = 0; i < skeletalCount; i++)
-	{
-		/*if (Result[i].w > -1)
-		{
-			Vector3 dir = animator->GetPosition(0, i) - animator->GetPosition(0, static_cast<uint>(Result[i].w));
-			Vector3 nor;
-			D3DXVec3Normalize(&nor, &dir);
-			Matrix  T = animator->GetInstMatrix(0, static_cast<uint>(Result[i].w));
-
-			T._41 -= nor.x*0.4f;
-			T._43 -= nor.z*0.4f;
-			animator->SetInstMatrix(0, static_cast<uint>(Result[i].w), T);
-			cout << to_string(i) + " Actor Collison" + to_string(Result[i].w) + " actor" << endl;
-
-		}*/
-		if (tweenDesc[i].state != ActorState::Attack || tweenDesc[i].state == ActorState::Die) continue;
-		if (Result[i].x > -1)
-		{
-
-			
-
-			
-
-			if (tweenDesc[static_cast<uint>(Result[i].x)].state != ActorState::Die)
+			if (tweenDesc[index].state == ActorState::MoveSide ||
+				tweenDesc[index].state == ActorState::Move)
 			{
-				if (tweenDesc[static_cast<uint>(Result[i].x)].state == ActorState::MoveSide)
-				{
-					continue;
-					
-				}
-					
-				else
-				{
-					tweenDesc[static_cast<uint>(Result[i].x)].state = ActorState::StandingReaction;
-					effectCount2++;
-				}
-			}
-			
-			
-		}
+				tweenDesc[index].state = ActorState::BlockingReaction;
 
-		if (Result[i].y > -1)
-		{
+			/*	Vector3 dir;
+				animator->GetFoward(&dir, 0, i);
 
-			
+				animator->GetInstMatrix(&T, 0, index);
+				T._41 -= dir.x*10.0f;
+				T._43 -= dir.z*10.0f;
 
-			if(tweenDesc[static_cast<uint>(Result[i].y)].state != ActorState::MoveSide&&Result[i].x<0 && Result[i].z < 0)
-			tweenDesc[static_cast<uint>(Result[i].y)].state = ActorState::Die;
-		}
-
-		if (Result[i].z > -1)
-		{
-
-		
-			
-			if (tweenDesc[static_cast<uint>(Result[i].z)].state == ActorState::MoveSide
-				||tweenDesc[static_cast<uint>(Result[i].z)].state == ActorState::Move)
-			{
-				tweenDesc[static_cast<uint>(Result[i].z)].state = ActorState::BlockingReaction;
-				
+				animator->SetInstMatrix(&T, 0, index);*/
 
 			}
-
-			effectCount++;
-			
+			//break;
 		}
+	}
 
-		
-	}
-	if (effectCount > 0)
+
+
+	if (bodyEffectIndex > -1 && effectCounts[bodyEffectIndex] > 0)
 	{
-		effects->ResetBodies(0, effectCount);
+		effects->ResetBodies(bodyEffectIndex, effectCounts[bodyEffectIndex]);
+		effectCounts[bodyEffectIndex] = 0;
 	}
-	if (effectCount2 > 0)
+
+
+
+	if (swordEffectIndex > -1 && effectCounts[swordEffectIndex] > 0)
 	{
-		effects->ResetBodies(1, effectCount2);
+		effects->ResetBodies(swordEffectIndex, effectCounts[swordEffectIndex]);
+		effectCounts[swordEffectIndex] = 0;
 	}
+
+	if (headEffectIndex > -1 && effectCounts[headEffectIndex] > 0)
+	{
+		effects->ResetBodies(headEffectIndex, effectCounts[headEffectIndex]);
+		effectCounts[headEffectIndex] = 0;
+	}
+
 
 	
 }
@@ -364,7 +485,7 @@ void PhysicsSystem::CreateCopyBuffer(ID3D11Device * device)
 
 	UINT outSize = 10;
 	
-	for (uint i = 0; i < 10; i++)
+	for (uint i = 0; i < outSize; i++)
 	{
 		Input[i] = Vector4(-1, -1, -1, -1);
 		Result[i] = Vector4(-1, -1, -1, -1);
@@ -374,8 +495,6 @@ void PhysicsSystem::CreateCopyBuffer(ID3D11Device * device)
 
 	SafeRelease(copy_StructuredBuffer);
 	SafeRelease(copy_StructuredBufferUAV);
-
-
 
 	// Create Structured Buffer
 	D3D11_BUFFER_DESC sbDesc;
@@ -398,7 +517,6 @@ void PhysicsSystem::CreateCopyBuffer(ID3D11Device * device)
 	sbUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
 	sbUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 	Check(device->CreateUnorderedAccessView(copy_StructuredBuffer, &sbUAVDesc, &copy_StructuredBufferUAV));
-
 
 
 	D3D11_BUFFER_DESC desc;

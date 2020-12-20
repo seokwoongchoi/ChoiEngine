@@ -1,5 +1,6 @@
 #include "Header.hlsl"
 Texture2DArray<float4> AnimBoneTransforms : register(t1);
+
 struct VertexSkeletal
 {
     float4 Position : Position0;
@@ -25,9 +26,8 @@ struct Keyframe
 
 struct TweenFrame
 {
-    float TakeTime;
     float TweenTime;
-    float2 Padding;
+    float3 padding;
     
     Keyframe Curr;
     Keyframe Next;
@@ -55,63 +55,93 @@ float4 BoneWeights(float4 BlendWeights)
     return weights;
 }
         
-matrix LoadAnimTransforms(uint boneIndices, uint frame, uint clip)
-{
-    float4 c0, c1, c2, c3;
-    c0 = AnimBoneTransforms.Load(uint4(boneIndices * 4 + 0, frame, clip, 0));
-    c1 = AnimBoneTransforms.Load(uint4(boneIndices * 4 + 1, frame, clip, 0));
-    c2 = AnimBoneTransforms.Load(uint4(boneIndices * 4 + 2, frame, clip, 0));
-    c3 = AnimBoneTransforms.Load(uint4(boneIndices * 4 + 3, frame, clip, 0));
+//matrix LoadAnimTransforms(uint boneIndices, uint frame, uint clip)
+//{
+//    float4 c0, c1, c2, c3;
+//    c0 = AnimBoneTransforms.Load(uint4(boneIndices * 4 + 0, frame, clip, 0));
+//    c1 = AnimBoneTransforms.Load(uint4(boneIndices * 4 + 1, frame, clip, 0));
+//    c2 = AnimBoneTransforms.Load(uint4(boneIndices * 4 + 2, frame, clip, 0));
+//    c3 = AnimBoneTransforms.Load(uint4(boneIndices * 4 + 3, frame, clip, 0));
     
-    return matrix(c0, c1, c2, c3);
-}
+//    return matrix(c0, c1, c2, c3);
+//}
 
-matrix GetCurrAnimTransforms(uint boneIndices, uint InstID)
-{
+//matrix GetCurrAnimTransforms(uint boneIndices, uint InstID)
+//{
    
-    matrix curr = LoadAnimTransforms(boneIndices, Tweenframes[InstID].Curr.CurrFrame, Tweenframes[InstID].Curr.Clip);
-    matrix next = LoadAnimTransforms(boneIndices, Tweenframes[InstID].Curr.NextFrame, Tweenframes[InstID].Curr.Clip);
-    return lerp(curr, next, Tweenframes[InstID].Curr.Time);
-}
+//    matrix curr = LoadAnimTransforms(boneIndices, Tweenframes[InstID].Curr.CurrFrame, Tweenframes[InstID].Curr.Clip);
+//    matrix next = LoadAnimTransforms(boneIndices, Tweenframes[InstID].Curr.NextFrame, Tweenframes[InstID].Curr.Clip);
+//    return lerp(curr, next, (matrix) Tweenframes[InstID].Curr.Time);
+//}
 
-matrix GetNextAnimTransforms(uint boneIndices, uint InstID)
-{
+//matrix GetNextAnimTransforms(uint boneIndices, uint InstID)
+//{
       
-    matrix curr = LoadAnimTransforms(boneIndices, Tweenframes[InstID].Next.CurrFrame, Tweenframes[InstID].Next.Clip);
-    matrix next = LoadAnimTransforms(boneIndices, Tweenframes[InstID].Next.NextFrame, Tweenframes[InstID].Next.Clip);
-    return lerp(curr, next, (matrix) Tweenframes[InstID].Next.Time);
+//    matrix curr = LoadAnimTransforms(boneIndices, Tweenframes[InstID].Next.CurrFrame, Tweenframes[InstID].Next.Clip);
+//    matrix next = LoadAnimTransforms(boneIndices, Tweenframes[InstID].Next.NextFrame, Tweenframes[InstID].Next.Clip);
+//    return lerp(curr, next, (matrix) Tweenframes[InstID].Next.Time);
     
-}
+//}
 
-matrix LerpCurrAnim_NextAnimTransform(uint boneIndices, uint InstID)
-{
+//matrix LerpCurrAnim_NextAnimTransform(uint boneIndices, uint InstID)
+//{
    
     
-    matrix curr = GetCurrAnimTransforms(boneIndices, InstID);
-    matrix next = GetNextAnimTransforms(boneIndices, InstID);
-    return lerp(curr, next, Tweenframes[InstID].TweenTime);
+//    matrix curr = GetCurrAnimTransforms(boneIndices, InstID);
+//    matrix next = GetNextAnimTransforms(boneIndices, InstID);
+//    return lerp(curr, next, (matrix) Tweenframes[InstID].TweenTime);
   
-}
+//}
+
+//void SetAnimationWorld(float4 BlendIndices, float4 BlendWeights, uint InstID)
+//{
+//    matrix transform = 0;
+//    matrix Anim = 0;
+  
+//    float4 boneIndices = BoneIndeces(BlendIndices);
+//    float4 boneWeights = BoneWeights(BlendWeights);
+//    uint instId =prevDrawCount+ InstID;
+       
+//    [unroll(4)]
+//    for (int i = 0; i < 4; i++)
+//    {
+//        Anim =
+//        lerp(
+//        GetCurrAnimTransforms(boneIndices[i], instId), LerpCurrAnim_NextAnimTransform(boneIndices[i], instId),
+//        saturate(Tweenframes[instId].Next.Clip + 1)
+//        );
+       
+//        transform += mul(boneWeights[i], Anim);
+//    }
+     
+//    float4 inst1 = InstTransforms[int2(InstID * 4 + 0, actorIndex)];
+//    float4 inst2 = InstTransforms[int2(InstID * 4 + 1, actorIndex)];
+//    float4 inst3 = InstTransforms[int2(InstID * 4 + 2, actorIndex)];
+//    float4 inst4 = InstTransforms[int2(InstID * 4 + 3, actorIndex)];
+    
+//    World = mul(transform, matrix(inst1, inst2, inst3, inst4));
+//}
 
 void SetAnimationWorld(float4 BlendIndices, float4 BlendWeights, uint InstID)
 {
     matrix transform = 0;
-    matrix Anim = 0;
+  
   
     float4 boneIndices = BoneIndeces(BlendIndices);
     float4 boneWeights = BoneWeights(BlendWeights);
-    uint instId =prevDrawCount+ InstID;
-       
+    uint instId = prevDrawCount + InstID;
+   
     [unroll(4)]
     for (int i = 0; i < 4; i++)
     {
-        Anim =
-        lerp(
-        GetCurrAnimTransforms(boneIndices[i], instId), LerpCurrAnim_NextAnimTransform(boneIndices[i], instId),
-        saturate(Tweenframes[instId].Next.Clip + 1)
-        );
+        float4 c0, c1, c2, c3;
+        c0 = AnimBoneTransforms.Load(uint4(boneIndices[i] * 4 + 0, Tweenframes[instId].Curr.CurrFrame, Tweenframes[instId].Curr.Clip, 0));
+        c1 = AnimBoneTransforms.Load(uint4(boneIndices[i] * 4 + 1, Tweenframes[instId].Curr.CurrFrame, Tweenframes[instId].Curr.Clip, 0));
+        c2 = AnimBoneTransforms.Load(uint4(boneIndices[i] * 4 + 2, Tweenframes[instId].Curr.CurrFrame, Tweenframes[instId].Curr.Clip, 0));
+        c3 = AnimBoneTransforms.Load(uint4(boneIndices[i] * 4 + 3, Tweenframes[instId].Curr.CurrFrame, Tweenframes[instId].Curr.Clip, 0));
+    
        
-        transform += mul(boneWeights[i], Anim);
+        transform += mul(boneWeights[i], matrix(c0, c1, c2, c3));
     }
      
     float4 inst1 = InstTransforms[int2(InstID * 4 + 0, actorIndex)];

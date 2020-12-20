@@ -34,11 +34,12 @@ RWTexture2D<float> OcclusionRW : register(u0);
 cbuffer OcclusionConstants : register(b0)
 {
     uint2 Res : packoffset(c0);
+    float occlusionFlag : packoffset(c0.z);
 }
 
 
 
-[numthreads(1024,1, 1)]
+[numthreads(720,1, 1)]
 void Occlussion(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
     
@@ -52,7 +53,7 @@ void Occlussion(uint3 dispatchThreadId : SV_DispatchThreadID)
 		float curDepth = DepthTex.Load(CurPixel);
 
 		// Flag anything closer than the sky as occlusion
-        OcclusionRW[CurPixel.xy].x = curDepth >0.8;
+        OcclusionRW[CurPixel.xy].x = curDepth > occlusionFlag;
      
     }
 }
@@ -82,8 +83,8 @@ VS_OUTPUT RayTraceVS( uint VertexID : SV_VertexID )
 	return Output;    
 }
 
-static const int NUM_STEPS =64;
-static const float NUM_DELTA = 1.0 / 63.0f;
+static const int NUM_STEPS =128;
+static const float NUM_DELTA = 1.0 / 127.0f;
 
 float GetRayleighPhase(float c)
 {
@@ -130,16 +131,18 @@ float4 RayTracePS( VS_OUTPUT In ) : SV_Target0
     float temp = dot(-dir, -In.Uv) / length(-In.Uv);
     float temp2 = temp * temp;
     
-   [unroll(64)]
+   [unroll(NUM_STEPS)]
     for (int i = 0; i < NUM_STEPS; i++)
    {
        float2 sampPos = In.Uv + rayOffset;
         float fCurIntensity = OcclusionTex.Sample(LinearSampler, sampPos).r ;
        
-        rayIntensity += (fCurIntensity * GetMiePhase(temp, temp2)) * decay;
+      
+        float inten = lerp(fCurIntensity , fCurIntensity * GetMiePhase(temp, temp2), rayOffset*2.0);
+        rayIntensity += (fCurIntensity) * decay;
        
        
-       rayOffset += rayDelta;
+        rayOffset += rayDelta;
      
        decay = saturate(decay - stepDecay);
     }
@@ -156,85 +159,85 @@ float4 RayTracePS( VS_OUTPUT In ) : SV_Target0
 //-----------------------------------------------------------------------------------------
 Texture2D<float> LightRaysTex : register(t0);
 
-static const float2 size = 1.0f / float2(1280, 720);
+//static const float2 size = 1.0f / float2(1280, 720);
 
-static const float2 offsets[] =
-{
-    float2(+2 * size.x, -2 * size.y), float2(+size.x, -2 * size.y), float2(0.0f, -2 * size.y), float2(-size.x, -2 * size.y),float2(-2 * size.x, -2 * size.y),
-    float2(+2 * size.x, -size.y),     float2(+size.x, -size.y),     float2(0.0f, -size.y),     float2(-size.x, -size.y),    float2(-2 * size.x, -size.y),
-    float2(+2 * size.x, 0.0f),        float2(+size.x, 0.0f),        float2(0.0f, 0.0f),        float2(-size.x, 0.0f),       float2(-2 * size.x, 0.0f),
-    float2(+2 * size.x, +size.y),     float2(+size.x, +size.y),     float2(0.0f, +size.y),     float2(-size.x, +size.y),    float2(-2 * size.x, +size.y),
-    float2(+2 * size.x, +2 * size.y), float2(+size.x, +2 * size.y), float2(0.0f, +2 * size.y), float2(-size.x, +2 * size.y),float2(-2 * size.x, +2 * size.y),
+//static const float2 offsets[] =
+//{
+//    float2(+2 * size.x, -2 * size.y), float2(+size.x, -2 * size.y), float2(0.0f, -2 * size.y), float2(-size.x, -2 * size.y),float2(-2 * size.x, -2 * size.y),
+//    float2(+2 * size.x, -size.y),     float2(+size.x, -size.y),     float2(0.0f, -size.y),     float2(-size.x, -size.y),    float2(-2 * size.x, -size.y),
+//    float2(+2 * size.x, 0.0f),        float2(+size.x, 0.0f),        float2(0.0f, 0.0f),        float2(-size.x, 0.0f),       float2(-2 * size.x, 0.0f),
+//    float2(+2 * size.x, +size.y),     float2(+size.x, +size.y),     float2(0.0f, +size.y),     float2(-size.x, +size.y),    float2(-2 * size.x, +size.y),
+//    float2(+2 * size.x, +2 * size.y), float2(+size.x, +2 * size.y), float2(0.0f, +2 * size.y), float2(-size.x, +2 * size.y),float2(-2 * size.x, +2 * size.y),
 
-};
-static const float weight[] =
-{
-    1, 1, 2, 1, 1,
-    1, 2, 4, 2, 1,
-    2, 4, 8, 4, 2,
-    1, 2, 4, 2, 1,
-    1, 1, 2, 1, 1,
-};
+//};
+//static const float weight[] =
+//{
+//    1, 1, 2, 1, 1,
+//    1, 2, 4, 2, 1,
+//    2, 4, 8, 4, 2,
+//    1, 2, 4, 2, 1,
+//    1, 1, 2, 1, 1,
+//};
 
-void Gaussianblur(inout float totalweight, inout float sum,float2 inputUV)
-{
-    float2 uv = 0;
-     [unroll(25)]
-    for (int i = 0; i < 25; i++)
-    {
-        uv = float2(inputUV.xy + offsets[i]);
-        totalweight += weight[i];
+//void Gaussianblur(inout float totalweight, inout float sum,float2 inputUV)
+//{
+//    float2 uv = 0;
+//     [unroll(25)]
+//    for (int i = 0; i < 25; i++)
+//    {
+//        uv = float2(inputUV.xy + offsets[i]);
+//        totalweight += weight[i];
 
     
-        sum += LightRaysTex.Sample(LinearSampler, uv).r* weight[i];
+//        sum += LightRaysTex.Sample(LinearSampler, uv).r* weight[i];
 
-    }
-}
+//    }
+//}
 
 
  
-//static const float Pi = 6.28318530718; // Pi*2
+static const float Pi = 6.28318530718; // Pi*2
     
-//    // GAUSSIAN BLUR SETTINGS {{{
-//static const float Directions = 16.0; // BLUR DIRECTIONS (Default 16.0 - More is better but slower)
-//static const float Quality = 5.0; // BLUR QUALITY (Default 4.0 - More is better but slower)
-//static const float Size = 8.0; // BLUR SIZE (Radius)
-//    // GAUSSIAN BLUR SETTINGS }}}
+    // GAUSSIAN BLUR SETTINGS {{{
+static const float Directions = 16.0; // BLUR DIRECTIONS (Default 16.0 - More is better but slower)
+static const float Quality = 4.0; // BLUR QUALITY (Default 4.0 - More is better but slower)
+static const float Size = 8.0; // BLUR SIZE (Radius)
+    // GAUSSIAN BLUR SETTINGS }}}
    
-//static const float2 Radius = Size / float2(640.0f, 360.0f);
+static const float2 Radius = Size / float2(640.0f, 360.0f);
 
 float4 CombinePS( VS_OUTPUT In ) : SV_Target0
 {
     
      
 	
-    ////float Color = 0;
-    ////// Blur calculations
-    ////[unroll(Directions)]
-    ////for (float d = 0.0; d < Pi; d += Pi / Directions)
-    ////{
-    ////      [unroll(5)]
-    ////    for (float i = 1.0 / Quality; i <= 1.0; i += 1.0 / Quality)
-    ////    {
-    ////        Color += LightRaysTex.Sample(LinearSampler, In.Uv + float2(cos(d), sin(d)) * Radius * i).r;
+    float Color = 0;
+    // Blur calculations
+    [unroll(Directions)]
+    for (float d = 0.0; d < Pi; d += Pi / Directions)
+    {
+          [unroll(Quality)]
+        for (float i = 1.0 / Quality; i <= 1.0; i += 1.0 / Quality)
+        {
+            Color += LightRaysTex.Sample(LinearSampler, In.Uv + float2(cos(d), sin(d)) * Radius * i).r;
            
-    ////    }
-    ////}
+        }
+    }
     
-    ////// Output to screen
-    ////Color /= Quality * Directions - 15.0;
+    // Output to screen
+    Color /= Quality * Directions - 15.0;
    
-  // return float4(RayColor * LightRaysTex.Sample(LinearSampler, In.Uv), 1.0f);
+    return float4(RayColor * Color, 1.0f);
     
-    float sum = 0.0f;
-    float totalweight = 0.0f;
+ //   float sum = 0.0f;
+ //   float totalweight = 0.0f;
      
-    Gaussianblur(totalweight, sum, In.Uv);
-    float factor = sum / totalweight;
+ //   Gaussianblur(totalweight, sum, In.Uv);
+ //   float factor = sum / totalweight;
 
-	// Return the color scaled by the intensity
+	//// Return the color scaled by the intensity
   
-    //return float4(rayIntensity, 0, 0, 1);
-    return float4(RayColor * saturate(factor), 1.0);
+ //   //return float4(rayIntensity, 0, 0, 1);
+ //   return float4(RayColor * saturate(factor), 1.0);
 }
 

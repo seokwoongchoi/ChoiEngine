@@ -139,23 +139,27 @@ static const float TerrainSpecularIntensity = 0.5;
 static const float2 WaterMicroBumpTexcoordScale = { 225, 225 };
 static const float2 WaterBumpTexcoordScale = { 7, 7 };
 static const float WaterHeightBumpScale = 1.0f;
-static const float3 WaterDeepColor = { 0.1, 0.4, 0.7 };
+static const float3 WaterDeepColor = { 0.3, 0.6, 0.9 };
 static const float3 WaterScatterColor = { 0.3, 0.7, 0.6 };
 static const float3 WaterSpecularColor = { 1, 1, 1 };
 static const float WaterSpecularIntensity = 350.0;
 static const  float  DynamicTessFactor = 50.0f;
 static const float WaterSpecularPower = 1000;
-static const float2 WaterColorIntensity = { 0.1, 0.2 };
+static const float2 WaterColorIntensity = { 0.11, 0.21 };
 
 static const float2 HeightFieldOrigin = float2(0, 0);
 static const float HeightFieldSize = 512;
 static const float ZNear = 0.1f;
 static const float ZFar = 1000.0f;
 
+
+//static const float3 g_AtmosphereBrightColor = { 1.0, 1.1, 0.8 };
+//static const float3 g_AtmosphereDarkColor = { 0.6, 0.6, 0.7 };
+//static const float g_FogDensity = 1.0f / 1000.0f;
 // calculating tessellation factor. It is either constant or hyperbolic depending on UseDynamicLOD switch
 float CalculateTessellationFactor(float distance)
 {
-    return  DynamicTessFactor * (1 / (0.015 * distance));
+    return  DynamicTessFactor * (1 / (0.08f * distance));
 }
 
 // to avoid vertex swimming while tessellation varies, one can use mipmapping for displacement maps
@@ -164,7 +168,10 @@ float CalculateMIPLevelForDisplacementTextures(float distance)
 {
     return log2(128 / CalculateTessellationFactor(distance));
 }
-
+//float3 CalculateFogColor(float3 pixel_to_light_vector, float3 pixel_to_eye_vector)
+//{
+//    return lerp(g_AtmosphereDarkColor, g_AtmosphereBrightColor, 0.5 * dot(pixel_to_light_vector, -pixel_to_eye_vector) + 0.5);
+//}
 
 // constructing the displacement amount and normal for water surface geometry
 float4 CombineWaterNormal(float3 world_position)
@@ -311,7 +318,7 @@ PatchData PatchConstantHS(InputPatch<HSIn_Heightfield, 1> inputPatch)
     float3 patch_center_realigned = patch_center + normalize(patch_to_camera_direction_vector) * min(2 * inputPatch[0].size.x, length(patch_to_camera_direction_vector));
     float4 patch_screenspace_center = mul(float4(patch_center_realigned, 1.0), ModelViewProjectionMatrix);
 
-    [branch]
+    [flatten]
     if (((patch_screenspace_center.x / patch_screenspace_center.w > -1.0) && (patch_screenspace_center.x / patch_screenspace_center.w < 1.0)
 		&& (patch_screenspace_center.y / patch_screenspace_center.w > -1.0) && (patch_screenspace_center.y / patch_screenspace_center.w < 1.0)
 		&& (patch_screenspace_center.w > 0)) || (length(patch_center - CameraPosition) < 2 * inputPatch[0].size.x))
@@ -319,7 +326,7 @@ PatchData PatchConstantHS(InputPatch<HSIn_Heightfield, 1> inputPatch)
         in_frustum = 1;
     }
     
-  [branch]
+  [flatten]
     if ((in_frustum==false))
     {
         output.Edges[0] = -1;
@@ -423,7 +430,7 @@ PSIn_Diffuse HeightFieldPatchDS(PatchData input,
 
 	//adding refraction caustics
     float cc = 0;
-	[branch]
+	[flatten]
     if ((SkipCausticsCalculation == 0) ) // doing it only for main
     {
         cc = CalculateWaterCausticIntensity(vertexPosition.xyz);
@@ -472,25 +479,29 @@ float4 HeightFieldPatchPS(PSIn_Diffuse input) : SV_Target
 
 	// getting diffuse color
     
-    float R = SlopeDiffuseTexture.GatherRed(SamplerAnisotropicWrap, input.texcoord).r;
-    float G = SlopeDiffuseTexture.GatherGreen(SamplerAnisotropicWrap, input.texcoord).r;
-    float B = SlopeDiffuseTexture.GatherBlue(SamplerAnisotropicWrap, input.texcoord).r;
+    //float R = SlopeDiffuseTexture.GatherRed(SamplerAnisotropicWrap, input.texcoord);
+    //float G = SlopeDiffuseTexture.GatherGreen(SamplerAnisotropicWrap, input.texcoord);
+    //float B = SlopeDiffuseTexture.GatherBlue(SamplerAnisotropicWrap, input.texcoord);
     
     
-    color = float3(R, G, B);
-    R = SandDiffuseTexture.GatherRed(SamplerAnisotropicWrap, input.texcoord).r;
-    G = SandDiffuseTexture.GatherGreen(SamplerAnisotropicWrap, input.texcoord).r;
-    B = SandDiffuseTexture.GatherBlue(SamplerAnisotropicWrap, input.texcoord).r;
-    color = lerp(color, float3(R, G, B), input.layerdef.g * input.layerdef.g);
-    R = RockDiffuseTexture.GatherRed(SamplerAnisotropicWrap, input.texcoord).r;
-    G = RockDiffuseTexture.GatherGreen(SamplerAnisotropicWrap, input.texcoord).r;
-    B = RockDiffuseTexture.GatherBlue(SamplerAnisotropicWrap, input.texcoord).r;
-    color = lerp(color, float3(R, G, B), input.layerdef.w * input.layerdef.w);
-    R = GrassDiffuseTexture.GatherRed(SamplerAnisotropicWrap, input.texcoord).r;
-    G = GrassDiffuseTexture.GatherGreen(SamplerAnisotropicWrap, input.texcoord).r;
-    B = GrassDiffuseTexture.GatherBlue(SamplerAnisotropicWrap, input.texcoord).r;
-    color = lerp(color, float3(R, G, B), input.layerdef.b);
-
+    
+    //color = float3(R, G, B);
+    //R = SandDiffuseTexture.GatherRed(SamplerAnisotropicWrap, input.texcoord);
+    //G = SandDiffuseTexture.GatherGreen(SamplerAnisotropicWrap, input.texcoord);
+    //B = SandDiffuseTexture.GatherBlue(SamplerAnisotropicWrap, input.texcoord);
+    //color = lerp(color, float3(R, G, B), input.layerdef.g * input.layerdef.g);
+    //R = RockDiffuseTexture.GatherRed(SamplerAnisotropicWrap, input.texcoord).r;
+    //G = RockDiffuseTexture.GatherGreen(SamplerAnisotropicWrap, input.texcoord);
+    //B = RockDiffuseTexture.GatherBlue(SamplerAnisotropicWrap, input.texcoord);
+    //color = lerp(color, float3(R, G, B), input.layerdef.w * input.layerdef.w);
+    //R = GrassDiffuseTexture.GatherRed(SamplerAnisotropicWrap, input.texcoord);
+    //G = GrassDiffuseTexture.GatherGreen(SamplerAnisotropicWrap, input.texcoord);
+    //B = GrassDiffuseTexture.GatherBlue(SamplerAnisotropicWrap, input.texcoord);
+    //color = lerp(color, float3(R, G, B), input.layerdef.b);
+    color = SlopeDiffuseTexture.Sample(SamplerAnisotropicWrap, input.texcoord).rgb;
+    color = lerp(color, SandDiffuseTexture.Sample(SamplerAnisotropicWrap, input.texcoord).rgb, input.layerdef.g * input.layerdef.g);
+    color = lerp(color, RockDiffuseTexture.Sample(SamplerAnisotropicWrap, input.texcoord).rgb, input.layerdef.w * input.layerdef.w);
+    color = lerp(color, GrassDiffuseTexture.Sample(SamplerAnisotropicWrap, input.texcoord).rgb, input.layerdef.b);
 	// adding per-vertex lighting defined by displacement of vertex 
     color *= 0.5 + 0.5 * min(1.0, max(0.0, input.layerdef.r / 3.0f + 0.5f));
    
@@ -519,14 +530,14 @@ struct PS_GBUFFER_OUT
 PS_GBUFFER_OUT PackGBuffer(float3 BaseColor,  float3 Normal, float metallic, float roughness, float terrainMask = 1)
 {
     PS_GBUFFER_OUT Out;
-    Out.ColorSpecInt = float4(BaseColor.rgb, 0.0);
-    Out.Specular = float4(roughness, metallic, 0.0, terrainMask);
-    Out.Normal = float4(normalize(Normal.rgb+0.5+0.5), 0.0);
+    Out.ColorSpecInt = float4(BaseColor.rgb, terrainMask);
+    Out.Specular = float4(roughness, metallic, 0.0, 0.0);
+    Out.Normal = float4(normalize(Normal.rgb+0.5+0.5), 1.0);
     return Out;
 }
 PS_GBUFFER_OUT HeightFieldPatchPacking(PSIn_Diffuse input)
 {
-    float4 color;
+    float3 color;
     float3 pixel_to_light_vector = normalize(LightPosition - input.positionWS.xyz);
     float3 pixel_to_eye_vector = normalize(CameraPosition - input.positionWS.xyz);
     float3 microbump_normal;
@@ -547,10 +558,10 @@ PS_GBUFFER_OUT HeightFieldPatchPacking(PSIn_Diffuse input)
     microbump_normal = mul(microbump_normal, normal_rotation_matrix);
 
 	// getting diffuse color
-    color = SlopeDiffuseTexture.Sample(SamplerAnisotropicWrap, input.texcoord);
-    color = lerp(color, SandDiffuseTexture.Sample(SamplerAnisotropicWrap, input.texcoord), input.layerdef.g * input.layerdef.g);
-    color = lerp(color, RockDiffuseTexture.Sample(SamplerAnisotropicWrap, input.texcoord), input.layerdef.w * input.layerdef.w);
-    color = lerp(color, GrassDiffuseTexture.Sample(SamplerAnisotropicWrap, input.texcoord), input.layerdef.b);
+    color = SlopeDiffuseTexture.Sample(SamplerAnisotropicWrap, input.texcoord).rgb;
+    color = lerp(color, SandDiffuseTexture.Sample(SamplerAnisotropicWrap, input.texcoord).rgb, input.layerdef.g * input.layerdef.g);
+    color = lerp(color, RockDiffuseTexture.Sample(SamplerAnisotropicWrap, input.texcoord).rgb, input.layerdef.w * input.layerdef.w);
+    color = lerp(color, GrassDiffuseTexture.Sample(SamplerAnisotropicWrap, input.texcoord).rgb, input.layerdef.b);
 
 	// adding per-vertex lighting defined by displacement of vertex 
     color *= 0.5 + 0.5 * min(1.0, max(0.0, input.layerdef.r / 3.0f + 0.5f));
@@ -568,13 +579,13 @@ PS_GBUFFER_OUT HeightFieldPatchPacking(PSIn_Diffuse input)
 	// making all a bit brighter, simultaneously pretending the wet surface is darker than normal;
     color.rgb *= 0.5 + 0.8 * max(0, min(1, input.positionWS.y * 0.5 + 0.5));
 
-
+   // float bitbrighter = 0.5 + 0.8 * max(0, min(1, input.positionWS.y * 0.5 + 0.5));
 
 	// applying refraction caustics
     color.rgb *= (1.0 + max(0, 0.4 + 0.6 * dot(pixel_to_light_vector, microbump_normal)) * input.positionWS.a * (0.4 + 0.6 * shadow_factor));
-
-	
-    return PackGBuffer(color.rgb,  microbump_normal,  0, 0.8, 0);
+   // float refractioncaustics = (1.0 + max(0, 0.4 + 0.6 * dot(pixel_to_light_vector, microbump_normal)) * input.positionWS.a * (0.4 + 0.6 * shadow_factor));
+  //  color.rgb = lerp(CalculateFogColor(pixel_to_light_vector, pixel_to_eye_vector).rgb, color.rgb, min(1, exp(-length(CameraPosition - input.positionWS.xyz) * g_FogDensity)));
+    return PackGBuffer(color.rgb, microbump_normal, 0.0, 0.0, 0);
 }
 
 //--------------------------------------------------------------------------------------
@@ -734,7 +745,7 @@ PS_GBUFFER_OUT WaterPatchPS(PSIn_DiffuseWater input)
     vertex_in_viewspace = mul(float4(input.positionWS.xyz, 1), ModelViewMatrix);
     float conservative_water_depth = conservative_refraction_depth - vertex_in_viewspace.z;
 
-    [branch]
+    [flatten]
     if (conservative_water_depth < 0)
     {
         refraction_disturbance = 0;
@@ -749,7 +760,7 @@ PS_GBUFFER_OUT WaterPatchPS(PSIn_DiffuseWater input)
 	// calculating water surface color and applying atmospheric fog to it
     water_color = diffuse_factor * float4(WaterDeepColor, 1);
   
-	
+   // water_color.rgb = lerp(CalculateFogColor(pixel_to_light_vector, pixel_to_eye_vector).rgb, water_color.rgb, min(1, exp(-length(CameraPosition - input.positionWS) * g_FogDensity)));
 	// fading fresnel factor to 0 to soften water surface edges
     fresnel_factor *= min(1, water_depth * 5.0);
 
@@ -760,8 +771,8 @@ PS_GBUFFER_OUT WaterPatchPS(PSIn_DiffuseWater input)
     color.rgb = lerp(refraction_color.rgb, reflection_color.rgb, fresnel_factor);
     color.rgb +=WaterSpecularIntensity * specular_factor * WaterSpecularColor * fresnel_factor;
     color.rgb += WaterScatterColor * scatter_factor;
-    color.a = 1;
-     return PackGBuffer(color.rgb*1.8, microbump_normal, 0.4, 0, 0);
+    //color.a = 1;
+     return PackGBuffer(color.rgb, microbump_normal, 0.1, 0.2, 0);
    // return color;
    
 }
@@ -839,7 +850,7 @@ technique11 T0//Refraction
     pass P2 //Terrain reflection
     {
         SetRasterizerState(CullBackMS);
-        SetDepthStencilState(DepthNormal, 0);
+        //SetDepthStencilState(DepthNormal, 0);
         SetBlendState(NoBlending, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
         SetVertexShader(CompileShader(vs_5_0, PassThroughVS()));
         SetHullShader(CompileShader(hs_5_0, PatchHS()));
@@ -850,7 +861,7 @@ technique11 T0//Refraction
     pass P3 //water
     {
         SetRasterizerState(CullBackMS);
-        // SetDepthStencilState(DepthNormal, 0);
+       // SetDepthStencilState(DepthNormal,2);
         SetBlendState(NoBlending, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
         //SetBlendState(blendState, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
         SetVertexShader(CompileShader(vs_5_0, PassThroughVS()));
@@ -862,7 +873,7 @@ technique11 T0//Refraction
     pass P4 //TerrainPacking
     {
         SetRasterizerState(CullBackMS);
-       // SetDepthStencilState(DepthNormal, 0);
+      //  SetDepthStencilState(DepthNormal, 0);
         SetBlendState(NoBlending, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
         SetVertexShader(CompileShader(vs_5_0, PassThroughVS()));
         SetHullShader(CompileShader(hs_5_0, PatchHS()));

@@ -60,7 +60,7 @@
         <NormalFile>Tachi_Sword_MESH2_Tachi_Sword_SG_Normal.jpg</NormalFile>
         <RoughnessFile>Tachi_Sword_MESH2_Tachi_Sword_SG_Rough.png</RoughnessFile>
         <MetallicFile>Tachi_Sword_MESH2_Tachi_Sword_SG_Metallic.jpg</MetallicFile>
-        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
+        <Diffuse R="0.97983873" G="0.95613295" B="0.95613295" A="1"/>
+        <PBR Roughness="1" Metallic="2"/>
     </Material>
 </Materials>

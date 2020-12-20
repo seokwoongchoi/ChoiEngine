@@ -845,6 +845,11 @@ void PreviewRenderer::ReadEditedMaterial(const wstring & name)
 		if (texture.length() > 0)
 			material->MetallicMap(directory + texture, true);
 
+		/*node = node->NextSiblingElement();
+		texture = String::ToWString(node->GetText());
+		if (texture.length() > 0)
+			material->HeightMap(directory + texture, true);*/
+
 		Color color;
 
 		node = node->NextSiblingElement();

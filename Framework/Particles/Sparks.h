@@ -12,8 +12,9 @@ public:
 	Sparks(ID3D11Device* device, uint ID);
 	~Sparks();
 
+	int ID() { return id; }
 public:
-	void InitBodies(const wstring& path);
+	int InitBodies(const wstring& path);
 	void InitBodies();
 	void Update(ID3D11DeviceContext* context)override;
 	void Render(ID3D11DeviceContext* context, ID3D11ShaderResourceView* positionSRV)override;
@@ -49,7 +50,7 @@ private:
 	ID3D11Buffer* simulateBuffer;
 	Vector4 *particleArray;
 
-	bool bRendered;
+
 	uint drawCount;
 private:
 	struct WVPDesc
@@ -72,6 +73,6 @@ private :
    ID3D11RasterizerState* rsState;
 
   
-
+   int id = -1;
 };
 

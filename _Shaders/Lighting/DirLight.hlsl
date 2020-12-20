@@ -12,6 +12,7 @@ cbuffer cbDirLight : register( b1 )
 {
 
 	float3 DirToLight			: packoffset( c0 );
+    float Time                  : packoffset(c0.w);
 	float3 DirLightColor		: packoffset( c1 );
 	float4x4 ToShadowSpace		: packoffset( c2 );
 	float4 ToCascadeOffsetX		: packoffset( c6 );
@@ -133,8 +134,6 @@ float CascadedShadow(float3 position)
     float sum = 0.0f;
     float totalweight = 0.0f;
 
-  
-    
     Gaussianblur(totalweight, sum, UVD, bestCascade);
   
     float factor = sum / totalweight;
@@ -217,6 +216,7 @@ float3 CalcDirectional(float3 position, Material mat)
     float3 diffuse = ndotl * Disney(ndotl, ldoth, ndotv, alpha) * DirLightColor;
     float3 specular = ndotl * GGX(ndotl, ndoth, ndotv, vdoth, ldoth, alpha, f0);
     
+   // float3 kS = FresnelSchlickRoughness(1 - ndotv, f0, roughness);
     float3 ibl = IBL(mat, viewDir, realSpecularColor);
     float3 finalColor = (realAlbedo * diffuse.rgb) + (ibl+specular.rgb);
    
@@ -236,10 +236,10 @@ float3 GammaToLinear(float3 color)
 float3 Ambient(float bumpY, float3 diffuse)
 {
     
-    //float3 g_vAmbientLowerColor = GammaToLinear(float3(0.4f, 0.4f, 0.4f));
-    //float3 g_vAmbientUpperColor = GammaToLinear(float3(0.53f, 0.53f, 0.6f));
-    float3 AmbientLowerColor = GammaToLinear(float3(0.4f, 0.4f, 0.3f));
-    float3 AmbientUpperColor = GammaToLinear(float3(0.53f, 0.53f, 0.6f));
+    float3 AmbientLowerColor = GammaToLinear(float3(0.4f, 0.4f, 0.4f));
+  
+   
+    float3 AmbientUpperColor = GammaToLinear(float3(0.6f, 0.6f, 0.63f));
   
   
     float3 AmbientRange = AmbientUpperColor - AmbientLowerColor;
@@ -257,61 +257,51 @@ float3 Ambient(float bumpY, float3 diffuse)
 float4 DirLightPS( VS_OUTPUT In) : SV_TARGET
 {
     Material mat = UnpackGBuffer(In.Position.xy);
-  
- 
     float3 position = CalcWorldPos(In.cpPos, mat.LinearDepth);
-    float ao = SsaoTexture.Sample(LinearSampler, In.UV).r;
-    //ao *= 2.0;
-   // float3 ambient = Ambient(mat.normal.y, mat.diffuseColor.rgb);
+    
    
-    float shadow = CascadedShadow(position);
-    float lightFactor = LightFactor(DirToLight.y);
-    float3 finalColor = 0;
     [flatten]
-    if (mat.TerrainMask<1)
+    if (mat.SkyMask<1)
     {
-        finalColor = mat.diffuseColor.rgb;
-      
-        finalColor *= ao;
-        finalColor *= shadow;
-        finalColor *= lightFactor;
-        return float4(finalColor, 1.0);
+       
+        return float4(mat.diffuseColor, 1.0);
     }
+    
    
-      
-    finalColor = CalcDirectional(position, mat);
-  
+   
+    float3 finalColor = lerp(mat.diffuseColor.rgb, CalcDirectional(position, mat), mat.TerrainMask);
+    float ao = SsaoTexture.Sample(LinearSampler, In.UV).r;
     finalColor *= ao;
-    finalColor *= shadow;
-    finalColor *= lightFactor;
+    finalColor += Ambient(mat.normal.y, finalColor.rgb);
+    finalColor *= CascadedShadow(position);
+    finalColor *= LightFactor(DirToLight.y);
     
-    
-     //// Apply the fog to the final color
-   // float3 eyeToPixel = position - EyePosition;
-   // finalColor = ApplyFog(finalColor, EyePosition.y, eyeToPixel); 
-
+    float3 eyeToPixel = (position) - (EyePosition);
+    finalColor = ApplyFog(finalColor, EyePosition.y , eyeToPixel);
+   
     
   
-    return float4(finalColor.xyz, 1.0);
+    return float4(finalColor, 1.0);
 }
 float4 DirLightNOAOPS(VS_OUTPUT In) : SV_TARGET
 {
    float ao = SsaoTexture.GatherRed(LinearSampler, In.UV).r;
    return float4(ao, ao, ao, 1.0f);
-   Material mat = UnpackGBuffer(In.Position.xy);
+    
+   //Material mat = UnpackGBuffer(In.Position.xy);
   
-   float3 position = CalcWorldPos(In.cpPos, mat.LinearDepth);
+   //float3 position = CalcWorldPos(In.cpPos, mat.LinearDepth);
   
   
-   float shadow = CascadedShadow(position);
-   float lightFactor = LightFactor(DirToLight.y);
-   [branch]
-   if (mat.TerrainMask == 0)
-   {
-       return float4(mat.diffuseColor.rgb *  shadow * lightFactor, 1.0f);
-   }
+   //float shadow = CascadedShadow(position);
+   //float lightFactor = LightFactor(DirToLight.y);
+   //[branch]
+   //if (mat.TerrainMask == 0)
+   //{
+   //    return float4(mat.diffuseColor.rgb *  shadow * lightFactor, 1.0f);
+   //}
    
-   float3 finalColor = CalcDirectional(position, mat) *  shadow * lightFactor;
+   //float3 finalColor = CalcDirectional(position, mat) *  shadow * lightFactor;
   
   
   
@@ -321,7 +311,7 @@ float4 DirLightNOAOPS(VS_OUTPUT In) : SV_TARGET
 
  
   
-    return float4(finalColor.xyz, 1.0);
+   // return float4(finalColor.xyz, 1.0);
 }
 
 

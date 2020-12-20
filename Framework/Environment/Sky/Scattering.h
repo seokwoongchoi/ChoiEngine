@@ -9,7 +9,7 @@ public:
 
 	void Render(ID3D11DeviceContext* context);
 
-	ID3D11Device* device;
+	
 private:
 	void CreateDoom();
 	void CreateShader();
@@ -48,6 +48,7 @@ private:
 
 private:
 	ID3D11DepthStencilState*  depthStencilState;
-	
+	ID3D11Device* device;
+	ID3D11BlendState*  AdditiveBlendState;
 };
 

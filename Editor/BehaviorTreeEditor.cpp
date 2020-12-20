@@ -39,3 +39,9 @@ void BehaviorTreeEditor::ImageButton()
 
 	Application_Frame(&bShowBehaviorTree);
 }
+
+void BehaviorTreeEditor::LoadAndCompile(const string& path)
+{
+	LoadAllNodes(L"../_BehaviorTreeDatas/BehaviorTree0.behaviortree");
+	Compile();
+}

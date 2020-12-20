@@ -9,3 +9,4 @@ void Application_Frame(bool* show);
 
 void SaveAllNodes();
 void LoadAllNodes(const wstring & file);
+void Compile();

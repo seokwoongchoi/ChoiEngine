@@ -102,6 +102,8 @@ RasterizerState CullBack
 
 RasterizerState CullBackMS
 {
+    //FillMode = WIREFRAME;
+
     CullMode = Back;
     FrontCounterClockwise = TRUE;
   //  MultisampleEnable = TRUE;
@@ -147,7 +149,14 @@ RasterizerState WireframeMS
 
 DepthStencilState DepthNormal
 {
-    DepthFunc = LESS_EQUAL;
+
+    DepthFunc = Less;
+    //StencilEnable = true;
+    //StencilReadMask = 0xff;
+    //StencilWriteMask = 0xff;
+
+    //FrontFaceStencilFunc = Always;
+    //BackFaceStencilFunc = Always;
 };
 
 DepthStencilState NoDepthStencil

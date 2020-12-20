@@ -30,7 +30,7 @@ int APIENTRY WinMain
 
 
 	{
-		//Thread::Create();
+		Thread::Create();
 		Time::Create();
 		Time::Get()->Start();
 		Keyboard::Create();
@@ -80,7 +80,7 @@ int APIENTRY WinMain
 	Mouse::Delete();
 	Keyboard::Delete();
 	Time::Delete();
-	//Thread::Delete();
+	Thread::Delete();
 	Window::Destroy();
 	return 0;
 }

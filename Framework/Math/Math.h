@@ -25,9 +25,9 @@ public:
     static const float ToDegree(const float& radian) { return radian * TO_DEG; }
 
     template <typename T>
-    static constexpr T Clamp(const T& value, const T& min, const T& max)
+    static void  Clamp( T& value, const T& min, const T& max)
     {
-        return (value < min) ? min : (value > max) ? max : value;
+		value=(value < min) ? min : (value > max) ? max : value;
     }
 
     template <typename T>

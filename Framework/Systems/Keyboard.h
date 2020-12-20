@@ -17,6 +17,18 @@ public:
     inline bool Up(DWORD key) { return keyMap[key] == KEY_INPUT_STATUS_UP; }
 	inline bool Press(DWORD key) { return keyMap[key] == KEY_INPUT_STATUS_PRESS; }
 
+	inline bool Press(const DWORD* key) { 
+		return keyMap[key[0]] == KEY_INPUT_STATUS_PRESS||
+			   keyMap[key[1]] == KEY_INPUT_STATUS_PRESS ||
+			   keyMap[key[2]] == KEY_INPUT_STATUS_PRESS ||
+			   keyMap[key[3]] == KEY_INPUT_STATUS_PRESS ; }
+
+	inline bool Up(const DWORD* key) {
+		return keyMap[key[0]] == KEY_INPUT_STATUS_UP ||
+			keyMap[key[1]] == KEY_INPUT_STATUS_UP ||
+			keyMap[key[2]] == KEY_INPUT_STATUS_UP ||
+			keyMap[key[3]] == KEY_INPUT_STATUS_UP;
+	}
 
 private:
 	Keyboard();

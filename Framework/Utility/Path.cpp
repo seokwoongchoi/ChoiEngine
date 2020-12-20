@@ -242,6 +242,39 @@ void Path::SaveFileDialog(wstring file, const WCHAR* filter, wstring folder, fun
 	}
 }
 
+void Path::OpenFileDialog(wstring file, const WCHAR * filter, wstring folder, bool isLevel, function<void(wstring, uint)> func, HWND hwnd)
+{
+	WCHAR name[255];
+	wcscpy_s(name, file.c_str());
+
+	wstring tempFolder = folder;
+	String::Replace(&tempFolder, L"/", L"\\");
+
+	OPENFILENAME ofn;
+	ZeroMemory(&ofn, sizeof(OPENFILENAME));
+	ofn.lStructSize = sizeof(OPENFILENAME);
+	ofn.hwndOwner = hwnd;
+	ofn.lpstrFilter = filter;
+	ofn.lpstrFile = name;
+	ofn.lpstrFileTitle = L"저장하기";
+	ofn.nMaxFile = 255;
+	ofn.lpstrInitialDir = tempFolder.c_str();
+	ofn.Flags = OFN_NOCHANGEDIR;
+
+	if (GetSaveFileName(&ofn) == TRUE)
+	{
+		if (func != NULL)
+		{
+			wstring loadName = name;
+			String::Replace(&loadName, L"\\", L"/");
+
+			func(loadName, isLevel);
+			loadName.clear();
+			loadName.shrink_to_fit();
+		}
+	}
+}
+
 void Path::GetFiles(vector<string>* files, string path, string filter, bool bFindSubFolder)
 {
 	vector<wstring> wFiles;

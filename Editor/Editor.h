@@ -1,5 +1,5 @@
 #pragma once
-
+#include "Utility/QuadTree.h"
 class Editor final
 {
 	friend class ActorEditor;
@@ -14,8 +14,10 @@ public:
 	void Update();
 	void Render();
 	void PostEffects();
+	void Cloud();
 	void Save(const wstring& fileName);
 	void Load(const wstring& fileName);
+	void LoadThread(const wstring& fileName);
 public:
 	void RenderTexture(Vector2 position, Vector2 scale, Color color, Texture* texture);
 private:
@@ -29,7 +31,10 @@ private:
 	void EditorMenu();
 private:
 	void AddTrasform(const Vector3& pos);
+	void DropParticle(const Vector3& pos);
 	void DebugRender();
+
+	void QuadTreeRender(shared_ptr<QuadTreeNode> node);
 private:
 	
 	class Engine* engine;
@@ -76,4 +81,6 @@ private:
 	};
 
 	vector<GuiTexture> textures;
+
+	
 };

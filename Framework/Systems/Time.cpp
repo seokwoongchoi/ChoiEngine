@@ -5,6 +5,7 @@ Time* Time::instance = NULL;
 
 bool Time::isTimerStopped = true;
 float Time::timeElapsed = 0.0f;
+float Time::GameSpeed = 1.0f;
 
 Time::Time(void) :
 	ticksPerSecond(0), currentTime(0), lastTime(0), lastFPSUpdate(0), fpsUpdateInterval(0),
@@ -89,8 +90,8 @@ void Time::Start()
 
 void Time::Stop()
 {
-	if (isTimerStopped)
-		assert(false);
+	if (isTimerStopped) return;
+		//assert(false);
 
 	INT64 stopTime = 0;
 	QueryPerformanceCounter((LARGE_INTEGER *)&stopTime);

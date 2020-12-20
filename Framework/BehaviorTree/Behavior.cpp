@@ -196,7 +196,8 @@ EStatus  Condition_IsSeeEnemy::Update(const uint & actorIndex, const uint& insta
 			uint index = animator->PrevDrawCount(a) + i;
 			if (animator->tweenDesc[index].state == ActorState::Die)continue;
 
-			Vector3 findPosition = animator->GetPosition(a, i);
+			Vector3 findPosition;
+			 animator->GetPosition(&findPosition,a, i);
 			float temp = (findPosition.x - position.x)*(findPosition.x - position.x) +
 				(findPosition.z - position.z)*(findPosition.z - position.z);
 
@@ -221,7 +222,8 @@ EStatus  Condition_IsSeeEnemy::Update(const uint & actorIndex, const uint& insta
 
 EStatus  Condition_IsHealthLow::Update(const uint & actorIndex, const uint& instanceIndex)
 {
-	Vector3 findPosition = animator->GetPosition(findedActorIndex, findedInstIndex);
+	Vector3 findPosition;
+	animator->GetPosition(&findPosition,findedActorIndex, findedInstIndex);
 
 	float length = D3DXVec3Length(&(Vector3(position.x,0.0f,position.z) - Vector3(findPosition.x, 0.0f, findPosition.z)));
   
@@ -262,7 +264,8 @@ EStatus  Action_Attack::Update(const uint & actorIndex, const uint& instanceInde
 	if (animator->tweenDesc[index].state == ActorState::Die)
 		return EStatus::Failure;
 
-	Vector3 findPosition = animator->GetPosition(findedActorIndex, findedInstIndex);
+	Vector3 findPosition;
+	animator->GetPosition(&findPosition,findedActorIndex, findedInstIndex);
 	Vector3 dir = position - findPosition > 0 ? position - findPosition : (position - findPosition)*-1;
 	float x = dir.x;
 	float z = dir.z;
@@ -298,21 +301,24 @@ EStatus  Action_Attack::Update(const uint & actorIndex, const uint& instanceInde
 		D3DXMatrixScaling(&S, scale.x, scale.y, scale.z);
 		D3DXMatrixTranslation(&T, position.x, position.y, position.z);
 		D3DXMatrixRotationY(&R, angle);
-		animator->SetInstMatrix(actorIndex, instanceIndex, S *R*T);
+		 world = S * R*T;
+		animator->SetInstMatrix(&world,actorIndex, instanceIndex);
 		saveAngle = angle;
 	}
 
 	if (length < 1.0f)
 	{
-		position -= 1.5f * -dir * Time::Delta();
+		position -= 2.0f * -dir * Time::Delta();
 		D3DXMatrixTranslation(&T, position.x, position.y, position.z);
-		animator->SetInstMatrix(actorIndex, instanceIndex, S *R*T);
+		 world = S * R*T;
+		animator->SetInstMatrix(&world, actorIndex, instanceIndex);
+		
 
 
 	}
 
 	
-//	animator->tweenData[index].speed = 1.5f;
+	animator->tweenData[index].speed = 1.5f;
 	animator->tweenDesc[index].state=ActorState::Attack;
 	
 	return EStatus::Success;
@@ -396,7 +402,8 @@ EStatus  Action_Patrol::Update(const uint & actorIndex, const uint& instanceInde
 
 EStatus Condition_IsInRange::Update(const uint & actorIndex, const uint & instanceIndex)
 {
-	Vector3 findPosition = animator->GetPosition(findedActorIndex, findedInstIndex);
+	Vector3 findPosition;
+	animator->GetPosition(&findPosition,findedActorIndex, findedInstIndex);
 
 	float length = D3DXVec3Length(&(Vector3(position.x, 0.0f, position.z) - Vector3(findPosition.x, 0.0f, findPosition.z)));
 
@@ -422,7 +429,8 @@ EStatus Action_Strafe::Update(const uint & actorIndex, const uint & instanceInde
 	{
 
 		
-		Vector3 findPosition = animator->GetPosition(findedActorIndex, findedInstIndex);
+		Vector3 findPosition;
+		animator->GetPosition(&findPosition,findedActorIndex, findedInstIndex);
 		Vector3 dir = position - findPosition > 0 ? position - findPosition : (position - findPosition)*-1;
 		float x = dir.x;
 		float z = dir.z;
@@ -458,7 +466,9 @@ EStatus Action_Strafe::Update(const uint & actorIndex, const uint & instanceInde
 		if (saveAngle != angle)
 		{
 			
-			animator->SetInstMatrix(actorIndex, instanceIndex, S *R*T);
+			world = S * R*T;
+			animator->SetInstMatrix(&world, actorIndex, instanceIndex);
+		
 			saveAngle = angle;
 		}
 
@@ -487,9 +497,10 @@ EStatus Action_Strafe::Update(const uint & actorIndex, const uint & instanceInde
 		}
 		
 		D3DXMatrixTranslation(&T, position.x, position.y, position.z);
-		animator->SetInstMatrix(actorIndex, instanceIndex, S *R*T);
 		
 		
+		 world = S * R*T;
+		animator->SetInstMatrix(&world, actorIndex, instanceIndex);
 
 	
 		

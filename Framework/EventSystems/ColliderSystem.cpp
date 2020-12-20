@@ -73,15 +73,15 @@ ColliderSystem::ColliderSystem(ID3D11Device * device, const string& path, const 
 //
 
 
-void ColliderSystem::FrustumCulling(const uint& index)
+uint ColliderSystem::FrustumCulling(const uint& index)
 {
 	
-	//if (renderers[index]->drawCount == 0)return;
+	//if ( renderDatas[index].drawCount == 0)return;
 
 	frustum->Update();
-
 	
-	 const uint& count = renderers[index]->drawCount;
+	
+	 const uint& count = renderDatas[index].drawCount;
 
 
 	 bool bChanged = false;
@@ -91,8 +91,8 @@ void ColliderSystem::FrustumCulling(const uint& index)
 	 {
 
 
-		 D3DXVec3TransformCoord(&min, &renderers[index]->boxMin, &instTransforms[index][i]);
-		 D3DXVec3TransformCoord(&max, &renderers[index]->boxMax, &instTransforms[index][i]);
+		 D3DXVec3TransformCoord(&min, & renderDatas[index].boxMin, &instTransforms[index][i]);
+		 D3DXVec3TransformCoord(&max, & renderDatas[index].boxMax, &instTransforms[index][i]);
 
 		 bool inFrustum = frustum->ContainRect((max + min)*0.5f, (max - min)*0.5f);
 		 if (inFrustum == false)
@@ -100,19 +100,19 @@ void ColliderSystem::FrustumCulling(const uint& index)
 
 
 
-			 uint lastIndex = renderers[index]->drawCount - 1;
+			 uint lastIndex =  renderDatas[index].drawCount - 1;
 
 			 cout << "culled: ";
 			 cout << to_string(i) << endl;
 
 
-			 if (i == lastIndex)
-			 {
-				 renderers[index]->drawCount--;
+			 //if (i == lastIndex)
+			 //{
+				//  renderDatas[index].drawCount--;
 
-				 culledCount[index]++;
-				 break;
-			 }
+				//  renderDatas[index].culledCount++;
+				// break;
+			 //}
 
 
 			 {
@@ -124,46 +124,46 @@ void ColliderSystem::FrustumCulling(const uint& index)
 			 }
 
 
-			 renderers[index]->drawCount--;
+			  renderDatas[index].drawCount--;
 
-			 culledCount[index]++;
+			 renderDatas[index].culledCount++;
 
 			 bChanged = true;
 
 
 
-			 break;
+			// break;
 
 		 }
 	 }
 
-	 const uint& totalCount = renderers[index]->drawCount + culledCount[index];
+	 const uint& totalCount =  renderDatas[index].drawCount + renderDatas[index].culledCount;
 
 
 	 for (uint i = count; i < totalCount; i++)
 	 {
 
 
-		 D3DXVec3TransformCoord(&min, &renderers[index]->boxMin, &instTransforms[index][i]);
-		 D3DXVec3TransformCoord(&max, &renderers[index]->boxMax, &instTransforms[index][i]);
+		 D3DXVec3TransformCoord(&min, & renderDatas[index].boxMin, &instTransforms[index][i]);
+		 D3DXVec3TransformCoord(&max, & renderDatas[index].boxMax, &instTransforms[index][i]);
 
 		 bool inFrustum = frustum->ContainRect((max + min)*0.5f, (max - min)*0.5f);
 		 if (inFrustum == true)
 		 {
-			 //if (i >= renderers[index]->drawCount)
+			 //if (i >=  renderDatas[index].drawCount)
 			 {
 
 
 				 cout << "InFrustum: ";
 				 cout << to_string(i) << endl;
 
-				 if (i == count)
+				/* if (i == count)
 				 {
-					 renderers[index]->drawCount++;
-					 culledCount[index]--;
+					  renderDatas[index].drawCount++;
+					 renderDatas[index].culledCount--;
 
 					 break;
-				 }
+				 }*/
 
 				 {
 					 memcpy(&temp, &instTransforms[index][count], sizeof(Matrix));
@@ -175,10 +175,10 @@ void ColliderSystem::FrustumCulling(const uint& index)
 					 bChanged = true;
 				 }
 
-				 renderers[index]->drawCount++;
-				 culledCount[index]--;
+				  renderDatas[index].drawCount++;
+				 renderDatas[index].culledCount--;
 
-				 break;
+				// break;
 			 }
 		 }
 
@@ -196,65 +196,7 @@ void ColliderSystem::FrustumCulling(const uint& index)
 		
 
 	 }
-	//bool bChanged = false;
-	//
-	//for (uint i = 0; i < count; i++)
-	//{
-	//	D3DXVec3TransformCoord(&min, &renderers[index]->boxMin, &instTransforms[index][i]);
-	//	D3DXVec3TransformCoord(&max, &renderers[index]->boxMax, &instTransforms[index][i]);
-
-
-	//	bool inFrustum = frustum->ContainCube((max + min)*0.5f, (max.x - min.x)*0.5f);
-	//	if (inFrustum == false)
-	//	{
-	//	
-
-	//		if (i >= renderers[index]->drawCount) continue;
-
-	//		cout << "culled: ";
-	//		cout << to_string(i) << endl;
-
-	//		uint culledDrawCount = renderers[index]->drawCount - 1;
-	//		/*if (i == culledDrawCount)
-	//		{
-	//			renderers[index]->drawCount--;
-
-	//			culledCount[index]++;
-	//			break;
-	//		}*/
-
-	//	
-	//		
-	//		Matrix temp = instTransforms[index][i];
-	//		memcpy(instTransforms[index][i], instTransforms[index][culledDrawCount], sizeof(Matrix));
-	//		memcpy(instTransforms[index][culledDrawCount], temp, sizeof(Matrix));
-	//		
-	//				
-	//		renderers[index]->drawCount--;
-	//		culledCount[index]++;
-	//	
-	//	
-	//		bChanged = true;
-	//	}
-	//	else
-	//	{
-	//		if (i >= renderers[index]->drawCount)
-	//		{
-
-	//			renderers[index]->drawCount++;
-	//			culledCount[index]--;
-
-	//			cout << "InFrustum: ";
-	//			cout << to_string(i) << endl;
-
-	//			
-	//		}
-	//	}
-
-	//}
-	//if(bChanged)
-	//	UpdateInstBuffer();
-	
+	 return  renderDatas[index].drawCount;
 	
 	
 }
@@ -262,8 +204,8 @@ void ColliderSystem::FrustumCulling(const uint& index)
 Vector3 * ColliderSystem::GetBoxMinMax(const uint & actorIndex, const uint & drawCount)
 {
 	
-	Vector3& min = renderers[actorIndex]->boxMin;
-	Vector3& max = renderers[actorIndex]->boxMax;
+	Vector3& min = renderDatas[actorIndex].boxMin;
+	Vector3& max = renderDatas[actorIndex].boxMax;
 	temp[0] = Vector3(min.x, min.y, max.z);
 	temp[1] = Vector3(max.x, min.y, max.z);
 	temp[2] = Vector3(min.x, max.y, max.z);
@@ -288,13 +230,13 @@ Vector3 * ColliderSystem::GetBoxMinMax(const uint & actorIndex, const uint & dra
 const uint & ColliderSystem::DrawCount(const uint & index)
 {
 	
-	return renderers[index]->drawCount;
+	return  renderDatas[index].drawCount;
 	
 }
 
 void ColliderSystem::RenderandCulledCount(const uint & index, uint& CulledCount)
 {
-	CulledCount = renderers[index]->drawCount + culledCount[index];
+	CulledCount =  renderDatas[index].drawCount + renderDatas[index].culledCount;
 	
 }
 
@@ -498,28 +440,47 @@ void ColliderSystem::ReadBone(BinaryReader * r)
 
 }
 
-void ColliderSystem::RegisterRenderer(Renderer * renderer, const uint & index)
+
+void ColliderSystem::RegisterRenderData(const uint& index,class Renderer* renderer)
 {
-	
-	if (renderers[index])
+	RenderData data;
+	if (renderer)
 	{
-		return;
+		data.boxMin = renderer->boxMin;
+		data.boxMax = renderer->boxMax;
 	}
-	renderers[index] = renderer;
 	
+	
+	if (renderDatas.empty()&&index==0)
+	{
+		
+		renderDatas.emplace_back(data);
+	}
+	else if(renderDatas.size()>index)
+	{
+		data.drawCount = renderDatas[index].drawCount;
+		data.prevDrawCount = renderDatas[index].prevDrawCount;
+		data.culledCount = renderDatas[index].culledCount;
+		data.btIndex = renderDatas[index].btIndex;
+		renderDatas[index] = data;
+	}
+	else 
+	{
+		renderDatas.emplace_back(data);
+	}
 	
 }
 
 void ColliderSystem::PushDrawCount(const uint & index, const Matrix & world)
 {
-	if (renderers[index]->drawCount >= MAX_MODEL_INSTANCE) return;
+	if (renderDatas.empty()|| renderDatas.size()<=index|| renderDatas[index].drawCount >= MAX_MODEL_INSTANCE) return;
 
-	instTransforms[index][renderers[index]->drawCount] = world;
+	instTransforms[index][ renderDatas[index].drawCount] = world;
 	
 	
 
 	CreateInstTransformSRV();
-	renderers[index]->drawCount++;
+	renderDatas[index].drawCount++;
 	/*ID3D11DeviceContext * context;
 	device->GetImmediateContext(&context);
 

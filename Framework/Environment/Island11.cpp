@@ -1,6 +1,7 @@
 #include "Framework.h"
 #include "Island11.h"
 #include "Utility/QuadTree.h"
+
 //#include "Core/D3D11/D3D11_Helper.h"
 #define PI 3.14159265358979323846f
 int gp_wrap(int a)
@@ -12,7 +13,7 @@ int gp_wrap(int a)
 
 
 Island11::Island11(ID3D11Device* device,QuadTree* tree)
-	:viewDesc{}, device(nullptr), updateDesc{},MultiSampleCount(1), MultiSampleQuality(0), BackBufferWidth(1280.0f), BackBufferHeight(720.0f), RenderCaustics(true), TotalTime(0.0f),
+	:viewDesc{}, device(nullptr), updateDesc{},MultiSampleCount(4), MultiSampleQuality(0), BackBufferWidth(1280.0f), BackBufferHeight(720.0f), RenderCaustics(true), TotalTime(0.0f),
 	shader(nullptr),rock_bump_texture(nullptr),rock_bump_textureSRV(nullptr),rock_microbump_texture(nullptr),rock_microbump_textureSRV(nullptr),rock_diffuse_texture(nullptr),rock_diffuse_textureSRV(nullptr),
     sand_bump_texture(nullptr),sand_bump_textureSRV(nullptr),sand_microbump_texture(nullptr),sand_microbump_textureSRV(nullptr),sand_diffuse_texture(nullptr),sand_diffuse_textureSRV(nullptr),
     grass_diffuse_texture(nullptr),grass_diffuse_textureSRV(nullptr),slope_diffuse_texture(nullptr),slope_diffuse_textureSRV(nullptr),water_bump_texture(nullptr),water_bump_textureSRV(nullptr),

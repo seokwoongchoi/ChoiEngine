@@ -59,6 +59,7 @@
     <ClCompile Include="Debug\DebugBox.cpp" />
     <ClCompile Include="Debug\DebugLine.cpp" />
     <ClCompile Include="Editor.cpp" />
+    <ClCompile Include="EditorMain.cpp" />
     <ClCompile Include="ImGui\Blueprints\ax\Builders.cpp" />
     <ClCompile Include="ImGui\Blueprints\ax\Drawing.cpp" />
     <ClCompile Include="ImGui\Blueprints\ax\Widgets.cpp" />
@@ -73,7 +74,6 @@
     <ClCompile Include="ImGui\Source\imgui.cpp" />
     <ClCompile Include="ImGui\Source\imgui_draw.cpp" />
     <ClCompile Include="ImGui\Source\imgui_widgets.cpp" />
-    <ClCompile Include="EditorMain.cpp" />
     <ClCompile Include="ActorEditor\PreviewRenderer.cpp" />
     <ClCompile Include="LightEditor\LightEditor.cpp" />
     <ClCompile Include="ParticleEditor\ParticleEditor.cpp" />

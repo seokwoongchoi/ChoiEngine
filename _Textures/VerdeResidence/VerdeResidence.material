@@ -10,7 +10,34 @@
         <PBR Roughness="1" Metallic="1"/>
     </Material>
     <Material>
+        <Name>Rubber</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="1.6" G="0.60000002" B="0.60000002" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>wire_000000000</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
         <Name>Base_Stone</Name>
+        <DiffuseFile>wall_6.jpg</DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Tubo</Name>
         <DiffuseFile>wall_6.jpg</DiffuseFile>
         <NormalFile></NormalFile>
         <RoughnessFile></RoughnessFile>
@@ -82,10 +109,28 @@
         <PBR Roughness="1" Metallic="1"/>
     </Material>
     <Material>
+        <Name>Site_Foundation001</Name>
+        <DiffuseFile>Site-Foundation001DiffuseMap.jpg</DiffuseFile>
+        <NormalFile>Site-Foundation001NormalsMap.jpg</NormalFile>
+        <RoughnessFile>Bricks28_rgh.jpg</RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
         <Name>Structure001</Name>
         <DiffuseFile>Structure001-DiffuseMap.jpg</DiffuseFile>
         <NormalFile>Structure001-NormalsMap.jpg</NormalFile>
         <RoughnessFile>Roughness.png</RoughnessFile>
+        <MetallicFile>DisplacementMap.png</MetallicFile>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="0.48100001"/>
+        <PBR Roughness="0.48100001" Metallic="0"/>
+    </Material>
+    <Material>
+        <Name>LR_Water_Tank</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
         <MetallicFile></MetallicFile>
         <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
         <PBR Roughness="1" Metallic="1"/>

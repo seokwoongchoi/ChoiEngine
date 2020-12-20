@@ -77,6 +77,8 @@ VertexModelOutput VS(VertexStatic input)
     //output.Cull.w = dot(float4(worldPosition - ViewPosition(), 1.0f), -FrustumNormals[3]);
     return output;
 }
+
+
 const static float4 plane = float4(0, 1, 0, 0.1);
 VertexModelOutputReflection ReflectionVS(VertexStatic input)
 {
@@ -96,6 +98,33 @@ VertexModelOutputReflection ReflectionVS(VertexStatic input)
     output.Uv = input.Uv;
     
   
+  
+    return output;
+}
+
+
+VertexModelParallaxMappingOutput ParallaxMappingVS(VertexStatic input)
+{
+    VertexModelParallaxMappingOutput output;
+
+   
+    SetModelWorld(input.InstID);
+  
+    output.Position = WorldPosition(input.Position);
+    float4 PositionWS = output.Position;
+    output.Position = ViewProjection(output.Position);
+ 
+    float3 view = EyePos.xyz - PositionWS.xyz;
+    output.ViewWorldSpace = view;
+    
+    output.Uv = input.Uv;
+    
+    output.Normal = WorldNormal(input.Normal);
+    output.Tangent = WorldTangent(input.Tangent);
+ 
+  
+   
+       
   
     return output;
 }

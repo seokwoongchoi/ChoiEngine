@@ -1,6 +1,6 @@
 #pragma once
-
 #include "Renders/Shader.h"
+
 
 #define terrain_gridpoints					512
 #define terrain_numpatches_1d				64
@@ -53,6 +53,12 @@ public:
 	~Island11();
 	Island11(const Island11&) = delete;
 	Island11& operator=(const Island11&) = delete;
+
+public:
+	inline const Matrix& GetReflectionMatrix()
+	{
+		return rflectionMatrix;
+	}
 public:
 	void SetupNormalView(ID3D11DeviceContext* context);
 	void Update(ID3D11DeviceContext* context);

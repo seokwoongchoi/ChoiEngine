@@ -26,10 +26,12 @@ protected:
 	ID3D11ShaderResourceView  *StructuredBufferSRV;
 	ID3D11UnorderedAccessView *StructuredBufferUAV;
 
+
 	
 protected:
 
 	ID3D11VertexShader* VS;
+	ID3D11VertexShader* maintainVS;
 	ID3D11VertexShader* preivewVS;
 	ID3D11GeometryShader* GS;
 	ID3D11PixelShader* PS;

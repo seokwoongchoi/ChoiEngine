@@ -22,7 +22,7 @@ int APIENTRY WinMain
 		desc.AppName = Window::AppName;
 		desc.Instance = Window::Instance;
 		desc.bFullScreen = Window::IsFullScreen;
-		desc.bVsync = true;
+		desc.bVsync = false;
 		desc.Handle = Window::Handle;
 		desc.Width = Window::GetWidth();
 		desc.Height = Window::GetHeight();

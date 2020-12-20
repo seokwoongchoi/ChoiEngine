@@ -32,6 +32,8 @@ void Material::ApplyMaterial(ID3D11DeviceContext* context)
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
 	context->Map(colorBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
 
+	Vector3 l = GlobalData::LightDirection();
+	colorDesc.Specular = Color(l.x, l.y, l.z, colorDesc.Specular.a);
 
 	memcpy(MappedResource.pData, &colorDesc, sizeof(colorDesc));
 

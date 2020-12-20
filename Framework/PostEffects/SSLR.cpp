@@ -16,9 +16,9 @@ SSLR::SSLR(ID3D11Device* device, uint width,uint height)
 	Params.MaxDeltaLen = 0.005f;*/
 
 	Params.MaxSunDist = 5.641f;
-	Params.intensity = 0.5f;
-	Params.decay = 0.772f;
-	Params.ddecay = 0.01f;
+	Params.intensity = 0.246f;
+	Params.decay = 0.044f;
+	Params.ddecay = 0.1f;
 	Params.dist = 1000.0f;
 	Params.MaxDeltaLen = 0.005f; 
 
@@ -175,15 +175,17 @@ void SSLR::Render(ID3D11DeviceContext* DC, ID3D11ShaderResourceView * ssaoSRV, I
 	dir = GlobalData::LightDirection();
 	const Vector3& forward = GlobalData::Forward();
 	const float& dotCamSun = -D3DXVec3Dot(&forward, &dir);
-	
+	Params.intensity = (dotCamSun*0.18f);
+	Params.decay =0.080f-(dotCamSun/26.8f);
+	Params.ddecay = dotCamSun * 0.1f;
 	if (dotCamSun <= 0.0f || dir.y > 0.1)
 	{
 		return;
 	}
-	if (dir.y > -0.56f)
-	{
-		dir.y = -0.56f;
-	}
+	//if (dir.y > -0.56f)
+	//{
+	//	dir.y = -0.56f;
+	//}
 
 
 	EyePos= GlobalData::Position();
@@ -233,6 +235,7 @@ void SSLR::PrepareOcclusion(ID3D11DeviceContext* DC, ID3D11ShaderResourceView * 
 
 	occlusionDesc.Width = width;
 	occlusionDesc.Height = height;
+	occlusionDesc.occlusionFlag = 0.99f;
 	memcpy(MappedResource.pData, &occlusionDesc, sizeof(occlusionDesc));
 	DC->Unmap( OcclusionCB, 0);
 	ID3D11Buffer* arrConstBuffers[1] = {  OcclusionCB };

@@ -5,7 +5,7 @@
 Scattering::Scattering(ID3D11Device* device)
 	:device(nullptr),world{},worldDesc {}, pixelDesc{}, worldBuffer(nullptr), pixelBuffer(nullptr), LinearSampler(nullptr), texture(nullptr),
 	inputLayout(nullptr), vs(nullptr), ps(nullptr), domeVertexBuffer(nullptr), domeIndexBuffer(nullptr), 
-	domeVertexCount(0),	domeIndexCount(0), domeCount(32), theta(1.676f), nullBuffer(nullptr)
+	domeVertexCount(0),	domeIndexCount(0), domeCount(32), theta(1.676f), nullBuffer(nullptr),  AdditiveBlendState(nullptr)
 {
 	this-> device = device;
 	CreateDoom();
@@ -37,13 +37,13 @@ Scattering::Scattering(ID3D11Device* device)
 	Check(device->CreateSamplerState(&samDesc, &LinearSampler));
 
 	D3D11_DEPTH_STENCIL_DESC descDepth;
-	descDepth.DepthEnable = true;
-	descDepth.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	descDepth.DepthEnable = false;
+	descDepth.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	descDepth.DepthFunc = D3D11_COMPARISON_LESS;
 	descDepth.StencilEnable = TRUE;
 	descDepth.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
 	descDepth.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
-	const D3D11_DEPTH_STENCILOP_DESC stencilMarkOp = { D3D11_STENCIL_OP_REPLACE, D3D11_STENCIL_OP_REPLACE, D3D11_STENCIL_OP_REPLACE, D3D11_COMPARISON_ALWAYS };
+	const D3D11_DEPTH_STENCILOP_DESC stencilMarkOp = { D3D11_STENCIL_OP_REPLACE, D3D11_STENCIL_OP_REPLACE, D3D11_STENCIL_OP_REPLACE, D3D11_COMPARISON_GREATER };
 	descDepth.FrontFace = stencilMarkOp;
 	descDepth.BackFace = stencilMarkOp;
 	Check(device->CreateDepthStencilState(&descDepth, &depthStencilState));
@@ -51,10 +51,32 @@ Scattering::Scattering(ID3D11Device* device)
 	texture = new Texture();
 	texture->Load(device,L"Environment/Starfield.png");
 	
-	D3DXMatrixScaling(&world,850, 850, 850);
+	D3DXMatrixScaling(&world,1, 1, 1);
 	//D3DXMatrixTranspose(&world, &world);
 	
-	
+
+	SafeRelease(AdditiveBlendState);
+	// Create the additive blend state
+	D3D11_BLEND_DESC descBlend;
+	descBlend.AlphaToCoverageEnable = true;
+	descBlend.IndependentBlendEnable = true;
+	const D3D11_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc =
+	{
+		TRUE,
+		D3D11_BLEND_SRC_COLOR, D3D11_BLEND_DEST_COLOR, D3D11_BLEND_OP_ADD, //srcBlend,descBlend,BlendOp
+		D3D11_BLEND_ZERO, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD,//srcBlendAlpha,destBlendAlpha,BlendOpAlpha
+		D3D11_COLOR_WRITE_ENABLE_ALL,//rendertargetWriteMask
+	};
+
+
+	for (UINT i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
+	{
+		descBlend.RenderTarget[i] = defaultRenderTargetBlendDesc;
+	}
+
+
+
+	Check(device->CreateBlendState(&descBlend, &AdditiveBlendState));
 }
 
 
@@ -112,13 +134,13 @@ void Scattering::Render(ID3D11DeviceContext* context)
 		context->Unmap(pixelBuffer, 0);
 		context->PSSetConstantBuffers(0, 1, &pixelBuffer);
 	}
-
-	ID3D11DepthStencilState* PrevDepthState;
-	UINT PrevStencil;
-	context->OMGetDepthStencilState(&PrevDepthState, &PrevStencil);
-
+	//ID3D11BlendState* pPrevBlendState;
+	//FLOAT prevBlendFactor[4];
+	//UINT prevSampleMask;
+	//context->OMGetBlendState(&pPrevBlendState, prevBlendFactor, &prevSampleMask);
 	// Set the depth state for the directional light
-	context->OMSetDepthStencilState(depthStencilState, 2);
+	//context->OMSetBlendState(AdditiveBlendState, prevBlendFactor, prevSampleMask);
+	context->OMSetDepthStencilState(depthStencilState,1);
 	uint offset = 0;
 	
 	context->IASetVertexBuffers(slot, 1, &domeVertexBuffer, &stride, &offset);
@@ -129,8 +151,8 @@ void Scattering::Render(ID3D11DeviceContext* context)
 	context->PSSetShader(ps, nullptr, 0);
 	context->DrawIndexed(domeIndexCount,0,0);
 
-
-	context->OMSetDepthStencilState(PrevDepthState, PrevStencil);
+	//context->OMSetBlendState(pPrevBlendState, prevBlendFactor, prevSampleMask);
+	
 
 	ID3D11ShaderResourceView* nullSRV = nullptr;
 	context->PSSetShaderResources(0, 1, &nullSRV);

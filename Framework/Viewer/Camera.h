@@ -3,7 +3,7 @@
 class Camera
 {
 public:
-	Camera() :move(20), R(2), position(0, 0, 0), forward(0, 0, 1), data{}, delta(0.04f)
+	Camera() :move(20), R(2), position(512, 0, 512), forward(0, 0, 1), data{}, delta(0.04f)
 	{
 		D3DXMatrixIdentity(&matView);
 		D3DXMatrixIdentity(&proj);
@@ -13,6 +13,10 @@ public:
 	virtual void Update() = 0;
 	virtual void Move()=0;
 
+	void Position(Vector3* pos)
+	{
+		*pos = position;
+	}
 	
 protected:
 	float delta;

@@ -245,10 +245,11 @@
 		
 		
 	protected:
-		Action() :S{}, T{}, R{}, angle(0.0f) {}
+		Action() :S{}, T{}, R{}, world{}, angle(0.0f) {}
 		virtual ~Action() {}
 
 		Matrix S, T, R;
+		Matrix world;
 		float angle;
 		float saveAngle = -1.0f;
 		float timer = 0.0f;

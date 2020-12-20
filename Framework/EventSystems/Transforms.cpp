@@ -2,7 +2,7 @@
 #include "Transforms.h"
 #include "Animator.h"
 #include "BehaviorTree/BehaviorTree.h"
-#include "Renderer.h"
+#include "Renderers/Renderer.h"
 Transforms::Transforms(ID3D11Device * device,Animator* animator)
 	:animator(animator), position(Vector3(0.0f, 0.0f, 0.0f)),quat ( Quaternion(0.0f, 0.0f, 0.0f, 0.0f)),
      scale( Vector3(1.0f, 1.0f, 1.0f))
@@ -15,15 +15,16 @@ Transforms::~Transforms()
 
 void Transforms::Update(const uint & index)
 {
-	uint drawCount = animator->renderers[index]->drawCount;
-	int btIndex= animator->renderers[index]->btIndex;
+	uint drawCount = animator->renderDatas[index].drawCount;
+	int btIndex= animator->renderDatas[index].btIndex;
 	if (btIndex > -1)
 	{
 		for (uint i = 0; i < drawCount; i++)
 		{
 			if (index == 0 && i == 0)continue;
-
-			D3DXMatrixDecompose(&scale, &quat, &position, &animator->GetInstMatrix(index, i));
+			
+			animator->GetInstMatrix(&inst,index, i);
+			D3DXMatrixDecompose(&scale, &quat, &position, &inst);
 			behaviorTrees[btIndex]->SetTransform(position,quat,scale);
 			behaviorTrees[btIndex]->Tick(index, i);
 		}
@@ -38,7 +39,12 @@ void Transforms::ReadBehaviorTree(BinaryReader * r, const uint & actorIndex)
 	int behaviorTreeNum = r->Int();
 	if (behaviorTreeNum > -1)
 	{
-		animator->renderers[actorIndex]->btIndex = behaviorTreeNum;
+		if (animator->renderDatas.empty())
+		{
+			animator->RegisterRenderData(actorIndex, nullptr);
+		}
+		
+		animator->renderDatas[actorIndex].btIndex = behaviorTreeNum;
 		BinaryReader * BehaviorRead = new BinaryReader();
 		wstring path = L"../_BehaviorTreeDatas/BehaviorTree" + to_wstring(behaviorTreeNum) + L".behaviortree";
 		BehaviorRead->Open(path);

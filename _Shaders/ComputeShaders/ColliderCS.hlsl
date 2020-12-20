@@ -8,7 +8,8 @@ Texture2D<float4> InstTransforms : register(t0);
 Texture2DArray<float4> AnimBoneTransforms : register(t1);
 Texture2D<float4> boneBoxTransforms : register(t2);
 
-RWTexture2D<float4> Output : register(u0);
+RWTexture2DArray<float4> OutputAnimBoneTransforms : register(u0);
+RWTexture2D<float4> Output : register(u1);
 //RWTexture2D<float4> EffectOutput;
 
 
@@ -69,9 +70,10 @@ struct AnimationFrame
 
 struct TweenFrame
 {
-    float TakeTime;
     float TweenTime;
-    float2 Padding;
+    uint totalCount;
+    uint maxBoneCount;
+    float Padding;
 
     AnimationFrame Curr;
     AnimationFrame Next;
@@ -82,19 +84,7 @@ cbuffer CB_AnimationFrame : register(b2)
     TweenFrame Tweenframes[MAX_MODEL_INSTANCE];
 };
 
-struct EffectData
-{
-    matrix effectlocal;
-  
-    int EffectIndex;
-    float3 pad0;
-};
 
-cbuffer CB_EffectAttach
-{
-    EffectData effectData[MAX_ACTOR_BONECOLLIDER];
-   
-};
 
 matrix LoadAnimTransforms(uint boneIndices, uint frame, uint clip)
 {
@@ -132,62 +122,136 @@ void GetBoneBoxtMatrix(inout matrix transform, uint actorIndex, uint boneBoxInde
     float4 m4 = boneBoxTransforms[int2(boneBoxIndex * 9 +3+(4*boxType), actorIndex)];
     transform = matrix(m1, m2, m3, m4);
 }
-[numthreads(10, 1, 1)]
-void SkeletalColliderCS(uint3 groupId        : SV_GroupID,
-                        uint3 groupThreadId  : SV_GroupThreadID, 
+[numthreads(256, 1, 1)]
+void SkeletalColliderCS(uint3 groupId : SV_GroupID,
+                        uint3 groupThreadId : SV_GroupThreadID,
                         uint3 globalThreadId : SV_DispatchThreadID)
 {
     
-            
-    uint index = globalThreadId.x;
-         
-   // if (globalThreadId.x < skeletalDrawCount)
+    if (globalThreadId.x < Tweenframes[0].maxBoneCount) 
+    for (int i = 0; i < Tweenframes[0].totalCount;i++)
     {
-        float3 position = 0;
-        float4 q = 0;
-        float3 scale = 0;
-        [unroll(3)]
-        for (uint i = 0; i < 3; i++)
-        {
-            int boneIndex = boneBoxTransforms[int2(i * 9 + 8, groupId.x)].x;
-            matrix result = lerp(GetCurrAnimTransforms(globalThreadId.x, boneIndex),
-                        lerp(GetCurrAnimTransforms(globalThreadId.x, boneIndex),
-                             GetNextAnimTransforms(globalThreadId.x, boneIndex),
-             Tweenframes[globalThreadId.x].TweenTime), saturate(Tweenframes[globalThreadId.x].Next.Clip + 1));
+        
+              matrix result = lerp(GetCurrAnimTransforms(i, globalThreadId.x),
+                        lerp(GetCurrAnimTransforms(i, globalThreadId.x),
+                             GetNextAnimTransforms(i, globalThreadId.x),
+             Tweenframes[i].TweenTime), saturate(Tweenframes[i].Next.Clip + 1));
+          
+            GroupMemoryBarrierWithGroupSync();
+            OutputAnimBoneTransforms[uint3(globalThreadId.x * 4 + 0, Tweenframes[i].Curr.CurrFrame, Tweenframes[i].Curr.Clip)] = result._11_12_13_14;
+            OutputAnimBoneTransforms[uint3(globalThreadId.x * 4 + 1, Tweenframes[i].Curr.CurrFrame, Tweenframes[i].Curr.Clip)] = result._21_22_23_24;
+            OutputAnimBoneTransforms[uint3(globalThreadId.x * 4 + 2, Tweenframes[i].Curr.CurrFrame, Tweenframes[i].Curr.Clip)] = result._31_32_33_34;
+            OutputAnimBoneTransforms[uint3(globalThreadId.x * 4 + 3, Tweenframes[i].Curr.CurrFrame, Tweenframes[i].Curr.Clip)] = result._41_42_43_44;
+            float3 position = 0;
+            float4 q = 0;
+            float3 scale = 0;
+           [unroll(3)]
+            for (uint b = 0; b < 3; b++)
+            {
+                int boneIndex = boneBoxTransforms[int2(b * 9 + 8, groupId.x)].x;
+                if (globalThreadId.x == boneIndex)
+                {
+                    Matrix local;
+                    GetBoneBoxtMatrix(local, groupId.x, b, 0);
+        
+                    matrix computeMatrix = mul(local, result);
+                    matrix transform;
+                    GetInstMatrix(transform, groupId.x, i);
+       
+                    matrix final = mul(computeMatrix, transform);
+                    decompose(final, position, q, scale);
+    
+    
+                    Matrix BoneScale;
+                    GetBoneBoxtMatrix(BoneScale, groupId.x, b, 1);
+                    matrix compute = mul(BoneScale, compose(position, q, float3(1, 1, 1)));
+                    
+                    [flatten]
+                    if (b == 2 && Tweenframes[i].Curr.Clip==3)
+                    {
+                        if ( Tweenframes[i].Curr.CurrFrame < 17 || Tweenframes[i].Curr.CurrFrame > 22)
+                        compute = 0;
+
+                    }
+        
+                    GroupMemoryBarrierWithGroupSync();
+                    Output[uint2(b * 4 + 0, i)] = float4(compute._11, compute._12, compute._13, compute._14);
+                    Output[uint2(b * 4 + 1, i)] = float4(compute._21, compute._22, compute._23, compute._24);
+                    Output[uint2(b * 4 + 2, i)] = float4(compute._31, compute._32, compute._33, compute._34);
+                    Output[uint2(b * 4 + 3, i)] = float4(compute._41, compute._42, compute._43, compute._44);
+                }
+                     
+   
+               
+            }
+            
+           
+                                                                         
+     }
+      
         
          
-   
-            Matrix local;
-            GetBoneBoxtMatrix(local, groupId.x, i, 0);
-        
-            matrix computeMatrix = mul(local, result);
-            matrix transform;
-            GetInstMatrix(transform, groupId.x, groupThreadId.x);
-       
-            matrix final = mul(computeMatrix, transform);
-            decompose(final, position, q, scale);
-    
-    
-            Matrix BoneScale;
-            GetBoneBoxtMatrix(BoneScale, groupId.x, i, 1);
-            matrix compute = mul(BoneScale, compose(position, q, float3(1, 1, 1)));
-        
-            GroupMemoryBarrierWithGroupSync();
-            Output[uint2(i * 4 + 0, index)] = float4(compute._11, compute._12, compute._13, compute._14);
-            Output[uint2(i * 4 + 1, index)] = float4(compute._21, compute._22, compute._23, compute._24);
-            Output[uint2(i * 4 + 2, index)] = float4(compute._31, compute._32, compute._33, compute._34);
-            Output[uint2(i * 4 + 3, index)] = float4(compute._41, compute._42, compute._43, compute._44);
-        }
-     
-        
-       
-    
-     
-    }
    
      
    
 }
+//[numthreads(10, 1, 1)]
+//void SkeletalColliderCS(uint3 groupId        : SV_GroupID,
+//                        uint3 groupThreadId  : SV_GroupThreadID, 
+//                        uint3 globalThreadId : SV_DispatchThreadID)
+//{
+    
+            
+//    uint index = globalThreadId.x;
+         
+//   // if (globalThreadId.x < skeletalDrawCount)
+//    {
+//        float3 position = 0;
+//        float4 q = 0;
+//        float3 scale = 0;
+//        [unroll(3)]
+//        for(uint i = 0; i < 3; i++)
+      
+//        {
+//            int boneIndex = boneBoxTransforms[int2(i * 9 + 8, groupId.x)].x;
+//            matrix result = lerp(GetCurrAnimTransforms(globalThreadId.x, boneIndex),
+//                        lerp(GetCurrAnimTransforms(globalThreadId.x, boneIndex),
+//                             GetNextAnimTransforms(globalThreadId.x, boneIndex),
+//             Tweenframes[globalThreadId.x].TweenTime), saturate(Tweenframes[globalThreadId.x].Next.Clip + 1));
+        
+         
+   
+//            Matrix local;
+//            GetBoneBoxtMatrix(local, groupId.x, i, 0);
+        
+//            matrix computeMatrix = mul(local, result);
+//            matrix transform;
+//            GetInstMatrix(transform, groupId.x, groupThreadId.x);
+       
+//            matrix final = mul(computeMatrix, transform);
+//            decompose(final, position, q, scale);
+    
+    
+//            Matrix BoneScale;
+//            GetBoneBoxtMatrix(BoneScale, groupId.x, i, 1);
+//            matrix compute = mul(BoneScale, compose(position, q, float3(1, 1, 1)));
+        
+//            GroupMemoryBarrierWithGroupSync();
+//            Output[uint2(i * 4 + 0, index)] = float4(compute._11, compute._12, compute._13, compute._14);
+//            Output[uint2(i * 4 + 1, index)] = float4(compute._21, compute._22, compute._23, compute._24);
+//            Output[uint2(i * 4 + 2, index)] = float4(compute._31, compute._32, compute._33, compute._34);
+//            Output[uint2(i * 4 + 3, index)] = float4(compute._41, compute._42, compute._43, compute._44);
+//        }
+     
+        
+       
+    
+     
+//    }
+   
+     
+   
+//}
 
 
 //[numthreads(1, 1, 1)]

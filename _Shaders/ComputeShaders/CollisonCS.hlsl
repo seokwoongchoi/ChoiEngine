@@ -6,9 +6,14 @@ const static float4 End = float4(0.0, 1.0, 0.0, 1);
 cbuffer CB_DrawCount : register(b0)
 {
    
-    uint drawCount;
-    uint skeletalCount;
-    uint staticCount;
+    uint drawCount : packoffset(c0.x);
+    uint skeletalCount : packoffset(c0.y);
+    uint staticCount : packoffset(c0.z);
+    uint pad : packoffset(c0.w);
+    
+    
+    
+   
   
     
 };
@@ -31,10 +36,12 @@ void CreateObj(inout matrix obj,int index, int BoxType)
 }
 float Clamp(float n, float min, float max)
 {
+   
     if (n < min)
         return min;
-    if (n > max)
+    else if (n > max)
         return max;
+    
     return n;
 }
 float LengthSq(float3 value)
@@ -60,7 +67,7 @@ float3 ClosestPtSegmentSegmentNorm(float3 p1, float3 q1, float3 p2, float3 q2, f
         return (c1 - c2);
     }
     
-    
+  
     if (a <= FLT_EPSILON)
     {
         s = 0.0f;
@@ -70,6 +77,7 @@ float3 ClosestPtSegmentSegmentNorm(float3 p1, float3 q1, float3 p2, float3 q2, f
     else
     {
         float c = dot(d1, r);
+       
         if (e <= FLT_EPSILON)
         {
             t = 0.0f;
@@ -80,6 +88,7 @@ float3 ClosestPtSegmentSegmentNorm(float3 p1, float3 q1, float3 p2, float3 q2, f
             float b = dot(d1, d2);
             float denom = a * e - b * b;
             
+           
             if (denom != 0.0f)
             {
                 s = Clamp((b * f - c * e) / denom, 0.0f, 1.0f) ;
@@ -91,6 +100,7 @@ float3 ClosestPtSegmentSegmentNorm(float3 p1, float3 q1, float3 p2, float3 q2, f
          
             float tnom = (b * s + f);
            
+            
             if (tnom < 0.0f)
             {
                 t = 0.0f;
@@ -112,7 +122,8 @@ float3 ClosestPtSegmentSegmentNorm(float3 p1, float3 q1, float3 p2, float3 q2, f
     return (c1 - c2);
 }
 
-int IsHit(matrix obj1, matrix obj2,inout float3 hitPos)
+int IsHit(matrix obj1, matrix obj2,int index,inout float3 hitPos)
+//int IsHit(matrix obj1, matrix obj2, inout float3 hitPos)
 {
    
     float3 ob1Start = mul(Start, obj1).xyz;
@@ -130,145 +141,89 @@ int IsHit(matrix obj1, matrix obj2,inout float3 hitPos)
     float radius2 = LengthSq(obj2._11_22_33)*0.5f;
     float radius = radius1 + radius2;
    
-     
+    
     if (dist2 <= radius * radius)
     {
       
-        return 1;
+        return index;
     }
    
-    return 0;
+    return -1;
     
 
 }
-groupshared int shared_data[2];
-groupshared matrix shared_matrix[3];
-[numthreads(1,10, 1)]
+
+groupshared int shared_data[3];
+groupshared matrix shared_matrix[4];
+groupshared matrix sword_matrix;
+groupshared matrix body_matrix;
+[numthreads(1, 20, 4)]
 void CS(uint3 groupID : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID)
 {
    
    
     shared_data[0] = 0;
     shared_data[1] = 0;
-
-   // matrix enemybody;
-    CreateObj(shared_matrix[0], groupID.x, 0);
-   // matrix enemyhead;
-    CreateObj(shared_matrix[1], groupID.x, 1);
-    //matrix enemysword;
-    CreateObj(shared_matrix[2], groupID.x, 2);
+    shared_data[2] = 0;
+    // matrix enemybody;
+    
+   
+  
+    CreateObj(shared_matrix[groupThreadId.z], groupID.x, groupThreadId.z % 3);
     CopyOutput[groupThreadId.y].x = -1;
     CopyOutput[groupThreadId.y].y = -1;
     CopyOutput[groupThreadId.y].z = -1;
     CopyOutput[groupThreadId.y].w = -1;
+  
     GroupMemoryBarrierWithGroupSync();
-    
-    int index = groupThreadId.y;// % skeletalCount;
+    int index = groupThreadId.y % skeletalCount;
     float3 hitPos = float3(0, 0, 0);
     if (groupID.x != index && index < skeletalCount)
     {
-        matrix sword;
-        CreateObj(sword, index, 2);
-             
-       
-        int swordResult = IsHit(sword, shared_matrix[2], hitPos);
-        if (swordResult > 0)
-        {
            
-            CopyOutput[index].z = groupID.x;
-                 
-            EffectPostionTexture[uint2(0, shared_data[0])] = float4(hitPos, 1.0f);
-            shared_data[0]++;
-
-        }
+     
+      
+    
+        
        
-        int bodyResult = IsHit(sword, shared_matrix[0], hitPos);
-        if (bodyResult>0)
+        int Result = -1;
+          
+        if (groupThreadId.z > 2)
         {
-            CopyOutput[index].x = groupID.x;
-            EffectPostionTexture[uint2(1, shared_data[1])] = float4(hitPos, 1.0f);
-            shared_data[1]++;
+            CreateObj(body_matrix, index, 0);
+            Result = IsHit(body_matrix, shared_matrix[groupThreadId.z], groupThreadId.z, hitPos);
+        }
+        else
+        {
+            CreateObj(sword_matrix, index, 2);
+            Result = IsHit(sword_matrix, shared_matrix[groupThreadId.z], groupThreadId.z, hitPos);
+        
+        }
+        
+      
+        [unroll(4)]
+        for (uint i = 0; i < 4; i++)
+        {
+            if (Result == i)
+            {
+            
+                CopyOutput[index][i] = groupID.x;
+                     
+                if (groupThreadId.z < 3)
+                {
+                    EffectPostionTexture[int2(i, shared_data[i])] = float4(hitPos, 1.0f);
+                    shared_data[i]++;
+                }
+              
+              
 
+            }
         }
-        int headResult = IsHit(sword, shared_matrix[1], hitPos);
-        if (headResult > 0)
-        {
-            CopyOutput[index].y = groupID.x;
-        }
-  
+    
+   
+      
     }
-    
-    //if (groupID.x != groupThreadId.z && groupThreadId.z < skeletalCount)
-    //{
-    //    matrix body;
-    //    CreateObj(body, index, 0);
-             
-       
-       
-    //    int bodyResult = IsHit(body, shared_matrix[0], hitPos);
-    //    if (bodyResult > 0)
-    //    {
-    //        CopyOutput[groupThreadId.z].w = groupID.x;
-           
-           
-    //    }
-       
-  
-    //}
-    // index = groupThreadId.z % skeletalCount;
-    //if (groupID.x != index)
-    //{
-    //    matrix sword;
-    //    CreateObj(sword, index, 2);
-       
-       
-    //    int swordResult = IsHit(sword, shared_matrix[2], hitPos);
-    //    if (swordResult > 0)
-    //    {
-           
-    //        CopyOutput[index].z = groupID.x;
-                 
-    //        EffectPostionTexture[uint2(0, shared_data)] = float4(hitPos, 1.0f);
-    //        shared_data++;
-
-    //    }
-        
-       
-    //}
-          
-   //GroupMemoryBarrierWithGroupSync();
-      
-          
-     
-   
-           
-    //if (shared_data[index] > 0)
-    //{
-    //    CopyOutput[index].x = groupID.x;
-    //}
-    //if (shared_data[1 + index] > 0)
-    //{
-    //    CopyOutput[index].y = groupID.x;
-    //}
-    
-    //if (shared_data[2+index] > 0)
-    //{
-    //    CopyOutput[index].z = groupID.x;
-    //}
-    
-   
-   
-      
-     
-      
-     
-        
-    
-       
-
-   
-
-
+ 
 }
   
  

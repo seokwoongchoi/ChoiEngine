@@ -4,16 +4,17 @@
 Sparks::Sparks(ID3D11Device* device,uint ID)
 	:ParticleSimulation(device), wvpBuffer(nullptr),
 	 NoDepth(nullptr), AdditiveBlendState(nullptr), simulateBuffer(nullptr),  readBuffer(0),
-	particleArray(nullptr), bRendered(true),bodyData{0,nullptr,nullptr}, drawCount(0)
+	particleArray(nullptr), bodyData{0,nullptr,nullptr}, drawCount(0)
 {
 	
-	wvpDesc.positionIndex = ID;
-
+	
+	id = ID;
 	// Create the additive blend state
+
 	D3D11_BLEND_DESC descBlend;
 	descBlend.AlphaToCoverageEnable = FALSE;
 	descBlend.IndependentBlendEnable = FALSE;
-	 D3D11_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc =
+	D3D11_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc =
 	{
 		TRUE,
 		D3D11_BLEND_ONE, D3D11_BLEND_ONE, D3D11_BLEND_OP_ADD, //srcBlend,descBlend,BlendOp
@@ -21,23 +22,12 @@ Sparks::Sparks(ID3D11Device* device,uint ID)
 		D3D11_COLOR_WRITE_ENABLE_ALL,//rendertargetWriteMask
 	};
 
-	if (ID == 1)
-	{
-		defaultRenderTargetBlendDesc =
-		{
-			TRUE,
-			D3D11_BLEND_DEST_COLOR, D3D11_BLEND_ONE, D3D11_BLEND_OP_ADD, //srcBlend,descBlend,BlendOp
-		    D3D11_BLEND_ONE, D3D11_BLEND_ONE, D3D11_BLEND_OP_ADD,//srcBlendAlpha,destBlendAlpha,BlendOpAlpha
-		    D3D11_COLOR_WRITE_ENABLE_ALL,//rendertargetWriteMask
-		};
-	}
+	
+	
 
 	for (UINT i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
 		descBlend.RenderTarget[i] = defaultRenderTargetBlendDesc;
-
-
 	Check(device->CreateBlendState(&descBlend, &AdditiveBlendState));
-
 
 	//Create Rasterizer
 	D3D11_RASTERIZER_DESC reasterizerDesc;
@@ -218,7 +208,7 @@ void Sparks::CreateBuffers(ID3D11Device * device)
 
 }
 
-void Sparks::InitBodies(const wstring& path)
+int Sparks::InitBodies(const wstring& path)
 {
 	BinaryReader* r = new BinaryReader();
 	r->Open(path);
@@ -239,14 +229,37 @@ void Sparks::InitBodies(const wstring& path)
 		particleTexture = new Texture();
 		particleTexture->Load(device, String::ToWString(temp));
 	}
+
+	wvpDesc.positionIndex = r->Int();
 	
 	r->Close();
 	SafeDelete(r);
 
 
 	InitBasicSpark();
+	if (wvpDesc.positionIndex == 0)
+	{
+		SafeRelease(AdditiveBlendState);
+		D3D11_BLEND_DESC descBlend;
+		descBlend.AlphaToCoverageEnable = FALSE;
+		descBlend.IndependentBlendEnable = FALSE;
+		D3D11_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc =
+		{
+			TRUE,
+				D3D11_BLEND_DEST_COLOR, D3D11_BLEND_ONE, D3D11_BLEND_OP_ADD, //srcBlend,descBlend,BlendOp
+				D3D11_BLEND_ONE, D3D11_BLEND_ONE, D3D11_BLEND_OP_ADD,//srcBlendAlpha,destBlendAlpha,BlendOpAlpha
+				D3D11_COLOR_WRITE_ENABLE_ALL,//rendertargetWriteMask
+		};
+		for (UINT i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
+		descBlend.RenderTarget[i] = defaultRenderTargetBlendDesc;
+		
+		Check(device->CreateBlendState(&descBlend, &AdditiveBlendState));
+	}
 
 	
+
+	
+	return wvpDesc.positionIndex;
 
 }
 
@@ -298,7 +311,7 @@ void Sparks::Render(ID3D11DeviceContext * context, ID3D11ShaderResourceView* pos
 	if (simulateDesc.timer < simulateDesc.runningTime)
 	{
 		drawCount = 0;
-		bRendered = true;
+		
 		return;
 	}
 
@@ -406,7 +419,6 @@ void Sparks::PreviewRender(ID3D11DeviceContext * context)
 {
 	if (simulateDesc.timer < simulateDesc.runningTime)
 	{
-		bRendered = true;
 		return;
 	}
 
@@ -463,12 +475,11 @@ void Sparks::PreviewRender(ID3D11DeviceContext * context)
 
 void Sparks::Reset(const uint& drawCount)
 {
-	simulateDesc.runningTime = 0.0f;
-	if (!bRendered|| bodyData.Bodies < 1)
-	{
-		//cout << "returned@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+	if ( bodyData.Bodies < 1)
 		return;
-	}
+
+	simulateDesc.runningTime = 0.0f;
+	
 	this->drawCount = drawCount;
 	readBuffer = 0;
 	
@@ -500,6 +511,8 @@ void Sparks::Reset(const uint& drawCount)
 	SafeRelease(StructuredBufferSRV);
 	SafeRelease(StructuredBufferUAV);
 
+	
+
 	// Create Structured Buffer
 	D3D11_BUFFER_DESC sbDesc;
 	sbDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
@@ -509,6 +522,7 @@ void Sparks::Reset(const uint& drawCount)
 	sbDesc.ByteWidth = sizeof(Vector4) * bodyData.Bodies * 3;
 	sbDesc.Usage = D3D11_USAGE_DEFAULT;
 	Check(device->CreateBuffer(&sbDesc, &initData, &StructuredBuffer));
+	
 
 	// create the Shader Resource View (SRV) for the structured buffer
 	D3D11_SHADER_RESOURCE_VIEW_DESC sbSRVDesc;
@@ -519,6 +533,7 @@ void Sparks::Reset(const uint& drawCount)
 	sbSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
 	sbSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
 	Check(device->CreateShaderResourceView(StructuredBuffer, &sbSRVDesc, &StructuredBufferSRV));
+	
 
 	// create the UAV for the structured buffer
 	D3D11_UNORDERED_ACCESS_VIEW_DESC sbUAVDesc;
@@ -528,9 +543,11 @@ void Sparks::Reset(const uint& drawCount)
 	sbUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
 	sbUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 	Check(device->CreateUnorderedAccessView(StructuredBuffer, &sbUAVDesc, &StructuredBufferUAV));
-
+	
 	//SafeDeleteArray(particleArray);
-	bRendered = false;
+
+	
+
 	
 }
 

@@ -22,5 +22,6 @@ private:
 	 Vector3 position;
 	 Quaternion quat;
 	 Vector3 scale;
+	 Matrix inst;
 };
 

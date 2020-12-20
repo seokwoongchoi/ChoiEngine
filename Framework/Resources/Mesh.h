@@ -4,6 +4,7 @@ class Mesh
 {
 public:
 	friend class Renderer;
+	friend class ShadowRenderer;
 	
 #ifdef EDITORMODE
 	friend class PreviewRenderer;
@@ -84,7 +85,7 @@ public:
 public:
 	inline const vector<shared_ptr<ModelBone>>& GetChilds() {return childs;}
 	inline shared_ptr<ModelBone>* ChildsData() { 
-		if (!childs.data()) return nullptr;
+		if (childs.empty()) return nullptr;
 
 		return childs.data(); }
 	

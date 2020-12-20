@@ -272,10 +272,10 @@
     </Material>
     <Material>
         <Name>DefaultMaterial30</Name>
-        <DiffuseFile>Bricks28_col.jpg</DiffuseFile>
-        <NormalFile>Bricks28_nrm.jpg</NormalFile>
-        <RoughnessFile>Bricks28_rgh.jpg</RoughnessFile>
-        <MetallicFile>Bricks28_AO.jpg</MetallicFile>
+        <DiffuseFile>Four_lane_road_wet_01_1K_Base_Color.png</DiffuseFile>
+        <NormalFile>Four_lane_road_wet_01_1K_Normal.png</NormalFile>
+        <RoughnessFile>Four_lane_road_wet_01_1K_Roughness.png</RoughnessFile>
+        <MetallicFile>Four_lane_road_wet_01_1K_Mask.png</MetallicFile>
         <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
         <PBR Roughness="1" Metallic="1"/>
     </Material>

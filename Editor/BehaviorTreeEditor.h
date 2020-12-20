@@ -14,5 +14,6 @@ public:
 	 bool bShowBehaviorTree;
 
 
+	 void LoadAndCompile(const string& path);
 };
 

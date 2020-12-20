@@ -12,8 +12,12 @@ void Orbit::Update()
 	//	return;
 
 	//Vector3 val = Mouse::Get()->GetMoveValue();
-	R.y += (moveValue.y *0.15f)* delta;
-	R.x += (moveValue.x *0.15f)* delta;
+	
+	
+	R.y += (moveValue.y *0.15f)* 0.02f;
+	Math::Clamp(R.y ,-2.66f, -0.154f);
+	
+	R.x += (moveValue.x *0.15f)* 0.02f;
 
 	
 	

@@ -9,8 +9,8 @@ public:
 	static void Delete();
 
 	static bool Stopped() { return isTimerStopped; }
-	static float Delta() { return isTimerStopped ? 0.0f : timeElapsed; }
-
+	static float Delta() { return isTimerStopped ? 0.0f : timeElapsed* GameSpeed; }
+	static void SetGameSpeed(float speed) { GameSpeed = speed; }
 	void Update();
 	void Print();
 
@@ -29,7 +29,7 @@ private:
 
 	static bool isTimerStopped;///< 타이머 중지
 	static float timeElapsed;///< 이전 프레임으로부터 경과시간
-
+	static float GameSpeed;
 
 	INT64 ticksPerSecond;///< 초당 틱카운트
 	INT64 currentTime;///< 현재 시간

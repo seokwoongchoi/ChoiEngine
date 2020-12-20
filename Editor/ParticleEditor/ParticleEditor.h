@@ -21,7 +21,7 @@ public:
 	void ImageButton();
 	bool bEditing;
 	void Compile();
-	void Load(const wstring& file);
+	void Load(const wstring& file,bool IsLevel=false);
 	void SetTexture(const wstring& file);
 private:
 	ID3D11Device* device;
@@ -56,6 +56,7 @@ private:
 	ImVec2 size;
 	Vector3 EyePosition;
 	ReadParticleType particleType;
-
+	int BindEffectBone=0;
+	string BoneCollider = "BodyCollider";
 };
 

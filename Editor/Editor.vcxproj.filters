@@ -43,7 +43,6 @@
     <ClCompile Include="ImGui\imgui_impl_dx11.cpp" />
     <ClCompile Include="ImGui\imgui_impl_win32.cpp" />
     <ClCompile Include="Editor.cpp" />
-    <ClCompile Include="EditorMain.cpp" />
     <ClCompile Include="ActorEditor\ActorEditor.cpp" />
     <ClCompile Include="ActorEditor\PreviewRenderer.cpp" />
     <ClCompile Include="ImGui\ImGuizmo.cpp" />
@@ -61,6 +60,7 @@
     <ClCompile Include="ImGui\NodeEditor\Source\imgui_node_editor.cpp" />
     <ClCompile Include="ImGui\NodeEditor\Source\imgui_node_editor_api.cpp" />
     <ClCompile Include="BehaviorTreeEditor.cpp" />
+    <ClCompile Include="EditorMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ImGui\Blueprints\ax\Math2D.inl" />

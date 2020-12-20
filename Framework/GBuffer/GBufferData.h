@@ -6,7 +6,9 @@ public:
 	GBufferData() :width(1280), height(720), device(nullptr),
 		nullBuffer(nullptr) , depthStencilTexture(nullptr), diffuseTexture(nullptr), normalTexture(nullptr), specularTexture(nullptr), depthStencilDSV(nullptr),
 		depthStencilReadOnlyDSV(nullptr), diffuseRTV(nullptr), normalRTV(nullptr), specularRTV(nullptr), depthStencilSRV(nullptr),
-		diffuseSRV(nullptr), normalSRV(nullptr), specularSRV(nullptr), depthStencilState(nullptr), packingVP{}{}
+		diffuseSRV(nullptr), normalSRV(nullptr), specularSRV(nullptr), depthStencilState(nullptr), packingVP{}
+	
+	{}
 	~GBufferData() {}
 
 	void Init(ID3D11Device* device,uint width = 1280, uint height = 720);
@@ -21,6 +23,7 @@ public:
 public:
 	inline ID3D11ShaderResourceView* DiffuseSRV(){return diffuseSRV;}
 	inline ID3D11ShaderResourceView* SpecularSRV(){return specularSRV;}
+	
 	inline ID3D11DepthStencilView* DepthstencilDSV(){return depthStencilDSV;}
 	inline ID3D11DepthStencilView* DepthstencilDSVReadOnly(){return depthStencilReadOnlyDSV;}
 public:
@@ -28,6 +31,8 @@ public:
 	inline ID3D11ShaderResourceView* DepthstencilSRV(){	return depthStencilSRV;	}
 public:
 	inline ID3D11Texture2D* DiffuseTexture(){	return diffuseTexture;}
+	inline ID3D11Texture2D* NormalTexture() { return normalTexture; }
+	inline ID3D11Texture2D* PBRTexture() { return specularTexture; }
 private:
 	ID3D11Device* device;
 private:
@@ -38,6 +43,7 @@ private:
 	ID3D11Texture2D* diffuseTexture;
 	ID3D11Texture2D* normalTexture;
 	ID3D11Texture2D* specularTexture;
+	
 
 	// GBuffer render views
 	ID3D11DepthStencilView* depthStencilDSV;
@@ -46,11 +52,14 @@ private:
 	ID3D11RenderTargetView* normalRTV;
 	ID3D11RenderTargetView* specularRTV;
 
+
 	// GBuffer shader resource views
 	ID3D11ShaderResourceView* depthStencilSRV;
 	ID3D11ShaderResourceView* diffuseSRV;
 	ID3D11ShaderResourceView* normalSRV;
 	ID3D11ShaderResourceView* specularSRV;
+
+	
 
 	ID3D11DepthStencilState * depthStencilState;
 

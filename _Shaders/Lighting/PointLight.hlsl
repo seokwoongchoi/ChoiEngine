@@ -185,17 +185,20 @@ float4 PointLightCommonPS(DS_OUTPUT In, bool bUseShadow) : SV_TARGET
         float3 lightDir = PointLightPos - position;
          
         float DistToLight = length(lightDir);
-        float3 finalColor = mat.diffuseColor.rgb * PointColor.rgb;
+      
+    
+        float3 finalColor = mat.diffuseColor.rgb  * PointColor.rgb;
       //  finalColor = FinalGamma(finalColor);
        
     // Attenuation
+       // float attenuation = max(0, 1.0f - (DistToLight / PointLightRangeRcp));
         float DistToLightNorm = 1.0 - saturate(DistToLight / PointLightRangeRcp);
         float Attn = DistToLightNorm * DistToLightNorm;
        
           
         finalColor *= Attn;
         finalColor *= PointIntencity;
-        
+       
         return float4(finalColor, 1.0f);
     }
       

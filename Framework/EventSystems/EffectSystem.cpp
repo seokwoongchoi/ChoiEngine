@@ -1,12 +1,14 @@
 #include "Framework.h"
 #include "EffectSystem.h"
+#include "PhysicsSystem.h"
 #include "Particles/Sparks.h"
 
 EffectSystem::EffectSystem(ID3D11Device * device)
-	:device(device), bLoaded(false), 
+	:device(device), bLoaded(false),
 	position_StructuredBuffer(nullptr),
 	position_StructuredBufferSRV(nullptr), 
-	position_StructuredBufferUAV(nullptr)
+	position_StructuredBufferUAV(nullptr),
+	physics(nullptr)
 {									
 
 	
@@ -31,12 +33,15 @@ void EffectSystem::LoadParticle(const uint & index, const wstring & path, const 
 	{
 	    if(particles.size()>index)
 		{
-			static_cast<Sparks*>(particles[index])->InitBodies(path);
+			int temp = static_cast<Sparks*>(particles[index])->InitBodies(path);
+			physics->EffectIndex(temp, static_cast<Sparks*>(particles[index])->ID());
 		}
 		else  
 		{
 			auto spark = new Sparks(device, index);
-			spark->InitBodies(path);
+			int temp =spark->InitBodies(path);
+			physics->EffectIndex(temp, spark->ID());
+			
 			particles.emplace_back(spark);
 			
 		}
@@ -63,9 +68,9 @@ void EffectSystem::Render(ID3D11DeviceContext * context)
 	
 }
 
-void EffectSystem::ResetBodies(const uint & index,const uint& effectCount)
+void EffectSystem::ResetBodies(const int & index,const uint& effectCount)
 {
-	if (particles.size() <= index)return;
+	if (index<0||particles.size() <= static_cast<uint>(index))return;
 	particles[index]->Reset(effectCount);
 	bLoaded = true;
 }
@@ -81,7 +86,7 @@ void EffectSystem::CreatePositionBuffer(ID3D11Device * device)
 
 	D3D11_TEXTURE2D_DESC desc;
 	ZeroMemory(&desc, sizeof(D3D11_TEXTURE2D_DESC));
-	desc.Width = 2;
+	desc.Width = 3;
 	desc.Height = maxHeight;
 	desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	desc.Usage = D3D11_USAGE_DEFAULT;
@@ -91,8 +96,8 @@ void EffectSystem::CreatePositionBuffer(ID3D11Device * device)
 	desc.ArraySize = 1;
 	desc.SampleDesc.Count = 1;
 
-	Vector4 temp[20];
-	for (uint i = 0; i < maxHeight*2; i++)
+	Vector4 temp[30];
+	for (uint i = 0; i < maxHeight*3; i++)
 	{
 		temp[i] = Vector4(0, 0, 0, 0);
 	}
@@ -101,7 +106,7 @@ void EffectSystem::CreatePositionBuffer(ID3D11Device * device)
 
 	D3D11_SUBRESOURCE_DATA subResource;
 	subResource.pSysMem = temp;
-	subResource.SysMemPitch = sizeof(Vector4)*2;
+	subResource.SysMemPitch = sizeof(Vector4)*3;
 	subResource.SysMemSlicePitch = 0;
 
 	Check(device->CreateTexture2D(&desc, &subResource, &position_StructuredBuffer));
@@ -124,7 +129,7 @@ void EffectSystem::CreatePositionBuffer(ID3D11Device * device)
 	D3D11_UNORDERED_ACCESS_VIEW_DESC sbUAVDesc;
 	sbUAVDesc.Buffer.FirstElement = 0;
 	sbUAVDesc.Buffer.Flags = 0;
-	sbUAVDesc.Buffer.NumElements = maxHeight*2;
+	sbUAVDesc.Buffer.NumElements = maxHeight*3;
 	sbUAVDesc.Format = desc.Format;
 	sbUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
 	Check(device->CreateUnorderedAccessView(position_StructuredBuffer, &sbUAVDesc, &position_StructuredBufferUAV));
