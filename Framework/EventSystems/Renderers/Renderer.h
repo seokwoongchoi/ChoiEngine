@@ -11,7 +11,7 @@ public:
 		inputLayout(nullptr), rsState(nullptr), mesh(nullptr),  sampLinear(nullptr), 
 		stride(0), offset(0), slot(0), meshCount(0), ID(0), materials{},
 		AdditiveBlendState(nullptr), forwardPS(nullptr), blendMesh(nullptr), blendCount(0), blendMeshIndex(0),
-		boxMin(0,0,0), boxMax(0,0,0), btIndex(-1), reflectionVS(nullptr)
+		boxMin(0,0,0), boxMax(0,0,0), btIndex(-1), reflectionVS(nullptr), AlphaToCoverageEnable(nullptr)
 	{}
 	~Renderer() = default;
 
@@ -31,7 +31,7 @@ public:
 	void BindingSkeletalMesh(BinaryReader* r);
 	void ReadMaterial(const wstring& name);
 	void BindMaterial();
-	void CreateShader(const string& file);
+	void CreateShader(const string& file,bool IsTree);
 
 	void Initiallize(ID3D11Device* device,const uint& ID);
 
@@ -84,6 +84,7 @@ private://RasterizerState
 	void CreateStates();
 	ID3D11RasterizerState* rsState;
 	ID3D11BlendState*  AdditiveBlendState;
+	ID3D11BlendState*  AlphaToCoverageEnable;
 	ID3D11SamplerState*    sampLinear;
 
 		
@@ -96,5 +97,6 @@ protected:
 	int btIndex;
 	uint ID;
 	bool bComplete = false;
+	bool bAlphaToCoverage = false;
 };
 

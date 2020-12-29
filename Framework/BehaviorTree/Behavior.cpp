@@ -179,25 +179,22 @@ EStatus  ActiveSelector::Update(const uint & actorIndex, const uint& instanceInd
 EStatus  Condition_IsSeeEnemy::Update(const uint & actorIndex, const uint& instanceIndex)
 {
 	const uint& actorCount = animator->ActorCount();
-	const uint& count = animator->DrawCount(actorIndex);
+	
 	
 	const float& dist = 5.0f;
-	
-
-	
-
-
-	
-	for(uint a=0;a< actorCount;a++)
+		
+	for (uint a = 0; a < actorCount; a++)
+	{
+		const uint& count = animator->DrawCount(a);
 		for (uint i = 0; i < count; i++)
 		{
-			if (actorIndex == a && instanceIndex == i ) continue;
+			if (actorIndex == a && instanceIndex == i) continue;
 
-			uint index = animator->PrevDrawCount(a) + i;
-			if (animator->tweenDesc[index].state == ActorState::Die)continue;
+			uint index = animator->SaveCount(a) + i;
+			if (animator->tweenData[index].state == ActorState::Die)continue;
 
 			Vector3 findPosition;
-			 animator->GetPosition(&findPosition,a, i);
+			animator->GetPosition(&findPosition, a, i);
 			float temp = (findPosition.x - position.x)*(findPosition.x - position.x) +
 				(findPosition.z - position.z)*(findPosition.z - position.z);
 
@@ -207,14 +204,16 @@ EStatus  Condition_IsSeeEnemy::Update(const uint & actorIndex, const uint& insta
 				findedActorIndex = a;
 				findedInstIndex = i;
 
-			
+
 
 				//sharedData->SetAngle(acosf(angle), index);
 				return !IsNegation ? EStatus::Success : EStatus::Failure;
 
 			}
-		
+
 		}
+	}
+		
 
 	 return !IsNegation ? EStatus::Failure : EStatus::Success;
 	
@@ -227,7 +226,7 @@ EStatus  Condition_IsHealthLow::Update(const uint & actorIndex, const uint& inst
 
 	float length = D3DXVec3Length(&(Vector3(position.x,0.0f,position.z) - Vector3(findPosition.x, 0.0f, findPosition.z)));
   
-	uint index = animator->PrevDrawCount(findedActorIndex) + findedInstIndex;
+	uint index = animator->SaveCount(findedActorIndex) + findedInstIndex;
     //if(length<2.0f|| length < 3.0f&& animator->tweenDesc[index].state == ActorState::Idle)
 	//{
 	//	return !IsNegation ? EStatus::Failure : EStatus::Success;
@@ -242,10 +241,10 @@ EStatus  Condition_IsHealthLow::Update(const uint & actorIndex, const uint& inst
 EStatus  Condition_IsEnemyDead::Update(const uint & actorIndex, const uint& instanceIndex)
 {
 	
-	uint index = animator->PrevDrawCount(findedActorIndex) + findedInstIndex;
+	uint index = animator->SaveCount(findedActorIndex) + findedInstIndex;
 
 
-	if(	animator->tweenDesc[index].state == ActorState::Die)
+	if(	animator->tweenData[index].state == ActorState::Die)
 	{
 		//std::cout << "Enemy is Dead" << std::endl;
 		return !IsNegation ? EStatus::Success : EStatus::Failure;
@@ -260,11 +259,12 @@ EStatus  Condition_IsEnemyDead::Update(const uint & actorIndex, const uint& inst
 
 EStatus  Action_Attack::Update(const uint & actorIndex, const uint& instanceIndex)
 {
-	uint index = animator->PrevDrawCount(actorIndex) + instanceIndex;
-	if (animator->tweenDesc[index].state == ActorState::Die)
+	uint index = animator->SaveCount(actorIndex) + instanceIndex;
+	auto& tweenData = animator->tweenData[index];
+	if (tweenData.state == ActorState::Die)
 		return EStatus::Failure;
 
-	Vector3 findPosition;
+	/*Vector3 findPosition;
 	animator->GetPosition(&findPosition,findedActorIndex, findedInstIndex);
 	Vector3 dir = position - findPosition > 0 ? position - findPosition : (position - findPosition)*-1;
 	float x = dir.x;
@@ -315,11 +315,11 @@ EStatus  Action_Attack::Update(const uint & actorIndex, const uint& instanceInde
 		
 
 
-	}
+	}*/
 
 	
-	animator->tweenData[index].speed = 1.5f;
-	animator->tweenDesc[index].state=ActorState::Attack;
+	tweenData.speed = 1.5f;
+	tweenData.state=ActorState::Attack;
 	
 	return EStatus::Success;
 }
@@ -407,8 +407,8 @@ EStatus Condition_IsInRange::Update(const uint & actorIndex, const uint & instan
 
 	float length = D3DXVec3Length(&(Vector3(position.x, 0.0f, position.z) - Vector3(findPosition.x, 0.0f, findPosition.z)));
 
-	uint index = animator->PrevDrawCount(findedActorIndex) + findedInstIndex;
-	if (length < 2.0f || length < 3.0f&& animator->tweenDesc[index].state == ActorState::Idle)
+	uint index = animator->SaveCount(findedActorIndex) + findedInstIndex;
+	if (length < 1.5f || length < 2.0f&& animator->tweenData[index].state == ActorState::Idle)
 	{
 		return !IsNegation ? EStatus::Failure : EStatus::Success;
 	}
@@ -421,9 +421,9 @@ EStatus Condition_IsInRange::Update(const uint & actorIndex, const uint & instan
 
 EStatus Action_Strafe::Update(const uint & actorIndex, const uint & instanceIndex)
 {
-	uint index = animator->PrevDrawCount(actorIndex) + instanceIndex;
-	
-	if (animator->tweenDesc[index].state == ActorState::Die)
+	uint index = animator->SaveCount(actorIndex) + instanceIndex;
+	auto& tweenData = animator->tweenData[index];
+	if (tweenData.state == ActorState::Die)
 		return EStatus::Failure;
 	else
 	{
@@ -505,10 +505,10 @@ EStatus Action_Strafe::Update(const uint & actorIndex, const uint & instanceInde
 	
 		
 		//animator->tweenData[index].speed = 1.0f;
-		if (animator->tweenDesc[index].state!=ActorState::Attack)
+		if (tweenData.state!=ActorState::Attack)
 		//if (!animator->IsAtacking(index))
 		{
-			animator->tweenDesc[index].state = ActorState::MoveSide;
+			tweenData.state = ActorState::MoveSide;
 		
 	    }
 	

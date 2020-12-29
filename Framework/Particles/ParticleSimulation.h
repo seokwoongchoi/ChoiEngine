@@ -13,7 +13,7 @@ public:
 	virtual void Update(ID3D11DeviceContext* context) = 0;
 	virtual void Render(ID3D11DeviceContext* context,ID3D11ShaderResourceView* positionSRV) = 0;
 
-	virtual void PreviewRender(ID3D11DeviceContext* context)=0;
+	virtual void PreviewRender(ID3D11DeviceContext* context, const Matrix & view, const Matrix & proj)=0;
 	virtual void Reset(const uint& drawCount) = 0;
 	
 protected:
@@ -40,7 +40,7 @@ protected:
 	ID3D11SamplerState* sampler;
 
 	class Texture* particleTexture;
-
+	int id = -1;
 
 };
 

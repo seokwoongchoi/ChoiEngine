@@ -257,17 +257,16 @@ float3 Ambient(float bumpY, float3 diffuse)
 float4 DirLightPS( VS_OUTPUT In) : SV_TARGET
 {
     Material mat = UnpackGBuffer(In.Position.xy);
-    float3 position = CalcWorldPos(In.cpPos, mat.LinearDepth);
-    
-   
+ 
+   // float pixelLength = length(eyeToPixel);
     [flatten]
-    if (mat.SkyMask<1)
+    if (mat.SkyMask < 1)
     {
-       
         return float4(mat.diffuseColor, 1.0);
     }
     
-   
+    float3 position = CalcWorldPos(In.cpPos, mat.LinearDepth);
+    float3 eyeToPixel = position - EyePosition;
    
     float3 finalColor = lerp(mat.diffuseColor.rgb, CalcDirectional(position, mat), mat.TerrainMask);
     float ao = SsaoTexture.Sample(LinearSampler, In.UV).r;
@@ -275,8 +274,6 @@ float4 DirLightPS( VS_OUTPUT In) : SV_TARGET
     finalColor += Ambient(mat.normal.y, finalColor.rgb);
     finalColor *= CascadedShadow(position);
     finalColor *= LightFactor(DirToLight.y);
-    
-    float3 eyeToPixel = (position) - (EyePosition);
     finalColor = ApplyFog(finalColor, EyePosition.y , eyeToPixel);
    
     

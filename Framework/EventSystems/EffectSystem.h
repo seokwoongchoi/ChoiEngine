@@ -24,7 +24,7 @@ private:
 	vector <  class ParticleSimulation*>particles;
 	vector < uint>instanceCount;
 	
-	bool bLoaded;
+
 private:
 	void CreatePositionBuffer(ID3D11Device* device);
 	ID3D11Texture2D			  *position_StructuredBuffer;

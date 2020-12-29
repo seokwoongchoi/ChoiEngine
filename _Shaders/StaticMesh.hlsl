@@ -13,12 +13,12 @@ void SetModelWorld(int InstID)
     float4 m3 = BoneTransforms[int2(BoneIndex * 4 + 2, actorIndex)];
     float4 m4 = BoneTransforms[int2(BoneIndex * 4 + 3, actorIndex)];
        
-    
-  // uint index = lerp(InstID, InstID + prevDrawCount, saturate(actorIndex));
-    float4 inst1 = InstTransforms[int2(InstID * 4 + 0, actorIndex)];
-    float4 inst2 = InstTransforms[int2(InstID * 4 + 1, actorIndex)];
-    float4 inst3 = InstTransforms[int2(InstID * 4 + 2, actorIndex)];
-    float4 inst4 = InstTransforms[int2(InstID * 4 + 3, actorIndex)];
+    uint instId = prevDrawCount + InstID;
+  
+    float4 inst1 = InstTransforms[int2(instId * 4 + 0, 0)];
+    float4 inst2 = InstTransforms[int2(instId * 4 + 1, 0)];
+    float4 inst3 = InstTransforms[int2(instId * 4 + 2, 0)];
+    float4 inst4 = InstTransforms[int2(instId * 4 + 3, 0)];
     World = mul(matrix(m1, m2, m3, m4), matrix(inst1, inst2, inst3, inst4));
 }
 struct VertexPosInst

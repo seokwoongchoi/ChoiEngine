@@ -5,7 +5,7 @@
 #include "Renderers/Renderer.h"
 Transforms::Transforms(ID3D11Device * device,Animator* animator)
 	:animator(animator), position(Vector3(0.0f, 0.0f, 0.0f)),quat ( Quaternion(0.0f, 0.0f, 0.0f, 0.0f)),
-     scale( Vector3(1.0f, 1.0f, 1.0f))
+     scale( Vector3(1.0f, 1.0f, 1.0f)), btIndex{-1,-1}
 {
 }
 
@@ -13,40 +13,27 @@ Transforms::~Transforms()
 {
 }
 
-void Transforms::Update(const uint & index)
+void Transforms::Update(const uint & actorIndex,const uint & index)
 {
-	uint drawCount = animator->renderDatas[index].drawCount;
-	int btIndex= animator->renderDatas[index].btIndex;
-	if (btIndex > -1)
-	{
-		for (uint i = 0; i < drawCount; i++)
-		{
-			if (index == 0 && i == 0)continue;
+	if (btIndex[actorIndex]<0)return;
 			
-			animator->GetInstMatrix(&inst,index, i);
-			D3DXMatrixDecompose(&scale, &quat, &position, &inst);
-			behaviorTrees[btIndex]->SetTransform(position,quat,scale);
-			behaviorTrees[btIndex]->Tick(index, i);
-		}
-		
-	}
+	animator->GetInstMatrix(&inst, actorIndex, index);
+	D3DXMatrixDecompose(&scale, &quat, &position, &inst);
+	behaviorTrees[btIndex[actorIndex]]->SetTransform(position,quat,scale);
+	behaviorTrees[btIndex[actorIndex]]->Tick(actorIndex, index);
 	
 }
 
 
 void Transforms::ReadBehaviorTree(BinaryReader * r, const uint & actorIndex)
 {
-	int behaviorTreeNum = r->Int();
-	if (behaviorTreeNum > -1)
+	btIndex[actorIndex] = r->Int();
+	if (btIndex[actorIndex] > -1)
 	{
-		if (animator->renderDatas.empty())
-		{
-			animator->RegisterRenderData(actorIndex, nullptr);
-		}
 		
-		animator->renderDatas[actorIndex].btIndex = behaviorTreeNum;
+		//animator->renderDatas[actorIndex].btIndex = btIndex[actorIndex];
 		BinaryReader * BehaviorRead = new BinaryReader();
-		wstring path = L"../_BehaviorTreeDatas/BehaviorTree" + to_wstring(behaviorTreeNum) + L".behaviortree";
+		wstring path = L"../_BehaviorTreeDatas/BehaviorTree" + to_wstring(btIndex[actorIndex]) + L".behaviortree";
 		BehaviorRead->Open(path);
 		uint count = BehaviorRead->UInt();
 		BehaviorTreeBuilder* Builder = new BehaviorTreeBuilder();

@@ -250,6 +250,7 @@
 
 		Matrix S, T, R;
 		Matrix world;
+		
 		float angle;
 		float saveAngle = -1.0f;
 		float timer = 0.0f;

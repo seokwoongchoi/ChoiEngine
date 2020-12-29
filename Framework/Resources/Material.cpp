@@ -28,15 +28,12 @@ Material::~Material()
 
 void Material::ApplyMaterial(ID3D11DeviceContext* context)
 {
-
-	D3D11_MAPPED_SUBRESOURCE MappedResource;
-	context->Map(colorBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-
 	Vector3 l = GlobalData::LightDirection();
 	colorDesc.Specular = Color(l.x, l.y, l.z, colorDesc.Specular.a);
 
+	D3D11_MAPPED_SUBRESOURCE MappedResource;
+	context->Map(colorBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
 	memcpy(MappedResource.pData, &colorDesc, sizeof(colorDesc));
-
 	context->Unmap(colorBuffer, 0);
 	context->PSSetConstantBuffers(0, 1, &colorBuffer);
 
@@ -51,14 +48,12 @@ void Material::ApplyMaterial(ID3D11DeviceContext* context)
 void Material::ApplyRefeltionMaterial(ID3D11DeviceContext * context)
 {
 	
-	
-	D3D11_MAPPED_SUBRESOURCE MappedResource;
-	context->Map(colorBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-
 	Vector3 l = GlobalData::LightDirection();
 	colorDesc.Specular = Color(l.x, l.y, l.z, colorDesc.Specular.a);
-	memcpy(MappedResource.pData, &colorDesc, sizeof(colorDesc));
 
+	D3D11_MAPPED_SUBRESOURCE MappedResource;
+	context->Map(colorBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+	memcpy(MappedResource.pData, &colorDesc, sizeof(colorDesc));
 	context->Unmap(colorBuffer, 0);
 	context->PSSetConstantBuffers(0, 1, &colorBuffer);
 
@@ -73,7 +68,7 @@ void Material::ApplyRefeltionMaterial(ID3D11DeviceContext * context)
 void Material::ClearMaterial(ID3D11DeviceContext* context)
 {
 	ZeroMemory(arrSRV, sizeof(arrSRV));
-		context->PSSetShaderResources(0, 5, arrSRV);
+		context->PSSetShaderResources(0, MAX_MODEL_TEXTURE, arrSRV);
 
 		context->PSSetConstantBuffers(0, 1, &nullBuffer);
 		

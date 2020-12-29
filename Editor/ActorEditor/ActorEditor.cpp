@@ -6,7 +6,7 @@
 #include "Editor.h"
 #include "EventSystems/ColliderSystem.h"
 #include "EventSystems/Animator.h"
-
+#include "EventSystems/Renderers/ShadowRenderer.h"
 ActorEditor::ActorEditor(ID3D11Device* device, class Engine* engine, class Editor* editor):
 	engine(engine),editor(editor),
 	device(device),
@@ -180,8 +180,7 @@ void ActorEditor::Save(BinaryWriter * w)
 
 	case ReadMeshType::StaticMesh:
 	{
-		uint drawCount;
-		engine->collider->RenderandCulledCount(actorIndex, drawCount);
+		uint drawCount=	engine->collider->DrawCount(actorIndex);
 		w->UInt(drawCount);
 		for (uint i = 0; i < drawCount; i++)
 		{
@@ -193,8 +192,8 @@ void ActorEditor::Save(BinaryWriter * w)
 	break;
 	case ReadMeshType::SkeletalMesh:
 	{
-		uint drawCount;
-		engine->animator->RenderandCulledCount(actorIndex, drawCount);
+		uint drawCount= engine->animator->DrawCount(actorIndex);
+		
 		w->UInt(drawCount);
 		for (uint i = 0; i < drawCount; i++)
 		{
@@ -243,7 +242,8 @@ void ActorEditor::Load(BinaryReader * r)
 		for (uint i = 0; i < drawCount; i++)
 		{
 			Matrix temp = r->Matrix();
-			engine->collider->PushDrawCount(actorIndex, temp);
+			engine->collider->PushDrawCount(actorIndex, temp, true);
+			engine->staticShadowRenderer[actorIndex].PushInstance();
 		}
 		break;
 	case 2:
@@ -251,6 +251,7 @@ void ActorEditor::Load(BinaryReader * r)
 		{
 			Matrix temp = r->Matrix();
 			engine->animator->PushDrawCount(actorIndex, temp);
+			engine->skeletalShadowRenderer[actorIndex].PushInstance();
 		}
 		break;
 
@@ -404,7 +405,7 @@ void ActorEditor::Editor()
 	ImGui::SetNextWindowSizeConstraints
 	(
 		ImVec2(800, 600),
-		ImVec2(1280, 720)
+		ImVec2(static_cast<float>(D3D::Width()), static_cast<float>(D3D::Height()))
 	);
 
 
@@ -457,7 +458,7 @@ void ActorEditor::ImGizmo()
 	
 	if (!bEditing) return;
 
-	editor->IsPushed = false;
+	editor->IsClicked = false;
 
 	static ImGuizmo::OPERATION operation(ImGuizmo::TRANSLATE);
 	//static ImGuizmo::MODE mode(ImGuizmo::WORLD);

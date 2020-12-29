@@ -36,6 +36,9 @@ private:
 
 	void QuadTreeRender(shared_ptr<QuadTreeNode> node);
 private:
+	void BoxRayTracing();
+	bool IntersectionAABB(const Vector3& org, const Vector3& dir, Vector3 & Pos, const Vector3& boundsMin, const Vector3& boundsMax);
+private:
 	
 	class Engine* engine;
 	void ApplyStyle();
@@ -54,9 +57,10 @@ private:
 	Vector3 pos;
 	 
 
-	bool IsPushed;
-	int pushedActorIndex;
-	ReadMeshType pushedMeshType;
+	bool IsClicked;
+	int clickedActorIndex;
+	int clickedInstanceIndex;
+	ReadMeshType clickedMeshType;
 protected:
 	uint staticActorCount;
 	uint skeletalActorCount;

@@ -32,7 +32,7 @@ void ActorController::Start()
 
 void ActorController::Update()
 {
-	if (!bStart)
+	if (!bStart||animator->actorCount<1)
 		return;
 
 	if (Keyboard::Get()->Down(27))
@@ -49,7 +49,8 @@ void ActorController::Update()
 	
 	animator->GetInstMatrix(&instMatrix,0, 0);
 	animator->GetFoward(&Forward, 0, 0);
-	tweenDesc = animator->tweenDesc[0];
+	tweenData = animator->tweenData[0];
+
 	D3DXMatrixDecompose(&s, &q, &position, &instMatrix);
 	D3DXMatrixScaling(&S, s.x, s.y, s.z);
 	prevPosition = position;
@@ -103,15 +104,15 @@ void ActorController::Update()
 	velocity = D3DXVec3Length(&(position - prevPosition));
 	if (velocity > 0.0f && !bAttack && !bJump)
 	{
-		tweenDesc.state = ActorState::Move;
+		tweenData.state = ActorState::Move;
 		if(speed>300.0f)
-			tweenDesc.state = ActorState::Run;
+			tweenData.state = ActorState::Run;
 	}
 
 	if (Keyboard::Get()->Press(0x20))
 	{
-		animator->tweenData[0].speed = 1.5f;
-		tweenDesc.state = ActorState::Jump;
+		tweenData.speed = 1.5f;
+		tweenData.state = ActorState::Jump;
 
 	/*	float height= animator->tweenDesc[0].Curr.CurrFrame<10?
 			1.0f*Time::Delta() :-1.0f*Time::Delta();
@@ -132,7 +133,7 @@ void ActorController::Update()
 	else if (Mouse::Get()->Down(1))
 	{
 		
-		tweenDesc.state = ActorState::MoveSide;
+		tweenData.state = ActorState::MoveSide;
 		
 	}
 
@@ -171,10 +172,10 @@ void ActorController::Update()
 	}
 	if (!Keyboard::Get()->Press('W')&&Keyboard::Get()->Up(&keys[0]))
 	{
-		tweenDesc.state = ActorState::Idle;
+		tweenData.state = ActorState::Idle;
 		speed = 200.0f;
 	}
-	if (tweenDesc.state == ActorState::Idle)
+	if (tweenData.state == ActorState::Idle)
 	{
 		bAttack = false;
 		bNextCombo = false;
@@ -182,7 +183,7 @@ void ActorController::Update()
 		ComboCount = 0;
 
 	}
-	animator->tweenDesc[0].state = tweenDesc.state;
+	animator->tweenData[0] = tweenData;
 }
 
 void ActorController::Stop()
@@ -205,8 +206,8 @@ void ActorController::Attacking()
 	
 	if (ComboCount < 1)
 	{
-		animator->tweenData[0].speed = 2.0f;
-		tweenDesc.state = ActorState::Attack;
+		tweenData.speed = 2.0f;
+		tweenData.state = ActorState::Attack;
 	}
 	//else if( ComboCount < 2)
 	//{

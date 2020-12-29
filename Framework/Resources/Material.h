@@ -1,5 +1,5 @@
 #pragma once
-#define MAX_MODEL_TEXTURE 5
+#define MAX_MODEL_TEXTURE 4
 class Material
 {
 public:
@@ -73,7 +73,7 @@ private:
 private:
 	ID3D11Device* device;
 	Texture* textures;
-	ID3D11ShaderResourceView* arrSRV[4];
+	ID3D11ShaderResourceView* arrSRV[MAX_MODEL_TEXTURE];
 	ID3D11ShaderResourceView* srvArray[2];
 
 	wstring diffuseFile;

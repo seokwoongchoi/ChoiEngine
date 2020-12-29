@@ -67,6 +67,7 @@ void Mesh::ApplyPipeline(ID3D11DeviceContext * context,const uint& prevDrawCount
 void Mesh::ApplyPipelineNoMaterial(ID3D11DeviceContext * context, const uint& prevDrawCount, const uint& actorIndex)
 {
 	boneDesc.prevDrawCount = prevDrawCount;
+	
 	boneDesc.actorIndex = actorIndex;
 	
 	D3D11_MAPPED_SUBRESOURCE MappedResource;

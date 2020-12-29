@@ -65,7 +65,7 @@ struct CB_CAPSULE_LIGHT_PIXEL
 
 #pragma pack(pop)
 LightManager::LightManager()
-	:device(nullptr),shadowVP{},ShowLightVolume(false), LastShadowLight(-1), NextFreeSpotShadowmap(-1), NextFreePointShadowmap(-1),
+	:device(nullptr),ShowLightVolume(false), LastShadowLight(-1), NextFreeSpotShadowmap(-1), NextFreePointShadowmap(-1),
  DirLightVertexShader(nullptr),  DirLightPixelShader(nullptr),  DirLightCB(nullptr),
  PointLightVertexShader(nullptr),  PointLightHullShader(nullptr),  PointLightDomainShader(nullptr),  PointLightPixelShader(nullptr),  PointLightShadowPixelShader(nullptr),
  PointLightDomainCB(nullptr),  PointLightPixelCB(nullptr),
@@ -74,14 +74,13 @@ LightManager::LightManager()
  CapsuleLightVertexShader(nullptr),  CapsuleLightHullShader(nullptr),  CapsuleLightDomainShader(nullptr),  CapsuleLightPixelShader(nullptr),
  CapsuleLightDomainCB(nullptr),  CapsuleLightPixelCB(nullptr),
 // pShadowGenVSLayout(nullptr),
- CascadedShadowGenGeometryShader(nullptr),
+ 
  SpotShadowGenVertexShader(nullptr),  SpotShadowGenVertexCB(nullptr),
  PointShadowGenVertexShader(nullptr),  PointShadowGenGeometryShader(nullptr),  PointShadowGenGeometryCB(nullptr),
-  CascadedShadowGenGeometryCB(nullptr), DebugCascadesPixelShader(nullptr),
- NoDepthWriteLessStencilMaskState(nullptr),  NoDepthWriteGreatherStencilMaskState(nullptr),  ShadowGenDepthState(nullptr),
+ DebugCascadesPixelShader(nullptr),
+ NoDepthWriteLessStencilMaskState(nullptr),  NoDepthWriteGreatherStencilMaskState(nullptr),
 AdditiveBlendState(nullptr), NoDepthClipFrontRS(nullptr),  WireframeRS(nullptr),
- ShadowGenRS(nullptr),  CascadedShadowGenRS(nullptr),  PCFSamplerState(nullptr),
-CascadedDepthStencilRT(nullptr), CascadedDepthStencilDSV(nullptr), CascadedDepthStencilSRV(nullptr)
+ ShadowGenRS(nullptr),   PCFSamplerState(nullptr)
 {
 	for (int i = 0; i <  iTotalSpotShadowmaps; i++)
 	{
@@ -130,14 +129,6 @@ void LightManager::Init(ID3D11Device* device)
 	Check(device->CreateDepthStencilState(&descDepth, & NoDepthWriteGreatherStencilMaskState));
 	
 
-	descDepth.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	descDepth.DepthFunc = D3D11_COMPARISON_LESS;
-	descDepth.StencilEnable = true;
-	descDepth.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
-	descDepth.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
-
-	
-	Check(device->CreateDepthStencilState(&descDepth, & ShadowGenDepthState));
 	
 	// Create the additive blend state
 	D3D11_BLEND_DESC descBlend;
@@ -178,11 +169,7 @@ void LightManager::Init(ID3D11Device* device)
 	descRast.SlopeScaledDepthBias = 1.0f;
 	Check(device->CreateRasterizerState(&descRast, & ShadowGenRS));
 	
-	descRast.DepthBias =6;
-	//descRast.CullMode = D3D11_CULL_FRONT;
-	descRast.SlopeScaledDepthBias = 1.0f;
-	descRast.DepthClipEnable = false;
-	Check(device->CreateRasterizerState(&descRast, & CascadedShadowGenRS));
+	
 	
 
 	// Create the PCF sampler state
@@ -202,82 +189,7 @@ void LightManager::Init(ID3D11Device* device)
 	samDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
 	samDesc.MaxLOD = D3D11_FLOAT32_MAX;
 	Check(device->CreateSamplerState(&samDesc, & PCFSamplerState));
-	
-	// Allocate the depth stencil target
-	D3D11_TEXTURE2D_DESC dtd = {
-		 1024, //UINT Width;
-		 1024, //UINT Height;
-		1, //UINT MipLevels;
-		1, //UINT ArraySize;
-		//DXGI_FORMAT_R24G8_TYPELESS,
-		DXGI_FORMAT_R32_TYPELESS, //DXGI_FORMAT Format;
-		1, //DXGI_SAMPLE_DESC SampleDesc;
-		0,
-		D3D11_USAGE_DEFAULT,//D3D11_USAGE Usage;
-		D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE,//UINT BindFlags;
-		0,//UINT CPUAccessFlags;
-		0//UINT MiscFlags;    
-	};
-	D3D11_DEPTH_STENCIL_VIEW_DESC descDepthView =
-	{
-		// DXGI_FORMAT_D24_UNOR S8_UINT,
-		DXGI_FORMAT_D32_FLOAT,
-		D3D11_DSV_DIMENSION_TEXTURE2D,
-		0
-	};
-	D3D11_SHADER_RESOURCE_VIEW_DESC descShaderView =
-	{
-		//DXGI_FORMAT_R24_UNOR X8_TYPELESS,
-		DXGI_FORMAT_R32_FLOAT,
-		D3D11_SRV_DIMENSION_TEXTURE2D,
-		0,
-		0
-	};
-	descShaderView.Texture2D.MipLevels = 1;
-
-	//char strResName[32];
-	//for (int i = 0; i <  iTotalSpotShadowmaps; i++)
-	//{
-	//	//sprintf_s(strResName, "Spot Shadowmap Target %d", i);
-	//	Check(device->CreateTexture2D(&dtd, nullptr, & SpotDepthStencilRT[i]));
-	//	
-
-	//	//sprintf_s(strResName, "Spot Shadowmap Depth View %d", i);
-	//	Check(device->CreateDepthStencilView( SpotDepthStencilRT[i], &descDepthView, & SpotDepthStencilDSV[i]));
-	//	
-	//	//sprintf_s(strResName, "Spot Shadowmap Resource View %d", i);
-	//	Check(device->CreateShaderResourceView( SpotDepthStencilRT[i], &descShaderView, & SpotDepthStencilSRV[i]));
-	//	
-	//}
-
-	// Allocate the point shadow targets and views
-	//
-	//dtd.ArraySize = 6;
-	//dtd.MiscFlags = D3D10_RESOURCE_MISC_TEXTURECUBE;
-	//descDepthView.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
-	//descDepthView.Texture2DArray.FirstArraySlice = 0;
-	//descDepthView.Texture2DArray.ArraySize = 6;
-	//descShaderView.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
-	//descShaderView.TextureCube.MipLevels = 1;
-	//descShaderView.TextureCube.MostDetailedMip = 0;
-	//for (int i = 0; i < TotalPointShadowmaps; i++)
-	//{
-	//	//sprintf_s(strResName, "Point Shadowmap Target %d", i);
-	//	Check(device->CreateTexture2D(&dtd, nullptr, & PointDepthStencilRT[i]));
-	//	
-
-	//	//sprintf_s(strResName, "Point Shadowmap Depth View %d", i);
-	//	Check(device->CreateDepthStencilView( PointDepthStencilRT[i], &descDepthView, & PointDepthStencilDSV[i]));
-	//	
-	//	//sprintf_s(strResName, "Point Shadowmap Resource View %d", i);
-	//	Check(device->CreateShaderResourceView( PointDepthStencilRT[i], &descShaderView, & PointDepthStencilSRV[i]));
-	//	
-	//}
-
-	float width = static_cast<float>(D3D::Width());
-    float height = static_cast<float>(D3D::Height());
-	CreateCascadedShadowBuffers(Vector2(width,height));
-	
+		
 	
 
 }
@@ -486,13 +398,7 @@ void LightManager::CreateShaders(ID3D11Device* device)
 	SafeRelease(ShaderBlob);
 */
 	
-	path = "../_Shaders/Lighting/ShadowGen.hlsl";
-	entryPoint = "CascadedShadowMapsGenGS";
-	shaderModel = "gs_5_0";
-	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
-	Check(device->CreateGeometryShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), nullptr, &CascadedShadowGenGeometryShader));
-	SafeRelease(ShaderBlob);
+
 
 	
 }
@@ -541,8 +447,7 @@ void LightManager::CreateBuffers(ID3D11Device* device)
 	Check(device->CreateBuffer(&cbDesc, nullptr, &PointShadowGenGeometryCB));
 	//DXUT_SetDebugName( pPointShadowGenGeometryCB, "Point Shadow Gen Geometry CB");
 
-	cbDesc.ByteWidth = 3 * sizeof(Matrix);
-	Check(device->CreateBuffer(&cbDesc, nullptr, &CascadedShadowGenGeometryCB));
+	
 	//DXUT_SetDebugName( pCascadedShadowGenGeometryCB, "Point Shadow Gen Geometry CB");
 }
 
@@ -579,18 +484,17 @@ void LightManager::Deinit()
 	SafeRelease( PointShadowGenGeometryShader);
 	SafeRelease( PointShadowGenGeometryCB);
 
-	SafeRelease( CascadedShadowGenGeometryShader);
-	SafeRelease( CascadedShadowGenGeometryCB);
+	
 	
 	SafeRelease( DebugCascadesPixelShader);
 	SafeRelease( NoDepthWriteLessStencilMaskState);
-	SafeRelease( ShadowGenDepthState);
+	
 	SafeRelease( NoDepthWriteGreatherStencilMaskState);
 	SafeRelease( AdditiveBlendState);
 	SafeRelease( NoDepthClipFrontRS);
 	SafeRelease( WireframeRS);
 	SafeRelease( ShadowGenRS);
-	SafeRelease( CascadedShadowGenRS);
+	
 	SafeRelease( PCFSamplerState);
 
 	for (int i = 0; i <  iTotalSpotShadowmaps; i++)
@@ -607,9 +511,7 @@ void LightManager::Deinit()
 		SafeRelease( PointDepthStencilSRV[i]);
 	}
 
-	SafeRelease(CascadedDepthStencilRT);
-	SafeRelease(CascadedDepthStencilDSV);
-	SafeRelease(CascadedDepthStencilSRV);
+
 }
 
 void LightManager::Update()
@@ -628,14 +530,7 @@ void LightManager::ClearShadowPipeLine(ID3D11DeviceContext * context)
 
 void LightManager::Resize(const Vector2 & size)
 {
-	CreateCascadedShadowBuffers(size);
-	CascadedMatrixSet.SetShadowMapSize(size);
-	for (uint i = 0; i < 3; i++)
-	{
-		shadowVP[i].Width = size.x;
-		shadowVP[i].Height = size.y;
-		
-	}
+	
 }
 
 
@@ -803,71 +698,7 @@ void LightManager::DoDebugCascadedShadows(ID3D11DeviceContext * context)
 	context->OMSetBlendState(PrevBlendState, prevBlendFactor, prevSampleMask);
 }
 
-bool LightManager::PrepareNextShadowLight(ID3D11DeviceContext * context)
-{
-	// Set the shadow rasterizer state with the bias
-	
-	context->OMSetDepthStencilState(ShadowGenDepthState, 0);
-	context->RSSetState(CascadedShadowGenRS);
 
-	
-	CascadedShadowsGen(context);
-	return false;
-}
-
-void LightManager::CreateCascadedShadowBuffers(const Vector2 & size)
-{
-	SafeRelease(CascadedDepthStencilSRV);
-	SafeRelease(CascadedDepthStencilDSV);
-	SafeRelease(CascadedDepthStencilRT);
-	// Allocate the depth stencil target
-	D3D11_TEXTURE2D_DESC dtd = {
-		 static_cast<uint>(size.x), //UINT Width;
-		 static_cast<uint>(size.y), //UINT Height;
-		1, //UINT MipLevels;
-		CascadedShadow::TotalCascades, //UINT ArraySize;
-		//DXGI_FORMAT_R24G8_TYPELESS,
-		DXGI_FORMAT_R32_TYPELESS, //DXGI_FORMAT Format;
-		1, //DXGI_SAMPLE_DESC SampleDesc;
-		0,
-		D3D11_USAGE_DEFAULT,//D3D11_USAGE Usage;
-		D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE,//UINT BindFlags;
-		0,//UINT CPUAccessFlags;
-		0//UINT MiscFlags;    
-	};
-
-	Check(device->CreateTexture2D(&dtd, nullptr, &CascadedDepthStencilRT));
-
-	D3D11_DEPTH_STENCIL_VIEW_DESC descDepthView;
-	ZeroMemory(&descDepthView, sizeof(descDepthView));
-	descDepthView.Format = DXGI_FORMAT_D32_FLOAT;//;
-	descDepthView.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
-	descDepthView.Texture2DArray.FirstArraySlice = 0;
-	descDepthView.Texture2DArray.ArraySize = CascadedShadow::TotalCascades;
-	Check(device->CreateDepthStencilView(CascadedDepthStencilRT, &descDepthView, &CascadedDepthStencilDSV));
-
-	D3D11_SHADER_RESOURCE_VIEW_DESC descShaderView;
-	ZeroMemory(&descShaderView, sizeof(descShaderView));
-	descShaderView.Format = DXGI_FORMAT_R32_FLOAT;
-	descShaderView.Texture2D.MipLevels = 1;
-	descShaderView.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
-	descShaderView.Texture2DArray.FirstArraySlice = 0;
-	descShaderView.Texture2DArray.ArraySize = CascadedShadow::TotalCascades;
-	Check(device->CreateShaderResourceView(CascadedDepthStencilRT, &descShaderView, &CascadedDepthStencilSRV));
-
-
-	CascadedMatrixSet.Init(size);
-
-	for (uint i = 0; i < CascadedShadow::TotalCascades; i++)
-	{
-		shadowVP[i].Width = size.x;
-		shadowVP[i].Height = size.y;
-		shadowVP[i].TopLeftX = 0;
-		shadowVP[i].TopLeftY = 0;
-		shadowVP[i].MinDepth = 0.0f;
-		shadowVP[i].MaxDepth = 1.0f;
-	}
-}
 
 void LightManager::DirectionalLight(ID3D11DeviceContext * context)
 {
@@ -894,12 +725,6 @@ void LightManager::DirectionalLight(ID3D11DeviceContext * context)
 	
 	context->Unmap( DirLightCB, 0);
 	context->PSSetConstantBuffers(1, 1, & DirLightCB);
-
-	// Set the cascaded shadow map if casting shadows
-	{
-	
-		context->PSSetShaderResources(4, 1, &CascadedDepthStencilSRV);
-	}
 
 	// Primitive settings
 	context->IASetInputLayout(nullptr);
@@ -1003,35 +828,3 @@ void LightManager::PointShadowGen(ID3D11DeviceContext * context, const PointLigh
 
 
 
-void LightManager::CascadedShadowsGen(ID3D11DeviceContext * context)
-{
-	
-
-		context->RSSetViewports(3, shadowVP);
-
-		// Set the depth target
-		ID3D11RenderTargetView* nullRT = nullptr;
-		context->OMSetRenderTargets(1, &nullRT, CascadedDepthStencilDSV);
-
-		// Clear the depth stencil
-		context->ClearDepthStencilView(CascadedDepthStencilDSV, D3D11_CLEAR_DEPTH, 1.0, 0);
-
-
-	
-
-	// Get the cascade matrices for the current camera configuration
-	CascadedMatrixSet.Update(GlobalData::LightDirection());
-	// Fill the shadow generation matrices constant buffer
-	D3D11_MAPPED_SUBRESOURCE MappedResource;
-	context->Map(CascadedShadowGenGeometryCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-	memcpy(MappedResource.pData, &CascadedMatrixSet.arrWorldToCascadeProj, sizeof(Matrix)*CascadedShadow::TotalCascades);
-	context->Unmap(CascadedShadowGenGeometryCB, 0);
-	
-	
-	context->GSSetConstantBuffers(6, 1, & CascadedShadowGenGeometryCB);
-
-
-	// Set the shadow generation shaders
-	context->GSSetShader( CascadedShadowGenGeometryShader, nullptr, 0);
-	context->PSSetShader(nullptr, nullptr, 0);
-}

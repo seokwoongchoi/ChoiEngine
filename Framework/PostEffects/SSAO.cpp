@@ -21,33 +21,6 @@ SSAO::SSAO(ID3D11Device* device, uint width, uint height)
 	
 
 
-	//////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Allocate down scaled depth buffer
-	D3D11_BUFFER_DESC bufferDesc;
-	ZeroMemory(&bufferDesc, sizeof(bufferDesc));
-	bufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
-	bufferDesc.StructureByteStride = 4 * sizeof(float);
-	bufferDesc.ByteWidth = this->width * this->height * bufferDesc.StructureByteStride;
-	bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-    Check(device->CreateBuffer(&bufferDesc, NULL, &MiniDepthBuffer));
-	
-	D3D11_UNORDERED_ACCESS_VIEW_DESC UAVDesc;
-	ZeroMemory(&UAVDesc, sizeof(UAVDesc));
-	UAVDesc.Format = DXGI_FORMAT_UNKNOWN;
-	UAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-	UAVDesc.Buffer.FirstElement = 0;
-	UAVDesc.Buffer.NumElements = this->width * this->height;
-	Check(device->CreateUnorderedAccessView(MiniDepthBuffer, &UAVDesc, &MiniDepthUAV));
-	
-	D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc;
-	ZeroMemory(&SRVDesc, sizeof(SRVDesc));
-	SRVDesc.Format = DXGI_FORMAT_UNKNOWN;
-	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-	SRVDesc.Buffer.FirstElement = 0;
-	SRVDesc.Buffer.NumElements = this->width * this->height;
-	Check(device->CreateShaderResourceView(MiniDepthBuffer, &SRVDesc, &MiniDepthSRV));
-	
-	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Allocate down scale depth constant buffer
 	D3D11_BUFFER_DESC CBDesc;
 	ZeroMemory(&CBDesc, sizeof(CBDesc));
@@ -237,4 +210,38 @@ void SSAO::CreateSSAOTexture()
 	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	SRVDesc.Texture2D.MipLevels = 1;
 	Check(device->CreateShaderResourceView(SSAO_RT, &SRVDesc, &SSAO_SRV));
+
+
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	SafeRelease(MiniDepthBuffer);
+	SafeRelease(MiniDepthUAV);
+	SafeRelease(MiniDepthSRV);
+	// Allocate down scaled depth buffer
+	D3D11_BUFFER_DESC bufferDesc;
+	ZeroMemory(&bufferDesc, sizeof(bufferDesc));
+	bufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+	bufferDesc.StructureByteStride = 4 * sizeof(float);
+	bufferDesc.ByteWidth = this->width * this->height * bufferDesc.StructureByteStride;
+	bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+	Check(device->CreateBuffer(&bufferDesc, NULL, &MiniDepthBuffer));
+
+
+	ZeroMemory(&UAVDesc, sizeof(UAVDesc));
+	UAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+	UAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+	UAVDesc.Buffer.FirstElement = 0;
+	UAVDesc.Buffer.NumElements = this->width * this->height;
+	Check(device->CreateUnorderedAccessView(MiniDepthBuffer, &UAVDesc, &MiniDepthUAV));
+
+	
+	ZeroMemory(&SRVDesc, sizeof(SRVDesc));
+	SRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+	SRVDesc.Buffer.FirstElement = 0;
+	SRVDesc.Buffer.NumElements = this->width * this->height;
+	Check(device->CreateShaderResourceView(MiniDepthBuffer, &SRVDesc, &MiniDepthSRV));
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
 }

@@ -4,8 +4,7 @@
 #include "Particles/Sparks.h"
 
 EffectSystem::EffectSystem(ID3D11Device * device)
-	:device(device), bLoaded(false),
-	position_StructuredBuffer(nullptr),
+	:device(device),position_StructuredBuffer(nullptr),
 	position_StructuredBufferSRV(nullptr), 
 	position_StructuredBufferUAV(nullptr),
 	physics(nullptr)
@@ -58,11 +57,8 @@ void EffectSystem::LoadParticle(const uint & index, const wstring & path, const 
 
 void EffectSystem::Render(ID3D11DeviceContext * context)
 {
-	if (!bLoaded)return;
-	
 	for (auto& particle : particles)
 	{
-		
 		particle->Render(context, position_StructuredBufferSRV);
 	}
 	
@@ -72,7 +68,7 @@ void EffectSystem::ResetBodies(const int & index,const uint& effectCount)
 {
 	if (index<0||particles.size() <= static_cast<uint>(index))return;
 	particles[index]->Reset(effectCount);
-	bLoaded = true;
+	
 }
 
 void EffectSystem::CreatePositionBuffer(ID3D11Device * device)

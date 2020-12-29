@@ -11,11 +11,6 @@ cbuffer CB_DrawCount : register(b0)
     uint staticCount : packoffset(c0.z);
     uint pad : packoffset(c0.w);
     
-    
-    
-   
-  
-    
 };
 Texture2D<float4> Input : register(t0);
 RWStructuredBuffer<float4> CopyOutput : register(u0);
@@ -180,12 +175,6 @@ void CS(uint3 groupID : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID)
     float3 hitPos = float3(0, 0, 0);
     if (groupID.x != index && index < skeletalCount)
     {
-           
-     
-      
-    
-        
-       
         int Result = -1;
           
         if (groupThreadId.z > 2)

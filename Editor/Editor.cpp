@@ -31,12 +31,11 @@
 #include "ProgressBar/ProgressBar.h"
 
 
-
 ID3D11DeviceContext* deferredContext;
 ID3D11CommandList* commadList;
 Editor::Editor()
-	:bStart(false), flags(0), IsPushed(false), pushedActorIndex(-1), pushedMeshType(ReadMeshType::Default),
-	staticActorCount(0),skeletalActorCount(0), bShowCollider(false), mainCamera(nullptr)
+	:bStart(false), flags(0), IsClicked(false), clickedActorIndex(-1), clickedMeshType(ReadMeshType::Default),
+	staticActorCount(0),skeletalActorCount(0), bShowCollider(false), mainCamera(nullptr), clickedInstanceIndex(-1)
 {
     engine= new Engine();
 
@@ -92,6 +91,8 @@ Editor::Editor()
 	lights = make_shared<LightEditor>(engine->device,this);
 	UINT contextFlags = engine->immediateContext->GetContextFlags();
 	Check(engine->device->CreateDeferredContext(contextFlags, &deferredContext));
+
+
 	
 }
 
@@ -163,7 +164,8 @@ void Editor::Update()
 
 	}
 	textures.clear();
-	if (IsPushed)
+	
+	if (IsClicked)
 	{
 		static ImGuizmo::OPERATION operation(ImGuizmo::TRANSLATE);
 		//static ImGuizmo::MODE mode(ImGuizmo::WORLD);
@@ -174,17 +176,17 @@ void Editor::Update()
 			operation = ImGuizmo::ROTATE;
 		if (ImGui::IsKeyPressed('U'))//r
 			operation = ImGuizmo::SCALE;
-		
-		switch (pushedMeshType)
+
+		switch (clickedMeshType)
 		{
 		case ReadMeshType::StaticMesh:
 		{
-		
+
 			Matrix gizmo;
-			engine->collider->GetInstMatrix(&gizmo,pushedActorIndex);
+			engine->collider->GetInstMatrix(&gizmo, clickedActorIndex, clickedInstanceIndex);
 			Matrix gizmoDelta;
 			D3DXMatrixIdentity(&gizmoDelta);
-		
+
 			const	ImGuiIO& io = ImGui::GetIO();
 			ImGuizmo::SetDrawlist();
 			ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
@@ -196,20 +198,20 @@ void Editor::Update()
 			{
 				isMove = true;
 			}
-			
+
 			if (isMove)
 			{
-				engine->collider->SetInstMatrix(&gizmo,pushedActorIndex);
-				engine->collider->CreateInstTransformSRV();
+				engine->collider->SetInstMatrix(&gizmo, clickedActorIndex, clickedInstanceIndex);
+				engine->collider->CreateShadowInstTransformSRV();
 			}
-			
+
 		}
 		break;
 		case ReadMeshType::SkeletalMesh:
 		{
 			Matrix gizmo;
-			engine->animator->GetInstMatrix(&gizmo, pushedActorIndex);
-		
+			engine->animator->GetInstMatrix(&gizmo, clickedActorIndex, clickedInstanceIndex);
+
 			Matrix gizmoDelta;
 			D3DXMatrixIdentity(&gizmoDelta);
 
@@ -224,22 +226,21 @@ void Editor::Update()
 			{
 				isMove = true;
 			}
-		
+
 			if (isMove)
 			{
 
-				engine->animator->SetInstMatrix(&gizmo, pushedActorIndex);
-				
+				engine->animator->SetInstMatrix(&gizmo, clickedActorIndex, clickedInstanceIndex);
+
 			}
 
 		}
 		break;
-	
+
 		}
-		
-		
+
+
 	}
-	
 	ImGui::End();
 
 	
@@ -261,7 +262,8 @@ void Editor::Update()
 	
 	engine->Update(bStart);
 
-	
+	if (Mouse::Get()->Down(0))
+	BoxRayTracing();
 	
 }
 
@@ -786,16 +788,14 @@ void Editor::AddTrasform(const Vector3 & pos)
 			previewWorld._42 = pos.y;
 			previewWorld._43 = pos.z;
 
-			pushedActorIndex = actor->ActorIndex();
-			pushedMeshType = actor->MeshType();
-			engine->PusInstance(pushedActorIndex, previewWorld, pushedMeshType);
+			engine->PusInstance(actor->ActorIndex(), previewWorld, actor->MeshType());
 
 		//	uint boxCallIndex = actor->BoxCallIndex();
 		//	DebugLine::Get()->SetInstPointer(engine->collider->GetInstMatrixPointer(pushedActorIndex), boxCallIndex,0);
 		//	DebugLine::Get()->DrawCount(boxCallIndex);
 
 			actor->IsDragged(false);
-			IsPushed = true;
+			
 		}
 
 	}
@@ -819,7 +819,7 @@ void Editor::DebugRender()
 		uint drawCount = engine->collider->DrawCount(i);
 		for (uint d = 0; d < drawCount; d++)
 		{
-			Vector3* dest = engine->collider->GetBoxMinMax(i, d);
+			vector<Vector3> dest = engine->collider->GetBoxMinMax(i, d);
 			//Front
 			DebugLine::Get()->RenderLine(dest[0], dest[1], color);
 			DebugLine::Get()->RenderLine(dest[1], dest[3], color);
@@ -845,7 +845,7 @@ void Editor::DebugRender()
 		uint drawCount = engine->animator->DrawCount(i);
 		for (uint d = 0; d < drawCount; d++)
 		{
-			Vector3* dest = engine->animator->GetBoxMinMax(i, d);
+			vector<Vector3> dest = engine->animator->GetBoxMinMax(i, d);
 			//Front
 			DebugLine::Get()->RenderLine(dest[0], dest[1], color);
 			DebugLine::Get()->RenderLine(dest[1], dest[3], color);
@@ -1039,6 +1039,116 @@ void Editor::QuadTreeRender(shared_ptr<QuadTreeNode> node)
 	{
 		QuadTreeRender(child);
 	}
+}
+
+void Editor::BoxRayTracing()
+{
+
+	Matrix V = GlobalData::GetView();
+	Matrix P = GlobalData::GetProj();
+	Matrix world;
+	D3DXMatrixIdentity(&world);
+	Vector3 org, dir;
+	tree->GetRay(&org, &dir, world, V, P);
+
+	uint renderedStaticActorCount = engine->collider->ActorCount();
+	uint renderedSkeletalActorCount = engine->animator->ActorCount();
+
+
+	Color color = Color(0, 1, 0, 1);
+	for (uint i = 0; i < renderedStaticActorCount; i++)
+	{
+		uint drawCount = engine->collider->DrawCount(i);
+		for (uint d = 0; d < drawCount; d++)
+		{
+			vector<Vector3> dest = engine->collider->GetBoxMinMax(i, d);
+
+
+			if (IntersectionAABB(org, dir, pos, dest[4], dest[3]))
+			{
+				clickedActorIndex = i;
+				clickedInstanceIndex = d;
+				clickedMeshType = ReadMeshType::StaticMesh;
+				IsClicked = true;
+			}
+			
+			
+		}
+	}
+
+	for (uint i = 0; i < renderedSkeletalActorCount; i++)
+	{
+		uint drawCount = engine->animator->DrawCount(i);
+		for (uint d = 0; d < drawCount; d++)
+		{
+			vector<Vector3> dest = engine->animator->GetBoxMinMax(i, d);
+			
+
+			if (IntersectionAABB(org, dir, pos, dest[4], dest[3]))
+			{
+				clickedActorIndex = i;
+				clickedInstanceIndex = d;
+				clickedMeshType = ReadMeshType::SkeletalMesh;
+				IsClicked = true;
+			}
+		}
+
+
+	}
+
+
+	
+
+}
+
+bool Editor::IntersectionAABB(const Vector3 & org, const Vector3 & dir, Vector3 & Pos, const Vector3 & boundsMin, const Vector3 & boundsMax)
+{
+	float t_min = FLT_MIN;
+	float t_max = FLT_MAX;
+
+
+	for (int i = 0; i < 3; i++)
+	{
+		if (abs(dir[i]) < Math::EPSILON)
+		{
+			if (org[i] < boundsMin[i] ||
+				org[i] >boundsMax[i])
+			{
+
+				return false;
+			}
+
+		}
+		else
+		{
+			float denom = 1.0f / dir[i];
+			float t1 = (boundsMin[i] - org[i]) * denom;
+			float t2 = (boundsMax[i] - org[i]) * denom;
+
+			if (t1 > t2)
+			{
+				swap(t1, t2);
+			}
+
+			t_min = max(t_min, t1);
+			t_max = min(t_max, t2);
+
+			if (t_min > t_max)
+			{
+
+				return false;
+			}
+
+
+		}
+	}
+
+	Vector3 hit = org + t_min * dir;
+
+
+
+	//d = t_min;
+	return true;
 }
 
 void Editor::ApplyStyle()

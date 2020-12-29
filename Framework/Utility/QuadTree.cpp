@@ -85,16 +85,17 @@ bool QuadTree::Intersection(Vector3 & Pos)
 
 	return true;
 }
-void QuadTree::Intersection(Matrix * matrix)
+void QuadTree::Intersection(Matrix * const  matrix)
 {
+	
+	Vector3 org = Vector3(matrix->_41, matrix->_42 + 5, matrix->_43);
 	Vector3 actorPos;
-	if (!root->Intersection(Vector3(matrix->_41, matrix->_42+5, matrix->_43), Vector3(-0.0f, -1.0f, -0.000001f), actorPos))
+	if (!root->Intersection(org, Vector3(-0.0f, -1.0f, -0.000001f), actorPos))
 	{
 		return;
 	}
-	
-	Vector3 lerp;
-	D3DXVec3Lerp(&lerp, &Vector3(0, matrix->_42, 0), &actorPos, Time::Delta()*5.0f);
+	Vector2 lerp;
+	D3DXVec2Lerp(&lerp, &Vector2(0, matrix->_42), &Vector2(0,actorPos.y), Time::Delta()*5.0f);
 	matrix->_42 = lerp.y;
 }
 bool QuadTree::InBounds(uint row, uint col)
@@ -202,8 +203,8 @@ void QuadTree::GetRay(OUT Vector3 * position, OUT Vector3 * direction, const Mat
 	Vector2 point;
 	//Inv Viewport
 	{
-		point.x = (((2.0f*mouse.x) / 1280.0f) - 1.0f);
-		point.y = (((2.0f*mouse.y) / 720) - 1.0f)*-1.0f;
+		point.x = (((2.0f*mouse.x) / D3D::Width()) - 1.0f);
+		point.y = (((2.0f*mouse.y) / D3D::Height()) - 1.0f)*-1.0f;
 
 	}
 

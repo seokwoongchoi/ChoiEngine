@@ -10,12 +10,12 @@ private:
 	Transforms & operator= (const Transforms &) = delete;
 
 public:
-	void Update(const uint& index);
+	void Update(const uint & actorIndex, const uint & index);
 	
 public:
 	void ReadBehaviorTree(BinaryReader * r, const uint & actorIndex);
 private:
-
+	
 	vector<class BehaviorTree*>behaviorTrees;
 	class Animator* animator;
 	
@@ -23,5 +23,7 @@ private:
 	 Quaternion quat;
 	 Vector3 scale;
 	 Matrix inst;
+
+	 int btIndex[2];
 };
 

@@ -1,5 +1,5 @@
 #pragma once
-
+#define MAX_CLIP_SIZE 10
 #include "ColliderSystem.h"
 #include "Resources/Mesh.h"
 enum class ActorState
@@ -27,22 +27,34 @@ struct KeyframeDesc
 	float Time = 0.0f;
 
 };
-struct TweenDesc
+struct TweenData
 {
 	float TweenTime = 0.0f;
-	uint  totalCount = 0;
-	uint maxBoneCount = 0;
 	ActorState state = ActorState::Idle;
+	float RunningTime = 0.0f;
+	float speed = 1.0f;
 
 	KeyframeDesc Curr;
 	KeyframeDesc Next;
 
-	TweenDesc()
+
+	uint index = 0;
+
+	bool bContinue;
+	int farmeDelta = 0;
+	bool IsStopped = false;
+	uint drawCount = 0;
+	uint maxBoneCount = 0;
+
+	TweenData()
 	{
 		Curr.Clip = 0;
 		Next.Clip = -1;
 	}
+
 };
+
+
 class Animator :public ColliderSystem
 {
 	friend class Transforms;
@@ -62,106 +74,94 @@ public:
 	explicit Animator(ID3D11Device* device);
 	~Animator();
 private:
-
 	Animator(const Animator &) = delete;
 	Animator & operator= (const Animator &) = delete;
-
+public:
+	inline ID3D11Buffer* TweenBuffer() {return tweenBuffer;}
+	inline ID3D11ShaderResourceView* SRV() { return outputSRV; }
+inline bool IsAtacking(const uint& index)
+{
+	if (tweenData[index].state!=ActorState::Attack)return false;
+	auto& curr = tweenData[index].Curr;
 	
-public:
-	inline ID3D11Buffer* TweenBuffer() {
-		return tweenBuffer;
-	}
-	void UpdateInstBuffer(ID3D11DeviceContext* context);
-	bool ComputeBarier(ID3D11DeviceContext * context);
-public:
-	class QuadTree* QuadTree()
+
+	if (curr.CurrFrame > 16&& curr.CurrFrame<23)
 	{
-		return tree;
+		return true;
+
 	}
-	void CreateQuadTree();
+	return false;
+}
+inline void PlayNextClip(int instance, int clip)
+{
+	if (tweenData[instance].Curr.Clip == clip) return;
+	tweenData[instance].Next.Clip = clip;
+}
 public:
- 
-	 void BoxRender();
-public:
-	const uint& DrawCount(const uint& actorIndex);
-	const uint& PrevDrawCount(const uint& actorIndex);
-private:
-	Matrix temp;
 	uint FrustumCulling(const uint& index);
 public:
 	void BindPipeline(ID3D11DeviceContext* context);
 	uint Update(const uint& actorIndex);
 	void Compute(ID3D11DeviceContext* context, ID3D11UnorderedAccessView* physicsUAV);
-	
-public:
-	void AnimTransformSRV();
-	void ReadBone(BinaryReader* r);
-	void ReadBoneBox(BinaryReader* r, const uint & actorIndex);
-	void ReadBehaviorTree(BinaryReader* r, const uint & actorIndex);
-	void ReadClip(const wstring& name);
-public:
-	void IintAnimData();
 private:
-	class QuadTree* tree;
-private:
-	class Transforms* transforms;
-private:
-
 	vector<shared_ptr<class ModelClip>> clips;
-
-	inline void PlayNextClip(int instance, int clip, float speed = 1.0f)
+	struct TweenDesc
 	{
-		if (tweenDesc[instance].Curr.Clip == clip) return;
-		tweenDesc[instance].Next.Clip = clip;
-	}
+		float TweenTime = 0.0f;
+		uint drawCount = 0;
+		uint maxBoneCount = 0;
+		uint index = 0;
 
-	int saveSword = -1;
+		KeyframeDesc Curr;
+		KeyframeDesc Next;
 
-
-	struct TweenData
-	{
-		float RunningTime;
-		float speed;
-		bool bContinue;
-		int farmeDelta=0;
-	}tweenData[20];
-
+		TweenDesc()
+		{
+			Curr.Clip = 0;
+			Next.Clip = -1;
+		}
+	};
+	vector<TweenData> tweenData;
 	vector<TweenDesc> tweenDesc;
-
 	ID3D11Buffer* tweenBuffer;
 private:
-	ID3D11Texture2D* texture;
-	ID3D11ShaderResourceView* srv;
 
 	ID3D11Texture2D* outputTexture;
 	ID3D11ShaderResourceView* outputSRV;
 	ID3D11UnorderedAccessView* outputUAV;
 private:
+	class QuadTree* tree;
+	class Transforms* transforms;
+private:
 	ID3D11Device* device;
-
-
-
 	class SkinnedTransform* boneTransfomrs;
-
-
 	uint maxkeyframe;
-	uint maxBoneCount ;
+	uint maxBoneCount;
+
 private:
 	struct BoneBoxDesc
 	{
 		Matrix local;
 		Matrix ColliderBoxWorld;
 		Vector4 factors=Vector4(0,0,0,0);
-		
-	};
+		};
 	vector<BoneBoxDesc> colliderBoxData;
 	
-
 	ID3D11Texture2D*          boneBoxTexture;
 	ID3D11ShaderResourceView* boneBoxSrv;
-
-	
-
-	bool bNeedUpdate = true;
+public:
+	void AnimTransformSRV();
+	void ClearTextureTransforms();
+public:
+	void ReadBone(BinaryReader* r, uint actorIndex);
+	void ReadBoneBox(BinaryReader* r, const uint & actorIndex);
+	void ReadBehaviorTree(BinaryReader* r, const uint & actorIndex);
+	void ReadClip(const wstring& name);
+public:
+	void IintAnimData();
+public:
+	class QuadTree* QuadTree() { return tree; }
+	void CreateQuadTree();
+	void BoxRender();
 };
 

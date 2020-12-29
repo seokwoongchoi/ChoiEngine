@@ -18,7 +18,7 @@ public:
 	void InitBodies();
 	void Update(ID3D11DeviceContext* context)override;
 	void Render(ID3D11DeviceContext* context, ID3D11ShaderResourceView* positionSRV)override;
-	void PreviewRender(ID3D11DeviceContext* context)override;
+	void PreviewRender(ID3D11DeviceContext* context, const Matrix & view, const Matrix & proj)override;
 	void Reset(const uint& drawCount)override;
 	
 private:
@@ -43,7 +43,7 @@ private:
 		uint writeOffset = 0;
 		float distance = 20.0f;
 		float timer = 0.0f;
-		float runningTime = 10.0f;
+		float runningTime = 0.0f;
 
 	}simulateDesc;
 
@@ -73,6 +73,6 @@ private :
    ID3D11RasterizerState* rsState;
 
   
-   int id = -1;
+ 
 };
 

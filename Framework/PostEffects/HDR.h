@@ -6,23 +6,18 @@ public:
 	~HDR();
 	HDR(const HDR &) = delete;
 	HDR & operator= (const HDR &) = delete;
-	void Pass(UINT val) { pass = val; }
+	
 	void PostProcessing(ID3D11DeviceContext* DC, ID3D11ShaderResourceView* pHDRSRV, ID3D11RenderTargetView * oldTarget, ID3D11ShaderResourceView* dsv);
 	void DownScale(ID3D11DeviceContext* DC,ID3D11ShaderResourceView* srv);
 	
-	void DownScaleBlur();
 	void Bloom(ID3D11DeviceContext* DC);
-	
-	
 	void BokehHightlightScan(ID3D11ShaderResourceView* pHDRSRV, ID3D11ShaderResourceView* pDepthSRV);
-
 	void Blur(ID3D11DeviceContext* DC,ID3D11ShaderResourceView* pInput, ID3D11UnorderedAccessView* pOutput);
-
 	void FinalPass(ID3D11DeviceContext* DC,ID3D11ShaderResourceView* srv, ID3D11ShaderResourceView* dsv);
-	// Entry point for post processing
+	
 
 	void BokehRender();
-
+	void Resize(const uint &width, const uint& height);
 public:
 
 	struct PARAMETERS_HDR
@@ -39,20 +34,20 @@ public:
 private:
 
 
-	ID3D11Buffer* downScale1DBuffer;
+	ID3D11Buffer*              downScale1DBuffer;
 	ID3D11UnorderedAccessView* downScale1DUAV;
-	ID3D11ShaderResourceView* downScale1DSRV;
+	ID3D11ShaderResourceView*  downScale1DSRV;
 
 
-	ID3D11Texture2D* DownScaleRT;
-	ID3D11ShaderResourceView* DownScaleSRV;
+	ID3D11Texture2D*           DownScaleRT;
+	ID3D11ShaderResourceView*   DownScaleSRV;
 	ID3D11UnorderedAccessView* DownScaleUAV;
 		
 
 	// Average luminance
-	ID3D11Buffer* avgLumBuffer;
+	ID3D11Buffer*              avgLumBuffer;
 	ID3D11UnorderedAccessView* avgLumUAV;
-	ID3D11ShaderResourceView* avgLumSRV;
+	ID3D11ShaderResourceView*   avgLumSRV;
 	
 	// Previous average luminance for adaptation
 	//ID3D11Buffer* PrevAvgLumBuffer;
@@ -64,7 +59,7 @@ private:
 
 private:
 
-	uint pass;
+	
 	uint width;
 	uint height;
 
@@ -112,7 +107,7 @@ private:
 	 ID3D11SamplerState*        SampLinear = NULL;
 	 ID3D11SamplerState*        SampPoint = NULL;
 	// Bloom texture
-	ID3D11Texture2D* BloomRT;
+	ID3D11Texture2D*          BloomRT;
 	ID3D11ShaderResourceView* BloomSRV;
 	ID3D11UnorderedAccessView* BloomUAV;
 	
@@ -178,11 +173,11 @@ private:
 
 	// Shaders
 	ID3D11ComputeShader* DownScaleFirstPassCS;
-	ID3D11ComputeShader*DownScaleSecondPassCS;
-	ID3D11ComputeShader*BloomRevealCS;
-	ID3D11ComputeShader*HorizontalBlurCS;
-	ID3D11ComputeShader*VerticalBlurCS;
-	ID3D11VertexShader* FullScreenQuadVS;
-	ID3D11PixelShader* FinalPassPS;
-	
+	ID3D11ComputeShader* DownScaleSecondPassCS;
+	ID3D11ComputeShader* BloomRevealCS;
+	ID3D11ComputeShader* HorizontalBlurCS;
+	ID3D11ComputeShader* VerticalBlurCS;
+	ID3D11VertexShader*  FullScreenQuadVS;
+	ID3D11PixelShader*   FinalPassPS;
+	ID3D11Device*device;
 };

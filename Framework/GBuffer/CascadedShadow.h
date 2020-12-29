@@ -6,11 +6,15 @@ public:
 	CascadedShadow();
 	~CascadedShadow();
 
+	bool PrepareNextShadowLight(ID3D11DeviceContext* context);
+	void CascadedShadowsGen(ID3D11DeviceContext* context);
+
+
+
+
 	void Init(Vector2 iShadowMapSize);
 	void SetShadowMapSize(Vector2 iShadowMapSize);
 	void Update(const Vector3& vDirectionalDir);
-
-
 	void SetAntiFlicker(bool bIsOn) {  bAntiFlickerOn = bIsOn; }
 
 	static const int  TotalCascades = 3;
@@ -72,5 +76,23 @@ private:
 
 
 	Vector3 vBoundSpan;
+public:
+	void CreateCascadedShadowBuffers(ID3D11Device* device,const Vector2& size);
+	ID3D11ShaderResourceView* CascadedDepthStencilSRV;
+private:
+	ID3D11DepthStencilState*  ShadowGenDepthState;
+	ID3D11RasterizerState*  CascadedShadowGenRS;
+
+	ID3D11Texture2D* CascadedDepthStencilRT;
+	ID3D11DepthStencilView* CascadedDepthStencilDSV;
+	
+
+
+
+	ID3D11GeometryShader*  CascadedShadowGenGeometryShader;
+	ID3D11Buffer*  CascadedShadowGenGeometryCB;
+
+	D3D11_VIEWPORT shadowVP[3];
+
 };
 

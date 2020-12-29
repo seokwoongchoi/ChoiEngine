@@ -275,7 +275,7 @@ void Sparks::InitBodies()
 
 void Sparks::Update(ID3D11DeviceContext * context)
 {
-	if (simulateDesc.timer < simulateDesc.runningTime) return;
+	if (simulateDesc.timer <= simulateDesc.runningTime) return;
 
 	{
 
@@ -308,7 +308,7 @@ void Sparks::Update(ID3D11DeviceContext * context)
 void Sparks::Render(ID3D11DeviceContext * context, ID3D11ShaderResourceView* positionSRV)
 {
 	
-	if (simulateDesc.timer < simulateDesc.runningTime)
+	if (simulateDesc.timer <= simulateDesc.runningTime)
 	{
 		drawCount = 0;
 		
@@ -385,8 +385,6 @@ void Sparks::Render(ID3D11DeviceContext * context, ID3D11ShaderResourceView* pos
 
 
 
-
-
 		context->DrawInstanced(simulateDesc.numParticles, drawCount,0,0);
 
 
@@ -408,23 +406,19 @@ void Sparks::Render(ID3D11DeviceContext * context, ID3D11ShaderResourceView* pos
 
 		simulateDesc.runningTime += simulateDesc.timestep;
 	}
-	
-
-
-
-	
 }
 
-void Sparks::PreviewRender(ID3D11DeviceContext * context)
+void Sparks::PreviewRender(ID3D11DeviceContext * context, const Matrix & view, const Matrix & proj)
 {
-	if (simulateDesc.timer < simulateDesc.runningTime)
+	if (simulateDesc.timer <= simulateDesc.runningTime)
 	{
 		return;
 	}
 
 
 	{
-
+		
+		D3DXMatrixTranspose(&wvpDesc.WVP, &(view*proj));
 		wvpDesc.readOffset = readBuffer * simulateDesc.numParticles;
 
 		D3D11_MAPPED_SUBRESOURCE MappedResource;

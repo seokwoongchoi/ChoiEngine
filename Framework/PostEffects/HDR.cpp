@@ -3,104 +3,31 @@
 
 //, fMiddleGrey(6.0), fWhite(6.0f)
 HDR::HDR(ID3D11Device* device, uint width, uint height)
-	:fianlPassDesc{}, DownScaleDesc{},pass(0), DC(NULL), Params{}
+	:device(device),fianlPassDesc{}, DownScaleDesc{}, DC(NULL), Params{},
+	DownScaleFirstPassCS(nullptr), DownScaleSecondPassCS(nullptr),  BloomRevealCS(nullptr),
+    HorizontalBlurCS(nullptr),  VerticalBlurCS(nullptr),  FullScreenQuadVS(nullptr),  FinalPassPS(nullptr),
+    BloomRT(nullptr),  BloomSRV(nullptr),  BloomUAV(nullptr),
+    downScale1DBuffer(nullptr),  downScale1DUAV(nullptr),  downScale1DSRV(nullptr),  DownScaleRT(nullptr),
+    DownScaleSRV(nullptr),  DownScaleUAV(nullptr),  avgLumBuffer(nullptr),  avgLumUAV(nullptr),  avgLumSRV(nullptr)
 {// Find the amount of thread groups needed for the downscale operation
+	
+
+	for (uint i = 0; i < 2; i++)
+	{
+		TempRT[i] = nullptr;
+		TempSRV[i] = nullptr;
+		TempUAV[i] = nullptr;
+	}
 	
 	Params.BloomScale = 1.1f;
 	Params.BloomThreshold = 0.0f;
 	Params.White = 3.878f;
 	Params.MiddleGrey = 2.459f;
 	
+	Resize(width, height);
+
+
 	
-	this->width = width;
-	this->height = height;
-	downScaleGroups = (UINT)ceil((float)(width * height / 16) / 1024.0f);
-
-	// Allocate the downscaled target
-	D3D11_TEXTURE2D_DESC dtd = {
-		this->width / 4, //UINT Width;
-		this->height / 4, //UINT Height;
-		1, //UINT MipLevels;
-		1, //UINT ArraySize;
-		DXGI_FORMAT_R16G16B16A16_TYPELESS, //DXGI_FORMAT Format;
-		1, //DXGI_SAMPLE_DESC SampleDesc;
-		0,
-		D3D11_USAGE_DEFAULT,//D3D11_USAGE Usage;
-		D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS,//UINT BindFlags;
-		0,//UINT CPUAccessFlags;
-		0//UINT MiscFlags;    
-	};
-	Check(device->CreateTexture2D(&dtd, NULL, &DownScaleRT));
-
-
-	// Create the resource views
-	D3D11_SHADER_RESOURCE_VIEW_DESC dsrvd;
-	ZeroMemory(&dsrvd, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
-	dsrvd.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	dsrvd.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-	dsrvd.Texture2D.MipLevels = 1;
-	Check(device->CreateShaderResourceView(DownScaleRT, &dsrvd, &DownScaleSRV));
-
-
-	// Create the UAVs
-	D3D11_UNORDERED_ACCESS_VIEW_DESC DescUAV;
-	ZeroMemory(&DescUAV, sizeof(D3D11_UNORDERED_ACCESS_VIEW_DESC));
-	DescUAV.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	DescUAV.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
-	DescUAV.Buffer.FirstElement = 0;
-	DescUAV.Buffer.NumElements = this->width * this->height / 16;
-	Check(device->CreateUnorderedAccessView(DownScaleRT, &DescUAV, &DownScaleUAV));
-	Check(device->CreateTexture2D(&dtd, NULL, &TempRT[0]));
-	Check(device->CreateShaderResourceView(TempRT[0], &dsrvd, &TempSRV[0]));
-	Check(device->CreateUnorderedAccessView(TempRT[0], &DescUAV, &TempUAV[0]));
-	Check(device->CreateTexture2D(&dtd, NULL, &TempRT[1]));
-	Check(device->CreateShaderResourceView(TempRT[1], &dsrvd, &TempSRV[1]));
-	Check(device->CreateUnorderedAccessView(TempRT[1], &DescUAV, &TempUAV[1]));
-
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Allocate bloom target
-	Check(device->CreateTexture2D(&dtd, NULL, &BloomRT));
-	Check(device->CreateShaderResourceView(BloomRT, &dsrvd, &BloomSRV));
-	Check(device->CreateUnorderedAccessView(BloomRT, &DescUAV, &BloomUAV));
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Allocate down scaled luminance buffer
-	D3D11_BUFFER_DESC bufferDesc;
-	ZeroMemory(&bufferDesc, sizeof(D3D11_BUFFER_DESC));
-	bufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
-	bufferDesc.StructureByteStride = sizeof(float);
-	bufferDesc.ByteWidth = downScaleGroups * bufferDesc.StructureByteStride;
-	bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	Check(device->CreateBuffer(&bufferDesc, NULL, &downScale1DBuffer));
-
-//	D3D11_UNORDERED_ACCESS_VIEW_DESC DescUAV;
-	ZeroMemory(&DescUAV, sizeof(D3D11_UNORDERED_ACCESS_VIEW_DESC));
-	DescUAV.Format = DXGI_FORMAT_UNKNOWN;
-	DescUAV.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-	DescUAV.Buffer.NumElements = downScaleGroups;
-	Check(device->CreateUnorderedAccessView(downScale1DBuffer, &DescUAV, &downScale1DUAV));
-	//////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Allocate average luminance buffer
-	//D3D11_SHADER_RESOURCE_VIEW_DESC dsrvd;
-	ZeroMemory(&dsrvd, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
-	dsrvd.Format = DXGI_FORMAT_UNKNOWN;
-	dsrvd.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-	dsrvd.Buffer.NumElements = downScaleGroups;
-	Check(device->CreateShaderResourceView(downScale1DBuffer, &dsrvd, &downScale1DSRV));
-
-	bufferDesc.ByteWidth = sizeof(float);
-	Check(device->CreateBuffer(&bufferDesc, NULL, &avgLumBuffer));
-	//Check(device->CreateBuffer(&bufferDesc, NULL, &PrevAvgLumBuffer));
-
-	DescUAV.Buffer.NumElements = 1;
-	Check(device->CreateUnorderedAccessView(avgLumBuffer, &DescUAV, &avgLumUAV));
-	//Check(device->CreateUnorderedAccessView(avgLumBuffer, &DescUAV, &PrevAvgLumUAV));
-
-	dsrvd.Buffer.NumElements = 1;
-	Check(device->CreateShaderResourceView(avgLumBuffer, &dsrvd, &avgLumSRV));
-	//Check(device->CreateShaderResourceView(PrevAvgLumBuffer, &dsrvd, &PrevAvgLumSRV));
 
 
 	/////////////////////////////////////////////////////////////////////////
@@ -158,6 +85,7 @@ HDR::HDR(ID3D11Device* device, uint width, uint height)
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Allocate constant buffers
+	D3D11_BUFFER_DESC bufferDesc;
 	ZeroMemory(&bufferDesc, sizeof(bufferDesc));
 	bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
@@ -231,18 +159,7 @@ HDR::HDR(ID3D11Device* device, uint width, uint height)
 	SafeRelease(pShaderBlob);
 
 	
-	
-	/*ZeroMemory(&bufferDesc, sizeof(bufferDesc));
-	bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	bufferDesc.ByteWidth = sizeof(TDownScaleCB);
-	Check(device->CreateBuffer(&bufferDesc, NULL, &downScaleCB));
-
-	bufferDesc.ByteWidth = sizeof(TFinalPassCB);
-	Check(device->CreateBuffer(&bufferDesc, NULL, &finalPassCB));*/
-
-	
+		
 
 	// Create the two samplers
 	D3D11_SAMPLER_DESC samDesc;
@@ -253,12 +170,9 @@ HDR::HDR(ID3D11Device* device, uint width, uint height)
 	samDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
 	samDesc.MaxLOD = D3D11_FLOAT32_MAX;
 	Check(device->CreateSamplerState(&samDesc, &SampLinear));
-	//DXUT_SetDebugName(g_pSampLinear, "Linear Sampler");
 
 	samDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
 	Check(device ->CreateSamplerState(&samDesc, &SampPoint));
-	//DXUT_SetDebugName(g_pSampPoint, "Point Sampler");
-	
 }
 
 HDR::~HDR()
@@ -275,19 +189,19 @@ HDR::~HDR()
 
 void HDR::PostProcessing(ID3D11DeviceContext* DC,ID3D11ShaderResourceView * pHDRSRV, ID3D11RenderTargetView * oldTarget, ID3D11ShaderResourceView* dsv)
 {
+	{
+		DownScaleDesc.Width = width;
+		DownScaleDesc.Height = height;
+		DownScaleDesc.TotalPixels = DownScaleDesc.Width * DownScaleDesc.Height;
+		DownScaleDesc.GroupSize = downScaleGroups;
+		DownScaleDesc.BloomThreshold = Params.BloomThreshold;
 
+		D3D11_MAPPED_SUBRESOURCE MappedResource;
+		DC->Map(DownScaleCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+		memcpy(MappedResource.pData, &DownScaleDesc, sizeof(DownScaleDesc));
+		DC->Unmap(DownScaleCB, 0);
+	}
 	
-	D3D11_MAPPED_SUBRESOURCE MappedResource;
-	DC->Map(DownScaleCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-
-	DownScaleDesc.Width = width / 4;
-	DownScaleDesc.Height = height / 4;
-	DownScaleDesc.TotalPixels = DownScaleDesc.Width * DownScaleDesc.Height;
-	DownScaleDesc.GroupSize = downScaleGroups;
-	DownScaleDesc.BloomThreshold = Params.BloomThreshold;
-
-	memcpy(MappedResource.pData, &DownScaleDesc, sizeof(DownScaleDesc));
-	DC->Unmap(DownScaleCB, 0);
 	ID3D11Buffer* arrConstBuffers[1] = { DownScaleCB };
 	DC->CSSetConstantBuffers(0, 1, arrConstBuffers);
 
@@ -357,18 +271,9 @@ void HDR::DownScale(ID3D11DeviceContext* DC, ID3D11ShaderResourceView * srv)
 	DC->CSSetShaderResources(0, 2, arrViews);
 	ZeroMemory(arrUAVs, sizeof(arrUAVs));
 	DC->CSSetUnorderedAccessViews(0, 2, arrUAVs, NULL);
-
-	
-
-
 }
 
-void HDR::DownScaleBlur()
-{
-	/*sDownScaleUAV->SetUnorderedAccessView(DownScaleUAV);
-	downScaleShader->Dispatch(0, 2, downScaleGroups, 1, 1);*/
-	
-}
+
 
 void HDR::Bloom(ID3D11DeviceContext* DC)
 {
@@ -463,7 +368,7 @@ void HDR::Blur(ID3D11DeviceContext* DC, ID3D11ShaderResourceView * pInput, ID3D1
 	DC->CSSetShader(HorizontalBlurCS, NULL, 0);
 
 	// Execute the horizontal filter
-	DC->Dispatch(static_cast<uint>(ceil((width / 4.0f) / (128.0f - 12.0f))), static_cast<uint>(ceil(height / 4.0f)), 1);
+	DC->Dispatch(static_cast<uint>(ceil((width) / (128.0f - 12.0f))), static_cast<uint>(ceil(height)), 1);
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	// First pass - vertical Gaussian filter
@@ -480,7 +385,7 @@ void HDR::Blur(ID3D11DeviceContext* DC, ID3D11ShaderResourceView * pInput, ID3D1
 	DC->CSSetShader(VerticalBlurCS, NULL, 0);
 
 	// Execute the vertical filter
-	DC->Dispatch(static_cast<uint>(ceil(width / 4.0f)), static_cast<uint>(ceil((height / 4.0f) / (128.0f - 12.0f))), 1);
+	DC->Dispatch(static_cast<uint>(ceil(width )), static_cast<uint>(ceil((height) / (128.0f - 12.0f))), 1);
 
 	// Cleanup
 	DC->CSSetShader(NULL, NULL, 0);
@@ -495,34 +400,26 @@ void HDR::Blur(ID3D11DeviceContext* DC, ID3D11ShaderResourceView * pInput, ID3D1
 
 void HDR::FinalPass(ID3D11DeviceContext* DC, ID3D11ShaderResourceView* srv, ID3D11ShaderResourceView* dsv)
 {
-
-	/*auto commandList = D3D::GetCommand();
-	DC->ExecuteCommandList(commandList, false);*/
 	
-
-//	proj = Context::Get()->Projection();
-	
-	//ID3D11ShaderResourceView* arrViews[6] = { srv, avgLumSRV, BloomSRV, DownScaleSRV, dsv };
 	ID3D11ShaderResourceView* arrViews[3] = { srv, avgLumSRV, BloomSRV };
 	DC->PSSetShaderResources(0, 3, arrViews);
+		
+	{
+		fianlPassDesc.MiddleGrey = Params.MiddleGrey;
+		fianlPassDesc.LumWhiteSqr = Params.White;
+		fianlPassDesc.LumWhiteSqr *= fianlPassDesc.MiddleGrey; // Scale by the middle grey value
+		fianlPassDesc.LumWhiteSqr *= fianlPassDesc.LumWhiteSqr; // Square
+		fianlPassDesc.BloomScale = Params.BloomScale;
 
-	// Constants
-	D3D11_MAPPED_SUBRESOURCE MappedResource;
-	DC->Map(FinalPassCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-
-	fianlPassDesc.MiddleGrey = Params.MiddleGrey;
-	fianlPassDesc.LumWhiteSqr = Params.White;
-	fianlPassDesc.LumWhiteSqr *= fianlPassDesc.MiddleGrey; // Scale by the middle grey value
-	fianlPassDesc.LumWhiteSqr *= fianlPassDesc.LumWhiteSqr; // Square
-
-	fianlPassDesc.BloomScale = Params.BloomScale;
-	memcpy(MappedResource.pData, &fianlPassDesc, sizeof(fianlPassDesc));
-	DC->Unmap(FinalPassCB, 0);
-	ID3D11Buffer* arrConstBuffers[1] = { FinalPassCB };
-	DC->PSSetConstantBuffers(0, 1, arrConstBuffers);
+		D3D11_MAPPED_SUBRESOURCE MappedResource;
+		DC->Map(FinalPassCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+		memcpy(MappedResource.pData, &fianlPassDesc, sizeof(fianlPassDesc));
+		DC->Unmap(FinalPassCB, 0);
 	
-
-	DC->IASetInputLayout(NULL);
+		DC->PSSetConstantBuffers(0, 1, &FinalPassCB);
+	}
+	
+		DC->IASetInputLayout(NULL);
 	DC->IASetVertexBuffers(0, 0, NULL, NULL, NULL);
 	DC->IASetIndexBuffer(NULL, DXGI_FORMAT_UNKNOWN, 0);
 	DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
@@ -539,15 +436,10 @@ void HDR::FinalPass(ID3D11DeviceContext* DC, ID3D11ShaderResourceView* srv, ID3D
 	// Cleanup
 	ZeroMemory(arrViews, sizeof(arrViews));
 	DC->PSSetShaderResources(0, 3, arrViews);
-	ZeroMemory(arrConstBuffers, sizeof(arrConstBuffers));
-	DC->PSSetConstantBuffers(0, 1, arrConstBuffers);
+	ID3D11Buffer* nullBuffer = nullptr;
+	DC->PSSetConstantBuffers(0, 1, &nullBuffer);
 	DC->VSSetShader(NULL, NULL, 0);
 	DC->PSSetShader(NULL, NULL, 0);
-	//ZeroMemory(arrViews, sizeof(arrViews));
-	
-
-	
-	
 }
 
 void HDR::BokehRender()
@@ -576,6 +468,129 @@ void HDR::BokehRender()
 
 	//bokehShader->DrawInstancedIndirect(0,0, BokehIndirectDrawBuffer,0);
 	
+}
+
+void HDR::Resize(const uint & width, const uint & height)
+{
+
+	this->width = width/4;
+	this->height = height/4;
+	downScaleGroups = (UINT)ceil((float)(this->width *this->height) / 1024);
+
+
+
+
+	SafeRelease(DownScaleRT);
+	SafeRelease(DownScaleSRV);
+	SafeRelease(DownScaleUAV);
+
+
+	for (uint i = 0; i < 2; i++)
+	{
+		SafeRelease(TempRT[i]);
+		SafeRelease(TempSRV[i]);
+		SafeRelease(TempUAV[i]);
+	}
+
+	SafeRelease(BloomRT);
+	SafeRelease(BloomSRV);
+	SafeRelease(BloomUAV);
+
+	SafeRelease(avgLumBuffer);
+	SafeRelease(avgLumUAV);
+	SafeRelease(avgLumSRV);
+
+	SafeRelease(downScale1DBuffer);
+	SafeRelease(downScale1DUAV);
+	SafeRelease(downScale1DSRV);
+
+
+	// Allocate the downscaled target
+	D3D11_TEXTURE2D_DESC dtd = {
+		this->width , //UINT Width;
+		this->height, //UINT Height;
+		1, //UINT MipLevels;
+		1, //UINT ArraySize;
+		DXGI_FORMAT_R16G16B16A16_TYPELESS, //DXGI_FORMAT Format;
+		1, //DXGI_SAMPLE_DESC SampleDesc;
+		0,
+		D3D11_USAGE_DEFAULT,//D3D11_USAGE Usage;
+		D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS,//UINT BindFlags;
+		0,//UINT CPUAccessFlags;
+		0//UINT MiscFlags;    
+	};
+	Check(device->CreateTexture2D(&dtd, NULL, &DownScaleRT));
+
+
+	// Create the resource views
+	D3D11_SHADER_RESOURCE_VIEW_DESC dsrvd;
+	ZeroMemory(&dsrvd, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
+	dsrvd.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	dsrvd.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	dsrvd.Texture2D.MipLevels = 1;
+	Check(device->CreateShaderResourceView(DownScaleRT, &dsrvd, &DownScaleSRV));
+
+
+	// Create the UAVs
+	D3D11_UNORDERED_ACCESS_VIEW_DESC DescUAV;
+	ZeroMemory(&DescUAV, sizeof(D3D11_UNORDERED_ACCESS_VIEW_DESC));
+	DescUAV.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	DescUAV.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
+	DescUAV.Buffer.FirstElement = 0;
+	DescUAV.Buffer.NumElements = this->width * this->height;
+	Check(device->CreateUnorderedAccessView(DownScaleRT, &DescUAV, &DownScaleUAV));
+	Check(device->CreateTexture2D(&dtd, NULL, &TempRT[0]));
+	Check(device->CreateShaderResourceView(TempRT[0], &dsrvd, &TempSRV[0]));
+	Check(device->CreateUnorderedAccessView(TempRT[0], &DescUAV, &TempUAV[0]));
+	Check(device->CreateTexture2D(&dtd, NULL, &TempRT[1]));
+	Check(device->CreateShaderResourceView(TempRT[1], &dsrvd, &TempSRV[1]));
+	Check(device->CreateUnorderedAccessView(TempRT[1], &DescUAV, &TempUAV[1]));
+
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Allocate bloom target
+	Check(device->CreateTexture2D(&dtd, NULL, &BloomRT));
+	Check(device->CreateShaderResourceView(BloomRT, &dsrvd, &BloomSRV));
+	Check(device->CreateUnorderedAccessView(BloomRT, &DescUAV, &BloomUAV));
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Allocate down scaled luminance buffer
+	D3D11_BUFFER_DESC bufferDesc;
+	ZeroMemory(&bufferDesc, sizeof(D3D11_BUFFER_DESC));
+	bufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+	bufferDesc.StructureByteStride = sizeof(float);
+	bufferDesc.ByteWidth = downScaleGroups * bufferDesc.StructureByteStride;
+	bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	Check(device->CreateBuffer(&bufferDesc, NULL, &downScale1DBuffer));
+
+
+	//D3D11_UNORDERED_ACCESS_VIEW_DESC DescUAV;
+	ZeroMemory(&DescUAV, sizeof(D3D11_UNORDERED_ACCESS_VIEW_DESC));
+	DescUAV.Format = DXGI_FORMAT_UNKNOWN;
+	DescUAV.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+	DescUAV.Buffer.NumElements = downScaleGroups;
+	Check(device->CreateUnorderedAccessView(downScale1DBuffer, &DescUAV, &downScale1DUAV));
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Allocate average luminance buffer
+	//D3D11_SHADER_RESOURCE_VIEW_DESC dsrvd;
+	ZeroMemory(&dsrvd, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
+	dsrvd.Format = DXGI_FORMAT_UNKNOWN;
+	dsrvd.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+	dsrvd.Buffer.NumElements = downScaleGroups;
+	Check(device->CreateShaderResourceView(downScale1DBuffer, &dsrvd, &downScale1DSRV));
+
+	bufferDesc.ByteWidth = sizeof(float);
+	Check(device->CreateBuffer(&bufferDesc, NULL, &avgLumBuffer));
+	//Check(device->CreateBuffer(&bufferDesc, NULL, &PrevAvgLumBuffer));
+
+	DescUAV.Buffer.NumElements = 1;
+	Check(device->CreateUnorderedAccessView(avgLumBuffer, &DescUAV, &avgLumUAV));
+	//Check(device->CreateUnorderedAccessView(avgLumBuffer, &DescUAV, &PrevAvgLumUAV));
+
+	dsrvd.Buffer.NumElements = 1;
+	Check(device->CreateShaderResourceView(avgLumBuffer, &dsrvd, &avgLumSRV));
+	//Check(device->CreateShaderResourceView(PrevAvgLumBuffer, &dsrvd, &PrevAvgLumSRV));
 }
 
 

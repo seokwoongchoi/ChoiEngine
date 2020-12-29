@@ -42,7 +42,7 @@
         <NormalFile>Douglas_Top_Normal.png</NormalFile>
         <RoughnessFile>CamoFabric_Roughness.png</RoughnessFile>
         <MetallicFile>Douglas_Top_Specular.png</MetallicFile>
-        <Diffuse R="1" G="1" B="1" A="1"/>
+        <Diffuse R="0.74596775" G="0.72769749" B="0.71588838" A="1"/>
         <PBR Roughness="1" Metallic="1"/>
     </Material>
     <Material>
@@ -51,7 +51,7 @@
         <NormalFile>Douglas_Bottom_Normal.png</NormalFile>
         <RoughnessFile>CamoFabric_Roughness.png</RoughnessFile>
         <MetallicFile>Douglas_Bottom_Specular.png</MetallicFile>
-        <Diffuse R="1" G="1" B="1" A="1"/>
+        <Diffuse R="0.74201453" G="0.64761645" B="0.75403225" A="1"/>
         <PBR Roughness="1" Metallic="1"/>
     </Material>
     <Material>

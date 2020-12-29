@@ -115,11 +115,9 @@ public:
 	void DoLighting(ID3D11DeviceContext* context);
 	void DoDebugLightVolume(ID3D11DeviceContext* context);
 	void DoDebugCascadedShadows(ID3D11DeviceContext* context);
-	bool PrepareNextShadowLight(ID3D11DeviceContext* context);
+	
 private:
 	ID3D11Device* device;
-private:
-	void CreateCascadedShadowBuffers(const Vector2& size);
 
 
 public:
@@ -134,7 +132,7 @@ public:
     void SpotShadowGen(ID3D11DeviceContext* context, const SpotLights& light);
 	int GetNextFreePointShadowmapIdx() { return ( NextFreePointShadowmap + 1 < TotalPointShadowmaps) ? ++ NextFreePointShadowmap : -1; }
 	void PointShadowGen(ID3D11DeviceContext* context, const PointLights& light);
-	void CascadedShadowsGen(ID3D11DeviceContext* context);
+	;
 private:
 	D3DXMATRIX LightWorldScale;
 	D3DXMATRIX LightWorldTrans;
@@ -195,8 +193,6 @@ public:
 	ID3D11Buffer*  PointShadowGenGeometryCB;
 
 
-	ID3D11GeometryShader*  CascadedShadowGenGeometryShader;
-	ID3D11Buffer*  CascadedShadowGenGeometryCB;
 
 
 
@@ -206,7 +202,7 @@ public:
 	ID3D11DepthStencilState*  NoDepthWriteLessStencilMaskState;
 	ID3D11DepthStencilState*  NoDepthWriteGreatherStencilMaskState;
 
-	ID3D11DepthStencilState*  ShadowGenDepthState;
+	
 
 	ID3D11BlendState*  AdditiveBlendState;
 
@@ -216,7 +212,7 @@ public:
 	ID3D11RasterizerState*  WireframeRS;
 
 	ID3D11RasterizerState*  ShadowGenRS;
-	ID3D11RasterizerState*  CascadedShadowGenRS;
+	
 
 
 	ID3D11SamplerState*      sampLinear;
@@ -247,9 +243,7 @@ public:
 	ID3D11DepthStencilView*  PointDepthStencilDSV[ iTotalSpotShadowmaps];
 	ID3D11ShaderResourceView*  PointDepthStencilSRV[ iTotalSpotShadowmaps];
 
-	ID3D11Texture2D* CascadedDepthStencilRT;
-	ID3D11DepthStencilView* CascadedDepthStencilDSV;
-	ID3D11ShaderResourceView* CascadedDepthStencilSRV;
+
 
 	
 	vector<PointLights> pointLights;
@@ -258,9 +252,7 @@ public:
 
 
 	vector<CapsuleLights> capsuleLights;
-private:
-	
-	D3D11_VIEWPORT shadowVP[3];
+
 	
 
 

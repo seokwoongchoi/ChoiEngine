@@ -32,6 +32,7 @@ class LightManager Lighting;
 class CascadedShadow  CascadedMatrixSet;
 
 
+
 #define MAX_THREAD_COUNT 5
 ID3D11DeviceContext* deferredContext[MAX_THREAD_COUNT];
 ID3D11CommandList* commandList[MAX_THREAD_COUNT];
@@ -84,8 +85,9 @@ Engine::Engine()
 	
 
 	{
-		GBuffer.Init(device);
+		GBuffer.Init(device,width,height);
 		Lighting.Init(device);
+		CascadedMatrixSet.CreateCascadedShadowBuffers(device, Vector2(static_cast<float>(width), static_cast<float>(height)));
 	}
 	
 	//EventSystems
@@ -102,12 +104,10 @@ Engine::Engine()
 		
 		staticRenderer = new Renderer[3];
 		staticShadowRenderer = new ShadowRenderer[3];
-		skeletalRenderer = new Renderer[1];
-		skeletalShadowRenderer = new ShadowRenderer[1];
+		skeletalRenderer = new Renderer[2];
+		skeletalShadowRenderer = new ShadowRenderer[2];
 
-		softParticle = new SoftParticle();
-		softParticle->Initialize(device);
-		
+		softParticle = new SoftParticle(device, 0);
 	/*	for (uint i = 0; i < 7; i++)
 			Load(i, L"VerdeResidence", i+1,ReadMeshType::StaticMesh);
 
@@ -167,8 +167,8 @@ Engine::Engine()
 	queryDesc.MiscFlags = D3D11_QUERY_MISC_PREDICATEHINT;
 	device->CreatePredicate(&queryDesc, &predicate);
 
-	//{
-	//	// Create constant buffers
+	
+		// Create constant buffers
 		D3D11_BUFFER_DESC cbDesc;
 		ZeroMemory(&cbDesc, sizeof(cbDesc));
 		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -177,12 +177,9 @@ Engine::Engine()
 		cbDesc.ByteWidth = sizeof(CB_FOG);
 		Check(device->CreateBuffer(&cbDesc, NULL, &fogBuffer));
 
-		// Prepare the fog parameters
-		
 
-	//}
-	//
-	//
+
+	
 	
 	
 }
@@ -211,261 +208,294 @@ void Engine::Update(bool bStart)
 	if (Keyboard::Get()->Down('C'))
 	{
 		bShowCascadedDebug == true ? bShowCascadedDebug = false : bShowCascadedDebug = true;
-	}
-
-	
-
-	for (uint i = 0; i < staticActorCount; i++)
-	{
-		drawCount[skeletalActorCount+i]=collider->FrustumCulling(i);
-	}
-
-
-	for (uint i = 0; i < skeletalActorCount; i++)
-	{
-		drawCount[i] = animator->Update(i);
-	}
-	if (bStart)
-	{
-
-		actorController->Update();
-		animator->Compute(immediateContext, physics->UAV());
-		physics->ComputeEditor(immediateContext, effects->UAV(), animator->TotalCount(), collider->TotalCount());
-	
 		
 	}
-
-
-	D3DXMatrixTranspose(&mainViewData.VP, &GlobalData::GetVP());
-	mainViewData.EyePos = Vector4(GlobalData::Position(), 1.0f);
-	mainViewData.LightDir= Vector4(GlobalData::LightDirection(), 1.0f);
-	D3D11_MAPPED_SUBRESOURCE MappedResource;
-	deferredContext[1]->Map(mainViewBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-	memcpy(MappedResource.pData, &mainViewData, sizeof(Matrix));
-	deferredContext[1]->Unmap(mainViewBuffer, 0);
-
-	deferredContext[1]->VSSetConstantBuffers(1, 1, &mainViewBuffer);
-
+	
+	{
+		for (uint i = 0; i < staticActorCount; i++)
+		{
+			drawCount[skeletalActorCount + i] = collider->FrustumCulling(i);
+		}
+		collider->UpdateInstTransformSRV(immediateContext);
+	}
+	
+	{
+		for (uint i = 0; i < skeletalActorCount; i++)
+		{
+			drawCount[i] = animator->Update(i);
+		}
 
 	
+		animator->Compute(immediateContext, physics->UAV());
+		if (bStart)
+		{
+			actorController->Update();
+			physics->ComputeEditor(immediateContext, effects->UAV(), animator->TotalCount(), collider->TotalCount());
+		}
+
+	
+
+	}
+		
 }
 
 
 void Engine::Update()
 {
-
-	if (Keyboard::Get()->Down('C'))
-	{
-		bShowCascadedDebug == true ? bShowCascadedDebug = false : bShowCascadedDebug = true;
-	}
-
-
-
-	for (uint i = 0; i < staticActorCount; i++)
-	{
-		drawCount[skeletalActorCount + i] = collider->FrustumCulling(i);
-	}
-
-
-	for (uint i = 0; i < skeletalActorCount; i++)
-	{
-		drawCount[i] = animator->Update(i);
-	}
 	
+	{
+		for (uint i = 0; i < staticActorCount; i++)
+		{
+			drawCount[skeletalActorCount + i] = collider->FrustumCulling(i);
+		}
+		collider->UpdateInstTransformSRV(immediateContext);
+	}
 
-	actorController->Update();
-	animator->Compute(immediateContext, physics->UAV());
-	physics->Compute(immediateContext, effects->UAV(), animator->TotalCount(), collider->TotalCount());
+	{
+
+		for (uint i = 0; i < skeletalActorCount; i++)
+		{
+			drawCount[i] = animator->Update(i);
+		}
+		animator->Compute(immediateContext, physics->UAV());
+
+		actorController->Update();
+		physics->Compute(immediateContext, effects->UAV(), animator->TotalCount(), collider->TotalCount());
+	}
+
 
 	
+	
 
-
-	D3DXMatrixTranspose(&mainViewData.VP, &GlobalData::GetVP());
-	mainViewData.EyePos = Vector4(GlobalData::Position(), 1.0f);
-	mainViewData.LightDir = Vector4(GlobalData::LightDirection(), 1.0f);
-	D3D11_MAPPED_SUBRESOURCE MappedResource;
-	deferredContext[1]->Map(mainViewBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-	memcpy(MappedResource.pData, &mainViewData, sizeof(Matrix));
-	deferredContext[1]->Unmap(mainViewBuffer, 0);
-
-	deferredContext[1]->VSSetConstantBuffers(1, 1, &mainViewBuffer);
 }
+
+struct ShadowDatas
+{
+	uint shadowSkeletalActorCount ;
+	uint shadowStaticActorCount ;
+
+	vector<uint>drawCount;
+	
+
+	ID3D11ShaderResourceView* staticInstBuffer; 
+	ID3D11ShaderResourceView* staticBoneSRV;
+
+	ID3D11ShaderResourceView* skeletalInstBuffer;
+	ID3D11ShaderResourceView* skeletalBoneSRV;
+}shadowDatas;
+
+
 
 void Engine::Render()
 {
-	
-	auto mainDepthSRV = GBuffer.DepthstencilSRV();
-	island11->Update(immediateContext);
-	island11->Caustics(immediateContext);
-	animator->UpdateInstBuffer(immediateContext);
-	Thread::Get()->AddTask([this]()
-	{
-		Lighting.PrepareNextShadowLight(deferredContext[0]);
-		animator->BindPipeline(deferredContext[0]);
+	shadowDatas.shadowSkeletalActorCount = skeletalActorCount;
+	shadowDatas.shadowStaticActorCount = staticActorCount;
 
-		for (uint i = 0; i < skeletalActorCount; i++)
+	shadowDatas.drawCount = drawCount;
+	
+	shadowDatas.staticInstBuffer = collider->GetShadowInstBufferSRV();
+	shadowDatas.staticBoneSRV = collider->SRV();
+
+	shadowDatas.skeletalInstBuffer = animator->GetInstBufferSRV();
+	shadowDatas.skeletalBoneSRV = animator->SRV();
+
+
+	auto skeletalShadowRendererThread = skeletalShadowRenderer;
+	auto staticShadowRendererThread = staticShadowRenderer;
+	
+	//Thread::Get()->AddTask([skeletalShadowRendererThread, staticShadowRendererThread]()
+		//	thread worker([skeletalShadowRendererThread, staticShadowRendererThread]()
+	//{
+		CascadedMatrixSet.CascadedShadowsGen(deferredContext[0]);
+		ID3D11ShaderResourceView* srvArray[2] = { shadowDatas.skeletalInstBuffer,shadowDatas.skeletalBoneSRV };
+		deferredContext[0]->VSSetShaderResources(0, 2, srvArray);
+		for (uint i = 0; i < shadowDatas.shadowSkeletalActorCount; i++)
 		{
 			uint prevCount = 0;
 			if (i > 0)
 			{
-				prevCount = drawCount[i - 1];
+				for (uint p = 0; p < i; p++)
+				{
+					prevCount += shadowDatas.drawCount[p];
+				}
+					
 			}
+
+			skeletalShadowRendererThread[i].Depth_PreRender(deferredContext[0], shadowDatas.drawCount[i], prevCount);
+		}
+
+		srvArray[0] = { shadowDatas.staticInstBuffer };
+		srvArray[1] = { shadowDatas.staticBoneSRV };
+
+		deferredContext[0]->VSSetShaderResources(0, 2, srvArray);
+
+		for (uint i = 0; i < shadowDatas.shadowStaticActorCount; i++)
+		{
 			
-			skeletalShadowRenderer[i].Depth_PreRender(deferredContext[0], drawCount[i], prevCount);
+			uint prevCount = 0;
+			if (i > 0)
+			{
+				for (uint p = 0; p < i; p++)
+				{
+					prevCount += staticShadowRendererThread[p].DrawCount();
+					
+				}
+				
+
+			}
+			staticShadowRendererThread[i].Depth_PreRender(deferredContext[0], prevCount);
+
 		}
-	
+		deferredContext[0]->FinishCommandList(false, &commandList[0]);
 
-		
-
-		collider->BindPipeline(deferredContext[0]);
-
-	        for (uint i = 0; i < staticActorCount; i++)
-            {
-            	uint prevCount = 0;
-            	if (i > 0)
-            	{
-            		prevCount = drawCount[(skeletalActorCount + i) - 1];
-            	}
-            	staticShadowRenderer[i].Depth_PreRender(deferredContext[0], drawCount[(skeletalActorCount + i)], prevCount);
-            
-            }
-            
-            Lighting.ClearShadowPipeLine(deferredContext[0]);
-            
-            deferredContext[0]->FinishCommandList(false, &commandList[0]);
-	});
+	//});
 	
-	
-	
+	//Thread::Get()->AddTask([this]()
+	//	{
+	        D3DXMatrixTranspose(&mainViewData.VP, &GlobalData::GetVP());
+	        mainViewData.EyePos = Vector4(GlobalData::Position(), 1.0f);
+	        mainViewData.LightDir = Vector4(GlobalData::LightDirection(), 1.0f);
+	        D3D11_MAPPED_SUBRESOURCE MappedResource;
+	        deferredContext[1]->Map(mainViewBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+	        memcpy(MappedResource.pData, &mainViewData, sizeof(Matrix));
+	        deferredContext[1]->Unmap(mainViewBuffer, 0);
+	        deferredContext[1]->VSSetConstantBuffers(1, 1, &mainViewBuffer);
+			
+			island11->Update(deferredContext[1]);
+			island11->Caustics(deferredContext[1]);
+			GBuffer.PrepareForPacking(deferredContext[1]);
 
-		GBuffer.PrepareForPacking(deferredContext[1]);
+			{
+				ID3D11DepthStencilState* PrevDepthState;
+				UINT PrevStencil;
+				deferredContext[1]->OMGetDepthStencilState(&PrevDepthState, &PrevStencil);
 
-		{
-			ID3D11DepthStencilState* PrevDepthState;
-			UINT PrevStencil;
-			deferredContext[1]->OMGetDepthStencilState(&PrevDepthState, &PrevStencil);
+				sky->Render(deferredContext[1]);
+				deferredContext[1]->OMSetDepthStencilState(PrevDepthState, PrevStencil);
+				cloud->Render(deferredContext[1]);
+			}
+			island11->Reflection(deferredContext[2]);
 
-			sky->Render(deferredContext[1]);
-			deferredContext[1]->OMSetDepthStencilState(PrevDepthState, PrevStencil);
-			cloud->Render(deferredContext[1]);
-		}
-	
-	
+			{
+				for (uint i = 1; i < 3; i++)
+				{
+					animator->BindPipeline(deferredContext[i]);
+				}
+				for (uint i = 0; i < skeletalActorCount; i++)
+				{
+					uint prevCount = 0;
+					if (i > 0)
+					{
+						for (uint p = 0; p < i; p++)
+							prevCount += drawCount[p];
 
-		island11->Reflection(deferredContext[2]);
-	
-		{
+					}
+					skeletalRenderer[i].Render(deferredContext[1], drawCount[i], prevCount);
+					skeletalRenderer[i].Reflection_PreRender(deferredContext[2], drawCount[i], prevCount);
+				}
+				physics->Stop();
+			}
+
+
 			for (uint i = 1; i < 3; i++)
 			{
-				animator->BindPipeline(deferredContext[i]);
+				collider->BindPipeline(deferredContext[i]);
 			}
-			for (uint i = 0; i < skeletalActorCount; i++)
+
+			for (uint i = 0; i < staticActorCount; i++)
 			{
 				uint prevCount = 0;
 				if (i > 0)
 				{
-					prevCount = drawCount[i - 1];
+					for (uint p = 0; p < i; p++)
+						prevCount += drawCount[skeletalActorCount + p];
+
 				}
-				skeletalRenderer[i].Render(deferredContext[1], drawCount[i], prevCount);
-				skeletalRenderer[i].Reflection_PreRender(deferredContext[2], drawCount[i], prevCount);
+
+				staticRenderer[i].Render(deferredContext[1], drawCount[(skeletalActorCount + i)], prevCount);
+				staticRenderer[i].Reflection_PreRender(deferredContext[2], drawCount[(skeletalActorCount + i)], prevCount);
 			}
-			physics->Stop();
-		}
+			island11->Terrain(deferredContext[1]);
+			island11->Refraction(deferredContext[1], GBuffer.DepthstencilSRV(), GBuffer.DiffuseTexture());
+			GBuffer.PrepareForWaterPacking(deferredContext[1]);
+			island11->Water(deferredContext[1]);
+
+			deferredContext[1]->FinishCommandList(false, &commandList[1]);
+			deferredContext[2]->FinishCommandList(false, &commandList[2]);
 
 
-		for (uint i = 1; i < 3; i++)
-		{
-			collider->BindPipeline(deferredContext[i]);
-		}
+	//});
+	immediateContext->ExecuteCommandList(commandList[0], false);
+	SafeRelease(commandList[0]);
+	immediateContext->ExecuteCommandList(commandList[2], false);
+	SafeRelease(commandList[2]);
+	immediateContext->ExecuteCommandList(commandList[1], false);
+	SafeRelease(commandList[1]);
+
 	
-		for (uint i = 0; i < staticActorCount; i++)
 		{
-			uint prevCount = 0;
-			if (i > 0)
+			immediateContext->ClearRenderTargetView(HDRRTV, ClearColor);
+			immediateContext->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1, 0);
+
+			ssao->Compute(immediateContext, GBuffer.DepthstencilSRV(), GBuffer.NormalSRV());
+
+
+
+
+			//Unpack
+			immediateContext->RSSetViewports(1, &viewport);
+			immediateContext->OMSetRenderTargets(1, &HDRRTV, GBuffer.DepthstencilDSVReadOnly());
+			GBuffer.PrepareForUnpack(immediateContext);
+
 			{
-				prevCount = drawCount[(skeletalActorCount + i) - 1];
-			}
-			
-			staticRenderer[i].Render(deferredContext[1], drawCount[(skeletalActorCount + i)], prevCount);
-			staticRenderer[i].Reflection_PreRender(deferredContext[2], drawCount[(skeletalActorCount + i)], prevCount);
-		}
-		island11->Terrain(deferredContext[1]);
-		island11->Refraction(deferredContext[1], mainDepthSRV, GBuffer.DiffuseTexture());
-		GBuffer.PrepareForWaterPacking(deferredContext[1]);
-		island11->Water(deferredContext[1]);
+
+
+				ID3D11ShaderResourceView* arrSRV[4] = { CascadedMatrixSet.CascadedDepthStencilSRV, ssao->GetSSAOSRV(),*preintegratedFG ,skyIRSRV };
+				immediateContext->PSSetShaderResources(4, 4, arrSRV);
 
 
 
-		deferredContext[1]->FinishCommandList(false, &commandList[1]);
-		deferredContext[2]->FinishCommandList(false, &commandList[2]);
+				{//Fog
 
-		immediateContext->ExecuteCommandList(commandList[0], false);
-		SafeRelease(commandList[0]);
-		 immediateContext->ExecuteCommandList(commandList[2], false);
-		 SafeRelease(commandList[2]);
-		 immediateContext->ExecuteCommandList(commandList[1], false);
-		 SafeRelease(commandList[1]);
-		
+					fogDesc.dir = -GlobalData::LightDirection();
 
-		 {
-			
-			
-			 immediateContext->ClearRenderTargetView(HDRRTV, ClearColor);
-			 immediateContext->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH , 1, 0);
-			
-			 ssao->Compute(immediateContext, mainDepthSRV, GBuffer.NormalSRV());
-						 
-			 //Unpack
-			 immediateContext->RSSetViewports(1, &viewport);
-			 immediateContext->OMSetRenderTargets(1, &HDRRTV, GBuffer.DepthstencilDSVReadOnly());
-			 GBuffer.PrepareForUnpack(immediateContext);
-			 
-			 { 
-				
-				 ID3D11ShaderResourceView* arrSRV[3] = { ssao->GetSSAOSRV(),*preintegratedFG ,skyIRSRV };
-				 immediateContext->PSSetShaderResources(5, 3, arrSRV);
-
-				
-				
-				 {//Fog
-					 D3D11_MAPPED_SUBRESOURCE MappedResource;
-					 immediateContext->Map(fogBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-					 memcpy(MappedResource.pData, &fogDesc, sizeof(fogDesc));
-
-					 fogDesc.dir = -GlobalData::LightDirection();
-					 immediateContext->Unmap(fogBuffer, 0);
-					 immediateContext->PSSetConstantBuffers(2, 1, &fogBuffer);
-				 }
+					D3D11_MAPPED_SUBRESOURCE MappedResource;
+					immediateContext->Map(fogBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+					memcpy(MappedResource.pData, &fogDesc, sizeof(fogDesc));
+					immediateContext->Unmap(fogBuffer, 0);
+					immediateContext->PSSetConstantBuffers(2, 1, &fogBuffer);
+				}
 
 
-				 immediateContext->Begin(predicate);
-				 {
-					 Lighting.DoLighting(immediateContext);
-					 //Lighting.DoDebugLightVolume(immediateContext);
-				 }
-				 immediateContext->SetPredication(predicate, true);
-				 immediateContext->End(predicate);
+				immediateContext->Begin(predicate);
+				{
+					Lighting.DoLighting(immediateContext);
+					//Lighting.DoDebugLightVolume(immediateContext);
+				}
+				immediateContext->SetPredication(predicate, true);
+				immediateContext->End(predicate);
 
-				 if (bShowCascadedDebug)
+				if (bShowCascadedDebug)
 					Lighting.DoDebugCascadedShadows(immediateContext);
-			 }
+			}
+
+		}
 			
-			
-		 }	
+			 
+	
 		
 			
 		 //SSLR Execute & Referation
 		 { 
 			
 		    immediateContext->SetPredication(predicate, false);
-
+			
 			deferredContext[3]->RSSetViewports(1, &viewport);
 			deferredContext[3]->OMSetRenderTargets(1, &HDRRTV, GBuffer.DepthstencilDSVReadOnly());
-			
-			 sslr->Render(deferredContext[3], ssao->GetMiniDepthSRV(), HDRRTV);
-			 deferredContext[3]->FinishCommandList(false, &commandList[3]);
-			 immediateContext->ExecuteCommandList(commandList[3], false);
-			 SafeRelease(commandList[3]);
+			sslr->Render(deferredContext[3], ssao->GetMiniDepthSRV(), HDRRTV);
+			deferredContext[3]->FinishCommandList(false, &commandList[3]);
+			immediateContext->ExecuteCommandList(commandList[3], false);
+			SafeRelease(commandList[3]);
 		 }
 	
 		
@@ -475,57 +505,35 @@ void Engine::Render()
 			 immediateContext->RSSetViewports(1, &viewport);
 			 immediateContext->OMSetRenderTargets(1, &HDRRTV, GBuffer.DepthstencilDSVReadOnly());
 					 
-
 			 collider->BindPipeline(immediateContext);
-			 D3DXMatrixTranspose(&mainViewData.VP, &GlobalData::GetVP());
-			 mainViewData.EyePos = Vector4(GlobalData::Position(), 1.0f);
-			 mainViewData.LightDir = Vector4(GlobalData::LightDirection(), 1.0f);
-			 D3D11_MAPPED_SUBRESOURCE MappedResource;
-			 immediateContext->Map(mainViewBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-			 memcpy(MappedResource.pData, &mainViewData, sizeof(Matrix));
-			 immediateContext->Unmap(mainViewBuffer, 0);
-
-			 immediateContext->VSSetConstantBuffers(1, 1, &mainViewBuffer);
+		     immediateContext->VSSetConstantBuffers(1, 1, &mainViewBuffer);
 		
-
 			 for (uint i = 0; i < staticActorCount; i++)
 			 {
 				 uint prevCount = 0;
 				 if (i > 0)
-					 prevCount = drawCount[(skeletalActorCount + i) - 1];
+				 {
+					 for (uint p = 0; p < i; p++)
+						 prevCount += drawCount[skeletalActorCount + p];
+				 }
 				 staticRenderer[i].Forward_Render(immediateContext, drawCount[skeletalActorCount + i], prevCount);
-				 
 			 }
 			 ID3D11Buffer* nullBuffer = nullptr;
 			 immediateContext->VSSetConstantBuffers(1, 1, &nullBuffer);
-			
-			
-			// ID3D11DepthStencilState* PrevDepthState;
-			// UINT PrevStencil;
-			// immediateContext->OMGetDepthStencilState(&PrevDepthState, &PrevStencil);
+					
 
-		
-			// cloud->Render(immediateContext);
-			 //immediateContext->OMSetDepthStencilState(PrevDepthState, PrevStencil);
 			
-
-			 softParticle->Update(immediateContext);
-			 softParticle->Render(immediateContext, mainDepthSRV);
+			 softParticle->Render(immediateContext, GBuffer.DepthstencilSRV());
 			 immediateContext->SetPredication(nullptr, false);
-			
-
-			 effects->Render(immediateContext);
-			
-			
 		
+			 effects->Render(immediateContext);
 		 }
 
 
 		 //PostEffect
 		 {
-			
-			
-			 hdr->PostProcessing(immediateContext, HDRSRV, renderTargetView, mainDepthSRV);
+		
+			 hdr->PostProcessing(immediateContext, HDRSRV, renderTargetView, GBuffer.DepthstencilSRV());
 			 immediateContext->OMSetRenderTargets(1, &renderTargetView, GBuffer.DepthstencilDSVReadOnly());
 		 }
 		
@@ -836,7 +844,8 @@ void Engine::Load()
 					for (uint i = 0; i < drawCount; i++)
 					{
 						Matrix temp = r->Matrix();
-						collider->PushDrawCount(actorIndex, temp);
+						collider->PushDrawCount(actorIndex, temp,true);
+						staticShadowRenderer[actorIndex].PushInstance();
 					}
 				}
 					
@@ -846,6 +855,7 @@ void Engine::Load()
 					{
 						Matrix temp = r->Matrix();
 						animator->PushDrawCount(actorIndex, temp);
+						skeletalShadowRenderer[actorIndex].PushInstance();
 					}
 					break;
 
@@ -902,6 +912,7 @@ void Engine::Load()
 	SafeDelete(r);
 
 	collider->ClearTextureTransforms();
+	animator->ClearTextureTransforms();
 	actorController->Start();
 }
 
@@ -922,12 +933,17 @@ void Engine::Load(const uint& index, const wstring& modelName, const uint& actor
 		collider->SetActorCount(staticActorCount);
 		r->Open(L"../_Models/StaticMeshes/" + modelName + L"/" + modelName + L"_Edit" + L".mesh");
 		{
-			collider->ReadBone(r);
+			collider->ReadBone(r, index);
 			staticRenderer[index].ReadMesh(r, meshType);
 		}
 		r->Close();
 	
-		staticRenderer[index].CreateShader("../_Shaders/StaticMesh.hlsl");
+		bool isTree = false;
+		if (modelName == L"tree")
+		{
+			isTree = true;
+		}
+		staticRenderer[index].CreateShader("../_Shaders/StaticMesh.hlsl", isTree);
 
 		staticShadowRenderer[index].SetMesh(staticRenderer[index].GetMesh(), staticRenderer[index].GetMeshCount());
 		staticShadowRenderer[index].SetShadowVertexBufferData(staticRenderer[index].GetShadowBuffer(), staticRenderer[index].GetIndexBuffer());
@@ -935,7 +951,7 @@ void Engine::Load(const uint& index, const wstring& modelName, const uint& actor
 		staticShadowRenderer[index].SetShadowStride(meshType);
 
 		collider->RegisterRenderData(index,&staticRenderer[index]);
-		//collider->ClearTextureTransforms();
+	
 		
 	}
 	break;
@@ -945,15 +961,17 @@ void Engine::Load(const uint& index, const wstring& modelName, const uint& actor
 		skeletalShadowRenderer[index].Initiallize(device, index);
 
 		skeletalRenderer[index].ReadMaterial(modelName);
-		skeletalRenderer[index].CreateShader("../_Shaders/SkeletalMesh.hlsl");
+		skeletalRenderer[index].CreateShader("../_Shaders/SkeletalMesh.hlsl",false);
 		
 
-		
+		skeletalActorCount = actorCount;
+		animator->SetActorCount(skeletalActorCount);
+
 		r->Open(L"../_Models/SkeletalMeshes/" + modelName + L"/" + modelName + L"_Edit" + L".mesh");
 		{
 		
 			
-				animator->ReadBone(r);
+				animator->ReadBone(r,index);
 			
 
 			
@@ -962,12 +980,11 @@ void Engine::Load(const uint& index, const wstring& modelName, const uint& actor
 			animator->ReadBehaviorTree(r, index);
 		}
 		r->Close();
-
+		
 		animator->ReadClip(modelName);
-		animator->ClearTextureTransforms();
+		
 
-		skeletalActorCount = actorCount;
-		animator->SetActorCount(skeletalActorCount);
+		
 
 		skeletalShadowRenderer[index].SetMesh(skeletalRenderer[index].GetMesh(), skeletalRenderer[index].GetMeshCount());
 		skeletalShadowRenderer[index].SetShadowVertexBufferData(skeletalRenderer[index].GetShadowBuffer(), skeletalRenderer[index].GetIndexBuffer());
@@ -1002,17 +1019,15 @@ void Engine::PusInstance(const uint & index, const Matrix & world, const ReadMes
 	{
 	case ReadMeshType::StaticMesh:
 		
-		if (index == 0)
-		{
-			staticShadowRenderer[index].SetMaintainShadow(true);
-		}
-		collider->PushDrawCount(index, world);
+		
+		staticShadowRenderer[index].PushInstance();
+		collider->PushDrawCount(index, world, true);
 		
 		
 		break;
 	case ReadMeshType::SkeletalMesh:
 
-		
+		skeletalShadowRenderer[index].PushInstance();
 		animator->PushDrawCount(index, world);
 		
 		break;
@@ -1040,9 +1055,13 @@ void Engine::Resize(uint width, uint height)
 
 	Lighting.Resize(Vector2(static_cast<float>(width), static_cast<float>(height)));
 
+	CascadedMatrixSet.CreateCascadedShadowBuffers(device, Vector2(static_cast<float>(width), static_cast<float>(height)));
+	CascadedMatrixSet.SetShadowMapSize( Vector2(static_cast<float>(width), static_cast<float>(height)));
+	
 	GBuffer.Resize(width,height);
+	hdr->Resize(width, height);
 	ssao->Resize(width, height);
-
+	sslr->Resize(width, height);
 }
 
 

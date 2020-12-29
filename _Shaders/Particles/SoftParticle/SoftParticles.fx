@@ -638,7 +638,7 @@ technique11 T0
         SetGeometryShader( CompileShader( gs_5_0, GSParticlemain() ) );
         SetPixelShader( CompileShader( ps_5_0, PSVolumeParticlemain(true,false) ) );
         SetBlendState(AlphaBlending, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFF);
-        SetDepthStencilState(DisableDepth, 2);
+        SetDepthStencilState(DisableDepthWrite, 2);
     
     }  
 

@@ -16,7 +16,7 @@ cbuffer CB_Bone : register(b2)
 {
     uint BoneIndex : packoffset(c0.x);
     uint actorIndex : packoffset(c0.y);
-    uint clipIndex : packoffset(c0.z);
+    uint drawCount : packoffset(c0.z);
     uint prevDrawCount : packoffset(c0.w);
 };
 
@@ -161,7 +161,37 @@ PS_GBUFFER_OUT PS(VertexModelOutput In)
  
     roughness *= DiffuseFactor.w;
     metallic *= LightDir.w;
+    
+     
+    
     return PackGBuffer(DiffuseColor, normalize(bump), metallic, roughness);
+}
+PS_GBUFFER_OUT TreePS(VertexModelOutput In)
+{
+  
+    float4 DiffuseColor = DiffuseMap.Sample(LinearSampler, In.Uv);
+   
+    float metallic = MatallicMap.Sample(LinearSampler, In.Uv).r;
+    float roughness = RoughnessMap.Sample(LinearSampler, In.Uv).r;
+   
+ 
+    float3 bump = 0;
+    GetBumpMapCoord(In.Uv, normalize(In.Normal), normalize(In.Tangent), bump);
+       
+    DiffuseColor.xyz *= DiffuseFactor.xyz;
+ 
+    roughness *= DiffuseFactor.w;
+    metallic *= LightDir.w;
+    
+    //   [flatten]
+    //if (DiffuseColor.r < 0.01f)
+    //    discard;
+    PS_GBUFFER_OUT Out;
+    Out.ColorSpecInt = DiffuseColor;
+    Out.Specular = float4(roughness, metallic, 0.0, 0.0);
+    Out.Normal = float4(normalize(bump.rgb * 0.5 + 0.5), 1.0);
+    return Out;
+    //return PackGBuffer(DiffuseColor, normalize(bump), metallic, roughness);
 }
 
 

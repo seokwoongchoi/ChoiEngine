@@ -2,6 +2,7 @@
 #include "ParticleEditor.h"
 #include "Particles/ParticleSimulation.h"
 #include "Particles/Sparks.h"
+#include "Particles/SoftParticle.h"
 #include "Core/Engine.h"
 ParticleEditor::ParticleEditor(ID3D11Device * device, class Engine* engine, class Editor* editor, uint ID)
 	:engine(engine), editor(editor),bEditing(false), particle(nullptr), device(device),
@@ -116,14 +117,10 @@ void ParticleEditor::PreviewRender(ID3D11DeviceContext * context)
 		ID3D11ShaderResourceView* srv = particleTexture ? particleTexture->SRV():nullptr;
 		context->PSSetShaderResources(2, 1, &srv);
 		
-		auto spark =dynamic_cast<Sparks*>(particle);
-	
-		D3DXMatrixTranspose(&spark->wvpDesc.WVP, &(view*proj));
 	
 		if(bStart)
 		particle->Update(context);
-		
-		particle->PreviewRender(context);
+		particle->PreviewRender(context, view,proj);
 	}
 
 }
@@ -143,6 +140,9 @@ void ParticleEditor::Save(BinaryWriter * w)
 	case ReadParticleType::Blood:
 		break;
 	case ReadParticleType::Smoke:
+		w->UInt(1);
+		auto& path = "../_ParticleDatas/Smoke" + to_string(ID) + ".particle";
+		w->String(path);
 		break;
 	
 	}
@@ -157,7 +157,7 @@ void ParticleEditor::Editor()
 	ImGui::SetNextWindowSizeConstraints
 	(
 		ImVec2(800, 600),
-		ImVec2(1280, 720)
+		ImVec2(D3D::Width(), D3D::Height())
 	);
 	ImGuiWindowFlags windowFlags =
 		ImGuiWindowFlags_NoResize |
@@ -207,6 +207,7 @@ void ParticleEditor::SelectParticleType(const ImVec2 & size)
 		{
 			if (ImGui::Button("Sparks", ImVec2(80, 30)))
 			{
+				
 				SafeDelete(particle);
 				particle = new Sparks(device, ID);
 
@@ -215,13 +216,18 @@ void ParticleEditor::SelectParticleType(const ImVec2 & size)
 			ImGui::SameLine(100);
 			if (ImGui::Button("Blood", ImVec2(80, 30)))
 			{
-
-				particleType = ReadParticleType::Blood;
+				//particle.reset();
+				//particle = make_shared<Sparks>(device, ID);
+				//particleType = ReadParticleType::Blood;
 			}
 			ImGui::SameLine(190);
 
 			if (ImGui::Button("Smoke", ImVec2(80, 30)))
 			{
+				//particle.reset();
+				//particle = make_shared<SoftParticle>(device, ID);
+				SafeDelete(particle);
+				particle = new SoftParticle(device,ID);
 				particleType = ReadParticleType::Smoke;
 				
 
@@ -245,7 +251,8 @@ void ParticleEditor::SelectParticleType(const ImVec2 & size)
 
 			
 			auto spark = dynamic_cast<Sparks*>(particle);
-			
+			auto smoke = dynamic_cast<SoftParticle*>(particle);
+		
 			if (spark)
 			{
 				ImGui::SliderInt("NumBodies", (int*)&spark->simulateDesc.numParticles,0,2560);
@@ -257,8 +264,39 @@ void ParticleEditor::SelectParticleType(const ImVec2 & size)
 				ImGui::SliderFloat("Intensity", &spark->wvpDesc.intensity, 0.1f, 2.0f);
 				ImGui::SliderFloat("pontSize", &spark->wvpDesc.pontSize,0.1f,5.0f);
 				ImGui::SliderFloat("Time", &spark->simulateDesc.timer,0.0,2.0f);
-			}
 
+				ImGui::Text("Sword Hit:");
+				ImGui::SameLine();
+
+				const char* BoneColliers[] = { "BodyCollider" ,"HeadCollider", "SwordCollider" };
+
+				if (ImGui::BeginCombo("##BoneCollider", BoneCollider.c_str()))
+				{
+					for (uint i = 0; i < IM_ARRAYSIZE(BoneColliers); i++)
+					{
+						bool bSelected = BoneCollider == BoneColliers[i];
+						if (ImGui::Selectable(BoneColliers[i], bSelected))
+						{
+							BoneCollider = BoneColliers[i];
+							if (BoneCollider == "BodyCollider")
+								BindEffectBone = 0;
+							else if (BoneCollider == "HeadCollider")
+								BindEffectBone = 1;
+							else if (BoneCollider == "SwordCollider")
+								BindEffectBone = 2;
+
+						}
+
+						if (bSelected)
+							ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+			}
+			else if (smoke)
+			{
+
+			}
 		
 
 			if (ImGui::ImageButton(buttonTextures[0]->SRV(), ImVec2(20.0f, 20.0f)))//play
@@ -295,33 +333,7 @@ void ParticleEditor::SelectParticleType(const ImVec2 & size)
 				Path::OpenFileDialog(L"", Path::EveryFilter, L"../_ParticleDatas/",false, f, hWnd);
 
 			}
-			ImGui::Text("Sword Hit:");
-			ImGui::SameLine();
-			
-			const char* BoneColliers[] = { "BodyCollider" ,"HeadCollider", "SwordCollider" };
-			
-			if (ImGui::BeginCombo("##BoneCollider", BoneCollider.c_str()))
-			{
-				for (uint i = 0; i < IM_ARRAYSIZE(BoneColliers); i++)
-				{
-					bool bSelected = BoneCollider == BoneColliers[i];
-					if (ImGui::Selectable(BoneColliers[i], bSelected))
-					{
-						BoneCollider = BoneColliers[i];
-						if (BoneCollider == "BodyCollider")
-							BindEffectBone = 0;
-						else if (BoneCollider == "HeadCollider")
-							BindEffectBone = 1;
-						else if (BoneCollider == "SwordCollider")
-							BindEffectBone = 2;
-
-					}
-
-					if (bSelected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
+		
 		}
 
 
@@ -423,6 +435,30 @@ void ParticleEditor::Compile()
 		w->Close();
 		SafeDelete(w);
 	
+		engine->LoadParticle(ID, path, particleType);
+	}
+
+	auto smoke = dynamic_cast<SoftParticle*>(particle);
+
+	if (smoke)
+	{
+		BinaryWriter* w = new BinaryWriter();
+		path = L"../_ParticleDatas/Smoek" + to_wstring(ID) + L".particle";
+		w->Open(path);
+		w->UInt(spark->simulateDesc.numParticles);
+		w->Float(spark->simulateDesc.softeningSquared);
+		w->Float(spark->simulateDesc.distance);
+		w->Float(spark->clusterScale);
+		w->Float(spark->velocityScale);
+		w->Float(spark->wvpDesc.intensity);
+		w->Float(spark->wvpDesc.pontSize);
+		w->Float(spark->simulateDesc.timer);
+		string temp = String::ToString(textureName);
+		w->String(temp);
+		w->Int(BindEffectBone);
+		w->Close();
+		SafeDelete(w);
+
 		engine->LoadParticle(ID, path, particleType);
 	}
 }

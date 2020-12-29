@@ -337,7 +337,7 @@ void PreviewRenderer::ReadMesh(const wstring & file, const wstring & modelName, 
 			
 			
 			mesh->materialName = r->String();
-
+			cout << mesh->materialName << endl;
 
 			
 			//VertexData
@@ -2263,7 +2263,7 @@ void PreviewRenderer::CreateAnimTransformSRV()
 
 						saveParentMatrix[b] = animation * parent;
 
-						skinTransforms[i].Transform[f][b] = invGlobal * saveParentMatrix[b];
+						skinTransforms[i].Transform[f][b] = invGlobal*saveParentMatrix[b];
 					}
 					else
 					{

@@ -12,7 +12,7 @@ void Renderer::Initiallize(ID3D11Device* device,const uint & ID)
 
 	offset = 0;
 	slot = 0;
-	CreateStates();
+	
 
 	
 }
@@ -49,7 +49,7 @@ void Renderer::Reflection_PreRender(ID3D11DeviceContext * context,const uint&dra
 		m.ClearPipelineReflection(context);
 
 	}
-
+	
 	
 	
 	context->VSSetShader(nullptr, nullptr, 0);
@@ -74,17 +74,50 @@ void Renderer::Render(ID3D11DeviceContext* context, const uint& drawCount, const
 	context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	
 
-	
-	for (uint i = 0; i < meshCount; i++)
+	if (bAlphaToCoverage)
 	{
-		auto& m = mesh[i];
-		
-		
-		m.ApplyPipeline(context, prevDrawCount, ID);
-		context->DrawIndexedInstanced(m.indexCount, drawCount, m.startIndex, m.startVertexIndex, 0);
-		m.ClearPipelineMaterial(context);
-	
+		ID3D11BlendState* pPrevBlendState;
+		FLOAT prevBlendFactor[4];
+		UINT prevSampleMask;
+
+		for (uint i = 0; i < meshCount; i++)
+		{
+			auto& m = mesh[i];
+
+			if (i == 0)
+			{
+
+				context->OMGetBlendState(&pPrevBlendState, prevBlendFactor, &prevSampleMask);
+				context->OMSetBlendState(AlphaToCoverageEnable, prevBlendFactor, prevSampleMask);
+			}
+
+			m.ApplyPipeline(context, prevDrawCount, ID);
+			context->DrawIndexedInstanced(m.indexCount, drawCount, m.startIndex, m.startVertexIndex, 0);
+			m.ClearPipelineMaterial(context);
+
+			if (i == 0)
+			{
+				context->OMSetBlendState(pPrevBlendState, prevBlendFactor, prevSampleMask);
+			}
+		}
 	}
+	else
+	{
+		
+
+		for (uint i = 0; i < meshCount; i++)
+		{
+			auto& m = mesh[i];
+	
+
+			m.ApplyPipeline(context, prevDrawCount, ID);
+			context->DrawIndexedInstanced(m.indexCount, drawCount, m.startIndex, m.startVertexIndex, 0);
+			m.ClearPipelineMaterial(context);
+		
+		}
+	}
+	
+	
 
 
 	context->VSSetShader(nullptr, nullptr, 0);
@@ -155,27 +188,48 @@ void Renderer::CreateStates()
 	//////////////////////////////////////////////////////////////////////////
 
 
-
-
-	// Create the additive blend state
-	D3D11_BLEND_DESC descBlend;
-	descBlend.AlphaToCoverageEnable = FALSE;
-	descBlend.IndependentBlendEnable = FALSE;
-	const D3D11_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc =
+	if (blendCount > 0)
 	{
-		TRUE,
-		D3D11_BLEND_DEST_COLOR, D3D11_BLEND_SRC_COLOR, D3D11_BLEND_OP_ADD, //srcBlend,descBlend,BlendOp
-		D3D11_BLEND_ONE, D3D11_BLEND_ONE, D3D11_BLEND_OP_ADD,//srcBlendAlpha,destBlendAlpha,BlendOpAlpha
-		D3D11_COLOR_WRITE_ENABLE_ALL,//rendertargetWriteMask
-	};
+		// Create the additive blend state
+		D3D11_BLEND_DESC descBlend;
+		ZeroMemory(&descBlend, sizeof(descBlend));
+		descBlend.AlphaToCoverageEnable = false;
+		descBlend.IndependentBlendEnable = false;
+		const D3D11_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc =
+		{
+			TRUE,
+			D3D11_BLEND_DEST_COLOR, D3D11_BLEND_SRC_COLOR, D3D11_BLEND_OP_ADD, //srcBlend,descBlend,BlendOp
+			D3D11_BLEND_ONE, D3D11_BLEND_ONE, D3D11_BLEND_OP_ADD,//srcBlendAlpha,destBlendAlpha,BlendOpAlpha
+			D3D11_COLOR_WRITE_ENABLE_ALL,//rendertargetWriteMask
+		};
 
 
-
-	for (UINT i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
-		descBlend.RenderTarget[i] = defaultRenderTargetBlendDesc;
-
+		for (UINT i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
+			descBlend.RenderTarget[i] = defaultRenderTargetBlendDesc;
+		Check(device->CreateBlendState(&descBlend, &AdditiveBlendState));
+	}
 	
-	Check(device->CreateBlendState(&descBlend, &AdditiveBlendState));
+
+	if (bAlphaToCoverage)
+	{
+		D3D11_BLEND_DESC descBlend;
+		ZeroMemory(&descBlend, sizeof(descBlend));
+		descBlend.AlphaToCoverageEnable = true;
+		descBlend.IndependentBlendEnable = false;
+		const D3D11_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc =
+		{
+			false,
+			D3D11_BLEND_DEST_COLOR, D3D11_BLEND_SRC_COLOR, D3D11_BLEND_OP_ADD, //srcBlend,descBlend,BlendOp
+			D3D11_BLEND_ONE, D3D11_BLEND_ONE, D3D11_BLEND_OP_ADD,//srcBlendAlpha,destBlendAlpha,BlendOpAlpha
+			D3D11_COLOR_WRITE_ENABLE_ALL,//rendertargetWriteMask
+		};
+
+
+		for (UINT i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
+			descBlend.RenderTarget[i] = defaultRenderTargetBlendDesc;
+		Check(device->CreateBlendState(&descBlend, &AlphaToCoverageEnable));
+	}
+	
 }
 
 
@@ -294,7 +348,7 @@ void Renderer::BindMaterial()
 
 }
 
-void Renderer::CreateShader(const string& file)
+void Renderer::CreateShader(const string& file,  bool IsTree)
 {
 	SafeRelease(vs);
 	
@@ -322,14 +376,27 @@ void Renderer::CreateShader(const string& file)
 	SafeRelease(ShaderBlob);
 
 
+	if (IsTree == true)
+	{
+		bAlphaToCoverage = true;
+		entryPoint = "TreePS";
+		shaderModel = "ps_5_0";
+		Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
+		Check(device->CreatePixelShader(ShaderBlob->GetBufferPointer(),
+			ShaderBlob->GetBufferSize(), nullptr, &ps));
+		SafeRelease(ShaderBlob);
+	}
+	else
+	{
+		entryPoint = "PS";
+		shaderModel = "ps_5_0";
+		Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
+		Check(device->CreatePixelShader(ShaderBlob->GetBufferPointer(),
+			ShaderBlob->GetBufferSize(), nullptr, &ps));
+		SafeRelease(ShaderBlob);
+	}
 	
 	
-	entryPoint = "PS";
-	shaderModel = "ps_5_0";
-	Check(D3D11_Helper::CompileShader(path, entryPoint, shaderModel, nullptr, &ShaderBlob));
-	Check(device->CreatePixelShader(ShaderBlob->GetBufferPointer(),
-		ShaderBlob->GetBufferSize(), nullptr, &ps));
-	SafeRelease(ShaderBlob);
 
 
 	
@@ -360,7 +427,7 @@ void Renderer::CreateShader(const string& file)
 	}
 
 
-
+	CreateStates();
 
 	
 	//ID3DBlob* ShaderBlob = nullptr;

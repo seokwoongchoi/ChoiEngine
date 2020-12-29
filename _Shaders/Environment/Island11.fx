@@ -144,8 +144,8 @@ static const float3 WaterScatterColor = { 0.3, 0.7, 0.6 };
 static const float3 WaterSpecularColor = { 1, 1, 1 };
 static const float WaterSpecularIntensity = 350.0;
 static const  float  DynamicTessFactor = 50.0f;
-static const float WaterSpecularPower = 1000;
-static const float2 WaterColorIntensity = { 0.11, 0.21 };
+static const float WaterSpecularPower = 800;
+static const float2 WaterColorIntensity = { 0.1, 0.2 };
 
 static const float2 HeightFieldOrigin = float2(0, 0);
 static const float HeightFieldSize = 512;

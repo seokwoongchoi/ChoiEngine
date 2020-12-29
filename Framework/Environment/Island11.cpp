@@ -21,6 +21,8 @@ Island11::Island11(ID3D11Device* device,QuadTree* tree)
     shadowmap_resource(nullptr),shadowmap_resourceSRV(nullptr),shadowmap_resourceDSV(nullptr),reflection_depth_resource(nullptr),reflection_depth_resourceDSV(nullptr),refraction_depth_resource(nullptr),
     refraction_depth_resourceRTV(nullptr),refraction_depth_resourceSRV(nullptr),water_normalmap_resource(nullptr),water_normalmap_resourceSRV(nullptr),water_normalmap_resourceRTV(nullptr)
 {
+	BackBufferWidth = D3D::Width();
+	BackBufferHeight = D3D::Height();
 	this->device = device;
 	shader = new Shader(device,L"Environment/Island11.fx");
 
@@ -319,7 +321,7 @@ Island11::~Island11()
 void Island11::Update(ID3D11DeviceContext* context)
 {
 	
-	TotalTime += Time::Get()->Delta();
+	TotalTime += Time::Delta();
 	Vector3 SunPos;
 	SunPos = -1 * 10000 * GlobalData::LightDirection();
 	SunPos.y += 5500.f;

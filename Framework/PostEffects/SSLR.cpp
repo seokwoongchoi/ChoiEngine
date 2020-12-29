@@ -2,7 +2,7 @@
 #include "SSLR.h"
 
 SSLR::SSLR(ID3D11Device* device, uint width,uint height)
-	:occlusionDesc{}, lightRayDesc{}, oldvp{},ShowRayTraceRes(false), factor(-1), OcclusionTex(NULL), OcclusionUAV(NULL), OcclusionSRV(NULL),
+	:device(device),occlusionDesc{}, lightRayDesc{}, oldvp{},ShowRayTraceRes(false), factor(-1), OcclusionTex(NULL), OcclusionUAV(NULL), OcclusionSRV(NULL),
 	LightRaysTex(NULL), LightRaysRTV(NULL), LightRaysSRV(NULL),
 	 OcclusionCB(NULL),  OcclusionCS(NULL),  RayTraceCB(NULL),  FullScreenVS(NULL),  RayTracePS(NULL),  CombinePS(NULL),
 	AdditiveBlendState(NULL), yellow(Vector3(0.9f, 0.87f, 0.6f)), Params{}
@@ -22,66 +22,10 @@ SSLR::SSLR(ID3D11Device* device, uint width,uint height)
 	Params.dist = 1000.0f;
 	Params.MaxDeltaLen = 0.005f; 
 
-	this->width = 1280 / 2;
-	this->height = 720 /2 ;
-
-	downScaleGroups = (UINT)ceil((float)(width * height / 4) / 1024.0f);
+	Resize(width, height);
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Allocate the occlusion resources
-	D3D11_TEXTURE2D_DESC t2dDesc = {
-		this->width , //UINT Width;
-		this->height , //UINT Height;
-		1, //UINT MipLevels;
-		1, //UINT ArraySize;
-		DXGI_FORMAT_R8_TYPELESS, //DXGI_FORMAT Format;
-		1, //DXGI_SAMPLE_DESC SampleDesc;
-		0,
-		D3D11_USAGE_DEFAULT,//D3D11_USAGE Usage;
-		D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE,//UINT BindFlags;
-		0,//UINT CPUAccessFlags;
-		0//UINT MiscFlags;    
-	};
-	Check(device->CreateTexture2D(&t2dDesc, NULL, &OcclusionTex));
-	
-	
-
-	D3D11_UNORDERED_ACCESS_VIEW_DESC UAVDesc;
-	ZeroMemory(&UAVDesc, sizeof(UAVDesc));
-	UAVDesc.Format = DXGI_FORMAT_R8_UNORM;
-	UAVDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
-	Check(device->CreateUnorderedAccessView(OcclusionTex, &UAVDesc, &OcclusionUAV));
-	
-
-	D3D11_SHADER_RESOURCE_VIEW_DESC dsrvd =
-	{
-		DXGI_FORMAT_R8_UNORM,
-		D3D11_SRV_DIMENSION_TEXTURE2D,
-		0,
-		0
-	};
-	dsrvd.Texture2D.MipLevels = 1;
-	Check(device->CreateShaderResourceView(OcclusionTex, &dsrvd, &OcclusionSRV));
-
-
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Allocate the light rays resources
-	t2dDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	Check(device->CreateTexture2D(&t2dDesc, NULL, &LightRaysTex));
-	
-
-	D3D11_RENDER_TARGET_VIEW_DESC rtsvd =
-	{
-		DXGI_FORMAT_R8_UNORM,
-		D3D11_RTV_DIMENSION_TEXTURE2D
-	};
-	Check(device->CreateRenderTargetView(LightRaysTex, &rtsvd, &LightRaysRTV));
-	
-	Check(device->CreateShaderResourceView(LightRaysTex, &dsrvd, &LightRaysSRV));
-	
-	//////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Allocate the occlussion constant buffer
 	D3D11_BUFFER_DESC CBDesc;
 	ZeroMemory(&CBDesc, sizeof(CBDesc));
@@ -364,4 +308,66 @@ void SSLR::Combine(ID3D11DeviceContext* DC, ID3D11RenderTargetView* LightAccumRT
 	DC->PSSetShader(NULL, NULL, 0);
 	DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	DC->OMSetBlendState(PrevBlendState, prevBlendFactor, prevSampleMask);
+}
+
+void SSLR::Resize(const uint & width, const uint & height)
+{
+
+	this->width = width / 2;
+	this->height = height / 2;
+
+	downScaleGroups = (UINT)ceil((float)(width * height / 4) / 1024);
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Allocate the occlusion resources
+	D3D11_TEXTURE2D_DESC t2dDesc = {
+		this->width , //UINT Width;
+		this->height , //UINT Height;
+		1, //UINT MipLevels;
+		1, //UINT ArraySize;
+		DXGI_FORMAT_R8_TYPELESS, //DXGI_FORMAT Format;
+		1, //DXGI_SAMPLE_DESC SampleDesc;
+		0,
+		D3D11_USAGE_DEFAULT,//D3D11_USAGE Usage;
+		D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE,//UINT BindFlags;
+		0,//UINT CPUAccessFlags;
+		0//UINT MiscFlags;    
+	};
+	Check(device->CreateTexture2D(&t2dDesc, NULL, &OcclusionTex));
+
+
+
+	D3D11_UNORDERED_ACCESS_VIEW_DESC UAVDesc;
+	ZeroMemory(&UAVDesc, sizeof(UAVDesc));
+	UAVDesc.Format = DXGI_FORMAT_R8_UNORM;
+	UAVDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
+	Check(device->CreateUnorderedAccessView(OcclusionTex, &UAVDesc, &OcclusionUAV));
+
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC dsrvd =
+	{
+		DXGI_FORMAT_R8_UNORM,
+		D3D11_SRV_DIMENSION_TEXTURE2D,
+		0,
+		0
+	};
+	dsrvd.Texture2D.MipLevels = 1;
+	Check(device->CreateShaderResourceView(OcclusionTex, &dsrvd, &OcclusionSRV));
+
+
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Allocate the light rays resources
+	t2dDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	Check(device->CreateTexture2D(&t2dDesc, NULL, &LightRaysTex));
+
+
+	D3D11_RENDER_TARGET_VIEW_DESC rtsvd =
+	{
+		DXGI_FORMAT_R8_UNORM,
+		D3D11_RTV_DIMENSION_TEXTURE2D
+	};
+	Check(device->CreateRenderTargetView(LightRaysTex, &rtsvd, &LightRaysRTV));
+
+	Check(device->CreateShaderResourceView(LightRaysTex, &dsrvd, &LightRaysSRV));
 }

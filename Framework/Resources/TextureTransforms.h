@@ -1,9 +1,5 @@
 #pragma once
 
-#define MAX_BONE_TRANSFORMS 100
-#define MAX_ACTOR_COUNT 3
-#define MAX_MODEL_INSTANCE 10
-
 
 class BoneTransform
 {
@@ -11,7 +7,9 @@ public:
 	BoneTransform()=default;
 	~BoneTransform() = default;
 	
-	vector<shared_ptr<class ModelBone>> bones;
+	//map<uint, vector<shared_ptr<class ModelBone>>> bones;
+	map<uint, vector<shared_ptr<class ModelBone>>> bones;
+	
 	Matrix boneTransforms[MAX_ACTOR_COUNT][MAX_BONE_TRANSFORMS];
 	Matrix temp[MAX_BONE_TRANSFORMS];
 };
@@ -20,15 +18,10 @@ class SkinnedTransform
 {
 public:
 	SkinnedTransform() = default;
-	
 	~SkinnedTransform()
-	{
-		for (UINT i = 0; i < keyframe; i++)
-			SafeDeleteArray(Transform[i]);
+	{};
 
-		SafeDeleteArray(Transform);
-	};
-
+	
 	void CreateTransforms(const uint& keyframe, const uint& boneCount)
 	{
 		this->keyframe = keyframe;
@@ -50,11 +43,22 @@ public:
 
 		saveTransforms = new Matrix[MAX_BONE_TRANSFORMS];
 	}
+	map<uint, vector<shared_ptr<class ModelBone>>> bones;
 
-	vector<shared_ptr<class ModelBone>> bones;
-	Matrix** Transform;
-	Matrix* saveTransforms;
-	
+	Matrix** Transform=nullptr;
+	Matrix* saveTransforms = nullptr;
+
+	void Clear()
+	{
+		if (Transform == nullptr)return;
+
+		for (UINT i = 0; i < keyframe; i++)
+			SafeDeleteArray(Transform[i]);
+
+		SafeDeleteArray(Transform);
+		SafeDeleteArray(saveTransforms);
+	}
+
 private:
 	uint keyframe;
 

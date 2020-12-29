@@ -131,6 +131,6 @@ private:
 	bool bStart;
 	class Animator* animator;
 	class Orbit* orbit;
-	struct TweenDesc tweenDesc;
+	struct TweenData tweenData;
 };
 
