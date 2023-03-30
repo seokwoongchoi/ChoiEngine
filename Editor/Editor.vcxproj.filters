@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="ImGui\Source\imconfig.h" />
+    <ClInclude Include="ImGui\Source\imgui.h" />
+    <ClInclude Include="ImGui\Source\imgui_internal.h" />
+    <ClInclude Include="ImGui\Source\imstb_rectpack.h" />
+    <ClInclude Include="ImGui\Source\imstb_textedit.h" />
+    <ClInclude Include="ImGui\Source\imstb_truetype.h" />
+    <ClInclude Include="ImGui\imgui_impl_dx11.h" />
+    <ClInclude Include="ImGui\stb_image.h" />
+    <ClInclude Include="Editor.h" />
+    <ClInclude Include="ActorEditor\ActorEditor.h" />
+    <ClInclude Include="ActorEditor\PreviewRenderer.h" />
+    <ClInclude Include="ImGui\ImGuizmo.h" />
+    <ClInclude Include="ProgressBar\ProgressBar.h" />
+    <ClInclude Include="ProgressBar\ProgressReport.h" />
+    <ClInclude Include="Debug\DebugLine.h" />
+    <ClInclude Include="Debug\DebugBox.h" />
+    <ClInclude Include="ParticleEditor\ParticleEditor.h" />
+    <ClInclude Include="LightEditor\LightEditor.h" />
+    <ClInclude Include="ImGui\Blueprints\ax\Builders.h" />
+    <ClInclude Include="ImGui\Blueprints\ax\Drawing.h" />
+    <ClInclude Include="ImGui\Blueprints\ax\Interop.h" />
+    <ClInclude Include="ImGui\Blueprints\ax\Math2D.h" />
+    <ClInclude Include="ImGui\Blueprints\ax\Widgets.h" />
+    <ClInclude Include="ImGui\Blueprints\Blueprints.h" />
+    <ClInclude Include="ImGui\NodeEditor\Include\imgui_node_editor.h" />
+    <ClInclude Include="ImGui\NodeEditor\Source\crude_json.h" />
+    <ClInclude Include="ImGui\NodeEditor\Source\imgui_bezier_math.h" />
+    <ClInclude Include="ImGui\NodeEditor\Source\imgui_canvas.h" />
+    <ClInclude Include="ImGui\NodeEditor\Source\imgui_extra_math.h" />
+    <ClInclude Include="ImGui\NodeEditor\Source\imgui_node_editor_internal.h" />
+    <ClInclude Include="BehaviorTreeEditor.h" />
+    <ClInclude Include="ImGui\imgui_impl_win32.h" />
+    <ClInclude Include="TextReader\TextReader.h" />
+    <ClInclude Include="TerrainEditor\TerrainEditor.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="ImGui\Source\imgui.cpp" />
+    <ClCompile Include="ImGui\Source\imgui_draw.cpp" />
+    <ClCompile Include="ImGui\Source\imgui_widgets.cpp" />
+    <ClCompile Include="ImGui\imgui_impl_dx11.cpp" />
+    <ClCompile Include="Editor.cpp" />
+    <ClCompile Include="ActorEditor\ActorEditor.cpp" />
+    <ClCompile Include="ActorEditor\PreviewRenderer.cpp" />
+    <ClCompile Include="ImGui\ImGuizmo.cpp" />
+    <ClCompile Include="ProgressBar\ProgressBar.cpp" />
+    <ClCompile Include="Debug\DebugLine.cpp" />
+    <ClCompile Include="Debug\DebugBox.cpp" />
+    <ClCompile Include="ParticleEditor\ParticleEditor.cpp" />
+    <ClCompile Include="LightEditor\LightEditor.cpp" />
+    <ClCompile Include="ImGui\Blueprints\ax\Builders.cpp" />
+    <ClCompile Include="ImGui\Blueprints\ax\Drawing.cpp" />
+    <ClCompile Include="ImGui\Blueprints\ax\Widgets.cpp" />
+    <ClCompile Include="ImGui\Blueprints\Blueprints.cpp" />
+    <ClCompile Include="ImGui\NodeEditor\Source\crude_json.cpp" />
+    <ClCompile Include="ImGui\NodeEditor\Source\imgui_canvas.cpp" />
+    <ClCompile Include="ImGui\NodeEditor\Source\imgui_node_editor.cpp" />
+    <ClCompile Include="ImGui\NodeEditor\Source\imgui_node_editor_api.cpp" />
+    <ClCompile Include="BehaviorTreeEditor.cpp" />
+    <ClCompile Include="EditorMain.cpp" />
+    <ClCompile Include="ImGui\imgui_impl_win32.cpp" />
+    <ClCompile Include="TextReader\TextReader.cpp" />
+    <ClCompile Include="TerrainEditor\TerrainEditor.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ImGui\Blueprints\ax\Math2D.inl" />
+    <None Include="ImGui\NodeEditor\Source\imgui_bezier_math.inl" />
+    <None Include="ImGui\NodeEditor\Source\imgui_extra_math.inl" />
+    <None Include="ImGui\NodeEditor\Source\imgui_node_editor_internal.inl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="ImGui\NodeEditor\Support\imgui_node_editor.natvis" />
+  </ItemGroup>
+</Project>

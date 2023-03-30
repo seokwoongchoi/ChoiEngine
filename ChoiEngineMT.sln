@@ -1,0 +1,144 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.902
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Framework", "Framework\Framework.vcxproj", "{0662B614-4C61-420D-A031-245F7CA673D1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shader", "Shader", "{BCEB0D13-314C-41E9-A3FF-2D22FEB2F3FB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ComputeShaders", "ComputeShaders", "{936820A1-ED2B-4224-97D3-9016FF170720}"
+	ProjectSection(SolutionItems) = preProject
+		_Shaders\ComputeShaders\ColliderCS.hlsl = _Shaders\ComputeShaders\ColliderCS.hlsl
+		_Shaders\ComputeShaders\CollisonCS.hlsl = _Shaders\ComputeShaders\CollisonCS.hlsl
+		_Shaders\ComputeShaders\Matrix.hlsl = _Shaders\ComputeShaders\Matrix.hlsl
+		_Shaders\ComputeShaders\UpdateHeightCS.hlsl = _Shaders\ComputeShaders\UpdateHeightCS.hlsl
+		_Shaders\ComputeShaders\UpdateSkinTransforms.hlsl = _Shaders\ComputeShaders\UpdateSkinTransforms.hlsl
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Environment", "Environment", "{34F7FCB9-DDDE-46BF-9868-573A18CD8EF3}"
+	ProjectSection(SolutionItems) = preProject
+		_Shaders\Environment\Cloud.hlsl = _Shaders\Environment\Cloud.hlsl
+		_Shaders\Environment\InterlockingTerrainTiles.hlsl = _Shaders\Environment\InterlockingTerrainTiles.hlsl
+		_Shaders\Environment\InterlockingTerrainTilesComputeShader.hlsl = _Shaders\Environment\InterlockingTerrainTilesComputeShader.hlsl
+		_Shaders\Environment\Island11.fx = _Shaders\Environment\Island11.fx
+		_Shaders\Environment\HLSL\Island11.hlsl = _Shaders\Environment\HLSL\Island11.hlsl
+		_Shaders\Environment\IslandStates.fx = _Shaders\Environment\IslandStates.fx
+		_Shaders\Environment\Scattering.hlsl = _Shaders\Environment\Scattering.hlsl
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Lighting", "Lighting", "{1B9FF5EB-2DCF-4994-A627-606F33435D40}"
+	ProjectSection(SolutionItems) = preProject
+		_Shaders\Lighting\CapsuleLight.hlsl = _Shaders\Lighting\CapsuleLight.hlsl
+		_Shaders\Lighting\common.hlsl = _Shaders\Lighting\common.hlsl
+		_Shaders\Lighting\DirLight.hlsl = _Shaders\Lighting\DirLight.hlsl
+		_Shaders\Lighting\PBR.hlsl = _Shaders\Lighting\PBR.hlsl
+		_Shaders\Lighting\PointLight.hlsl = _Shaders\Lighting\PointLight.hlsl
+		_Shaders\Lighting\ShadowGen.hlsl = _Shaders\Lighting\ShadowGen.hlsl
+		_Shaders\Lighting\SpotLight.hlsl = _Shaders\Lighting\SpotLight.hlsl
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Particles", "Particles", "{878090E8-6B02-4E14-9362-EAA894622262}"
+	ProjectSection(SolutionItems) = preProject
+		_Shaders\Particles\LightSource.fx = _Shaders\Particles\LightSource.fx
+		_Shaders\Particles\LowResOffscreen.fx = _Shaders\Particles\LowResOffscreen.fx
+		_Shaders\Particles\nBodyCS.hlsl = _Shaders\Particles\nBodyCS.hlsl
+		_Shaders\Particles\ParticleSystem.fx = _Shaders\Particles\ParticleSystem.fx
+		_Shaders\Particles\ParticleSystemInsertCS.hlsl = _Shaders\Particles\ParticleSystemInsertCS.hlsl
+		_Shaders\Particles\ParticleSystemRender.hlsl = _Shaders\Particles\ParticleSystemRender.hlsl
+		_Shaders\Particles\ParticleSystemUpdateCS.hlsl = _Shaders\Particles\ParticleSystemUpdateCS.hlsl
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PostEffects", "PostEffects", "{6440A01F-9065-4C31-BE12-7BCFEFCA3BE0}"
+	ProjectSection(SolutionItems) = preProject
+		_Shaders\PostEffects\Blur.hlsl = _Shaders\PostEffects\Blur.hlsl
+		_Shaders\PostEffects\PostDownScaleFX.hlsl = _Shaders\PostEffects\PostDownScaleFX.hlsl
+		_Shaders\PostEffects\PostEffect.hlsl = _Shaders\PostEffects\PostEffect.hlsl
+		_Shaders\PostEffects\SSAO.hlsl = _Shaders\PostEffects\SSAO.hlsl
+		_Shaders\PostEffects\SSLR.hlsl = _Shaders\PostEffects\SSLR.hlsl
+		_Shaders\PostEffects\SSLRBlur.hlsl = _Shaders\PostEffects\SSLRBlur.hlsl
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Editor", "Editor\Editor.vcxproj", "{5221BF51-2735-4650-81E9-FFDA12FA0654}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0662B614-4C61-420D-A031-245F7CA673D1} = {0662B614-4C61-420D-A031-245F7CA673D1}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Game", "Game\Game.vcxproj", "{8FA2D9FF-6789-4CA4-A296-AC1DCA0CA0B8}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0662B614-4C61-420D-A031-245F7CA673D1} = {0662B614-4C61-420D-A031-245F7CA673D1}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Model", "Model", "{9F50F7E7-70A2-4142-BEFA-C76F1C402C61}"
+	ProjectSection(SolutionItems) = preProject
+		_Shaders\Header.hlsl = _Shaders\Header.hlsl
+		_Shaders\PreviewHeader.hlsl = _Shaders\PreviewHeader.hlsl
+		_Shaders\PreviewSkeletalModel.hlsl = _Shaders\PreviewSkeletalModel.hlsl
+		_Shaders\PreviewStaticModel.hlsl = _Shaders\PreviewStaticModel.hlsl
+		_Shaders\SkeletalMesh.hlsl = _Shaders\SkeletalMesh.hlsl
+		_Shaders\StaticMesh.hlsl = _Shaders\StaticMesh.hlsl
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utillity", "Utillity", "{EC3615B1-14F3-4AB7-A732-B8F26101836C}"
+	ProjectSection(SolutionItems) = preProject
+		_Shaders\000_Matrix.hlsl = _Shaders\000_Matrix.hlsl
+		_Shaders\DebugLine.hlsl = _Shaders\DebugLine.hlsl
+		_Shaders\PreviewDebug.hlsl = _Shaders\PreviewDebug.hlsl
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SoftParticle", "SoftParticle", "{796A0E94-10A3-408A-AF0B-A1BF02FB80DF}"
+	ProjectSection(SolutionItems) = preProject
+		_Shaders\Particles\SoftParticle\SoftParticles.fx = _Shaders\Particles\SoftParticle\SoftParticles.fx
+		_Shaders\Particles\SoftParticle\SoftParticles.hlsl = _Shaders\Particles\SoftParticle\SoftParticles.hlsl
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0662B614-4C61-420D-A031-245F7CA673D1}.Debug|x64.ActiveCfg = Debug|x64
+		{0662B614-4C61-420D-A031-245F7CA673D1}.Debug|x64.Build.0 = Debug|x64
+		{0662B614-4C61-420D-A031-245F7CA673D1}.Debug|x86.ActiveCfg = Debug|Win32
+		{0662B614-4C61-420D-A031-245F7CA673D1}.Debug|x86.Build.0 = Debug|Win32
+		{0662B614-4C61-420D-A031-245F7CA673D1}.Release|x64.ActiveCfg = Release|x64
+		{0662B614-4C61-420D-A031-245F7CA673D1}.Release|x64.Build.0 = Release|x64
+		{0662B614-4C61-420D-A031-245F7CA673D1}.Release|x86.ActiveCfg = Release|Win32
+		{0662B614-4C61-420D-A031-245F7CA673D1}.Release|x86.Build.0 = Release|Win32
+		{5221BF51-2735-4650-81E9-FFDA12FA0654}.Debug|x64.ActiveCfg = Debug|x64
+		{5221BF51-2735-4650-81E9-FFDA12FA0654}.Debug|x64.Build.0 = Debug|x64
+		{5221BF51-2735-4650-81E9-FFDA12FA0654}.Debug|x86.ActiveCfg = Debug|Win32
+		{5221BF51-2735-4650-81E9-FFDA12FA0654}.Debug|x86.Build.0 = Debug|Win32
+		{5221BF51-2735-4650-81E9-FFDA12FA0654}.Release|x64.ActiveCfg = Release|x64
+		{5221BF51-2735-4650-81E9-FFDA12FA0654}.Release|x64.Build.0 = Release|x64
+		{5221BF51-2735-4650-81E9-FFDA12FA0654}.Release|x86.ActiveCfg = Release|Win32
+		{5221BF51-2735-4650-81E9-FFDA12FA0654}.Release|x86.Build.0 = Release|Win32
+		{8FA2D9FF-6789-4CA4-A296-AC1DCA0CA0B8}.Debug|x64.ActiveCfg = Debug|x64
+		{8FA2D9FF-6789-4CA4-A296-AC1DCA0CA0B8}.Debug|x64.Build.0 = Debug|x64
+		{8FA2D9FF-6789-4CA4-A296-AC1DCA0CA0B8}.Debug|x86.ActiveCfg = Debug|Win32
+		{8FA2D9FF-6789-4CA4-A296-AC1DCA0CA0B8}.Debug|x86.Build.0 = Debug|Win32
+		{8FA2D9FF-6789-4CA4-A296-AC1DCA0CA0B8}.Release|x64.ActiveCfg = Release|x64
+		{8FA2D9FF-6789-4CA4-A296-AC1DCA0CA0B8}.Release|x64.Build.0 = Release|x64
+		{8FA2D9FF-6789-4CA4-A296-AC1DCA0CA0B8}.Release|x86.ActiveCfg = Release|Win32
+		{8FA2D9FF-6789-4CA4-A296-AC1DCA0CA0B8}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{936820A1-ED2B-4224-97D3-9016FF170720} = {BCEB0D13-314C-41E9-A3FF-2D22FEB2F3FB}
+		{34F7FCB9-DDDE-46BF-9868-573A18CD8EF3} = {BCEB0D13-314C-41E9-A3FF-2D22FEB2F3FB}
+		{1B9FF5EB-2DCF-4994-A627-606F33435D40} = {BCEB0D13-314C-41E9-A3FF-2D22FEB2F3FB}
+		{878090E8-6B02-4E14-9362-EAA894622262} = {BCEB0D13-314C-41E9-A3FF-2D22FEB2F3FB}
+		{6440A01F-9065-4C31-BE12-7BCFEFCA3BE0} = {BCEB0D13-314C-41E9-A3FF-2D22FEB2F3FB}
+		{9F50F7E7-70A2-4142-BEFA-C76F1C402C61} = {BCEB0D13-314C-41E9-A3FF-2D22FEB2F3FB}
+		{EC3615B1-14F3-4AB7-A732-B8F26101836C} = {BCEB0D13-314C-41E9-A3FF-2D22FEB2F3FB}
+		{796A0E94-10A3-408A-AF0B-A1BF02FB80DF} = {878090E8-6B02-4E14-9362-EAA894622262}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BA1611E9-7905-42F6-B149-3A2BE2BEB879}
+	EndGlobalSection
+EndGlobal

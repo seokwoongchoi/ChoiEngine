@@ -1,0 +1,5 @@
+﻿  GameMain.cpp
+c:\users\sow04\source\repos\real3d\choienginemt\game\stdafx.h(2): fatal error C1083: 포함 파일을 열 수 없습니다. 'Framework.h': No such file or directory
+  stdafx.cpp
+c:\users\sow04\source\repos\real3d\choienginemt\game\stdafx.h(2): fatal error C1083: 포함 파일을 열 수 없습니다. 'Framework.h': No such file or directory
+  코드를 생성하고 있습니다...
