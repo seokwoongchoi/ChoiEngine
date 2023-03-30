@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Materials xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <Material>
+        <Name>Glass</Name>
+        <DiffuseFile>Glass Diffuse.png</DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile>Glass Roughness.png</RoughnessFile>
+        <MetallicFile>Glass Metallic.png</MetallicFile>
+        <Diffuse R="0.58823532" G="0.58823532" B="0.58823532" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Blockers</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.58823532" G="0.58823532" B="0.58823532" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>DefaultMaterial</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Ligths</Name>
+        <DiffuseFile>Lights Diffuse.png</DiffuseFile>
+        <NormalFile>Lights Normals.png</NormalFile>
+        <RoughnessFile>Lights Roughness.png</RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.58823532" G="0.58823532" B="0.58823532" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Car Body</Name>
+        <DiffuseFile>Car Body Diffuse.png</DiffuseFile>
+        <NormalFile>Car Body Normals.png</NormalFile>
+        <RoughnessFile>Car body Roughness.png</RoughnessFile>
+        <MetallicFile>Car Body Metallic.png</MetallicFile>
+        <Diffuse R="0.072678208" G="0.60080647" B="0.57525194" A="0.58200002"/>
+        <PBR Roughness="0.58200002" Metallic="1.101"/>
+    </Material>
+    <Material>
+        <Name>Tire</Name>
+        <DiffuseFile>Tire Diffuse.png</DiffuseFile>
+        <NormalFile>Tire Normals.png</NormalFile>
+        <RoughnessFile>Tire Roughness.png</RoughnessFile>
+        <MetallicFile>Tire Metallic.png</MetallicFile>
+        <Diffuse R="1" G="0.99998999" B="0.99998999" A="1"/>
+        <PBR Roughness="1" Metallic="2"/>
+    </Material>
+    <Material>
+        <Name>Car Bottom</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.588" G="0.588" B="0.588" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>13 - Default</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.58823532" G="0.58823532" B="0.58823532" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+</Materials>

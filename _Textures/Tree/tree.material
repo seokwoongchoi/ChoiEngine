@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Materials xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <Material>
+        <Name>Material.003</Name>
+        <DiffuseFile>Bitmap2Material_3_Base_Color.tga.png</DiffuseFile>
+        <NormalFile>Bitmap2Material_3_Normal.tga.png</NormalFile>
+        <RoughnessFile>Bitmap2Material_3_Roughness.tga.png</RoughnessFile>
+        <MetallicFile>Bitmap2Material_3_Ambient_Occlusion.tga.png</MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>twig</Name>
+        <DiffuseFile>Wood_002.png</DiffuseFile>
+        <NormalFile>Wood_002_normal.tga.png</NormalFile>
+        <RoughnessFile>Wood_Roughness.png</RoughnessFile>
+        <MetallicFile>Wood_Metallic.png</MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+</Materials>

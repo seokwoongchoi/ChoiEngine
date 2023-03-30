@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Materials xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <Material>
+        <Name>Ropes</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Body</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Armor</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Head</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>EyeGlass</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Eyeball</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Eye Lash</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Eye Tear</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Cloth</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Katana</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Katana</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Ropes</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Bow and Arrow</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Bow and Arrow</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+</Materials>

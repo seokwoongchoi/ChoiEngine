@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Materials xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <Material>
+        <Name>None</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Material.001</Name>
+        <DiffuseFile>m4_Material.001_BaseColor.png</DiffuseFile>
+        <NormalFile>m4_Material.001_Normal.png</NormalFile>
+        <RoughnessFile>322_Material_Roughness.png</RoughnessFile>
+        <MetallicFile>m4_Material.001_Metallic.png</MetallicFile>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+    <Material>
+        <Name>Material.003</Name>
+        <DiffuseFile></DiffuseFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
+        <PBR Roughness="1" Metallic="1"/>
+    </Material>
+</Materials>
