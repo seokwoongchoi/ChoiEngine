@@ -3,19 +3,23 @@
     <Material>
         <Name>Body_SG</Name>
         <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
         <NormalFile></NormalFile>
         <RoughnessFile></RoughnessFile>
         <MetallicFile></MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
         <Diffuse R="0.3019608" G="0.3019608" B="0.3019608" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
+        <Specular R="0.2" G="0.2" B="0.2" A="1"/>
     </Material>
     <Material>
         <Name>Sword_SG</Name>
         <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
         <NormalFile></NormalFile>
         <RoughnessFile></RoughnessFile>
         <MetallicFile></MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
         <Diffuse R="0.22352943" G="0.77254909" B="0.90980399" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
+        <Specular R="0.2" G="0.2" B="0.2" A="1"/>
     </Material>
 </Materials>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<KeyFrames>
+    <Key Name="tank" Time="0" Position.x="0" Position.y="1" Position.z="1" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0.14943814" Quarternion.y="0" Quarternion.z="0" Quarternion.w="0.98877108"/>
+    <Key Name="tank" Time="1" Position.x="0" Position.y="2" Position.z="2" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0.24740396" Quarternion.y="0" Quarternion.z="0" Quarternion.w="0.96891242"/>
+    <Key Name="tank" Time="2" Position.x="0" Position.y="3" Position.z="3" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0.38941833" Quarternion.y="0" Quarternion.z="0" Quarternion.w="0.92106098"/>
+    <Key Name="tank" Time="3" Position.x="0" Position.y="4" Position.z="3" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0.5" Quarternion.y="0" Quarternion.z="0" Quarternion.w="0.98877108"/>
+    <Key Name="tank" Time="4" Position.x="0" Position.y="3" Position.z="4" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0.6" Quarternion.y="0" Quarternion.z="0" Quarternion.w="0.96891242"/>
+    <Key Name="tank" Time="5" Position.x="0" Position.y="2" Position.z="5" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0.7" Quarternion.y="0" Quarternion.z="0" Quarternion.w="0.92106098"/>
+    <Key Name="r_engine_geo" Time="0" Position.x="-1" Position.y="1" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0" Quarternion.w="1"/>
+    <Key Name="r_engine_geo" Time="1" Position.x="-2" Position.y="2" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.47942555" Quarternion.w="0.87758255"/>
+    <Key Name="r_engine_geo" Time="2" Position.x="-3" Position.y="2" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.47942555" Quarternion.w="0.87758255"/>
+    <Key Name="r_engine_geo" Time="3" Position.x="-4" Position.y="1" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.84147096" Quarternion.w="0.54030228"/>
+    <Key Name="r_engine_geo" Time="4" Position.x="-4" Position.y="0" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.997495" Quarternion.w="0.070737205"/>
+    <Key Name="r_engine_geo" Time="5" Position.x="-5" Position.y="-1" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.997495" Quarternion.w="0.070737205"/>
+  <Key Name="r_front_wheel_geo" Time="0" Position.x="-1" Position.y="1" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0" Quarternion.w="1"/>
+  <Key Name="r_front_wheel_geo" Time="1" Position.x="-2" Position.y="2" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.47942555" Quarternion.w="0.87758255"/>
+  <Key Name="r_front_wheel_geo" Time="2" Position.x="-3" Position.y="2" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.47942555" Quarternion.w="0.87758255"/>
+  <Key Name="r_front_wheel_geo" Time="3" Position.x="-4" Position.y="1" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.84147096" Quarternion.w="0.54030228"/>
+  <Key Name="r_front_wheel_geo" Time="4" Position.x="-4" Position.y="0" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.997495" Quarternion.w="0.070737205"/>
+  <Key Name="r_front_wheel_geo" Time="5" Position.x="-5" Position.y="-1" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.997495" Quarternion.w="0.070737205"/>
+  <Key Name="l_engine_geo" Time="0" Position.x="1" Position.y="1" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0" Quarternion.w="1"/>
+  <Key Name="l_engine_geo" Time="1" Position.x="2" Position.y="2" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.47942555" Quarternion.w="0.87758255"/>
+  <Key Name="l_engine_geo" Time="2" Position.x="3" Position.y="2" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.47942555" Quarternion.w="0.87758255"/>
+  <Key Name="l_engine_geo" Time="3" Position.x="4" Position.y="1" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.84147096" Quarternion.w="0.54030228"/>
+  <Key Name="l_engine_geo" Time="4" Position.x="4" Position.y="0" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.997495" Quarternion.w="0.070737205"/>
+  <Key Name="l_engine_geo" Time="5" Position.x="5" Position.y="-1" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.997495" Quarternion.w="0.070737205"/>
+  <Key Name="l_front_wheel_geo" Time="0" Position.x="1" Position.y="1" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0" Quarternion.w="1"/>
+  <Key Name="l_front_wheel_geo" Time="1" Position.x="2" Position.y="2" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.47942555" Quarternion.w="0.87758255"/>
+  <Key Name="l_front_wheel_geo" Time="2" Position.x="3" Position.y="2" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.47942555" Quarternion.w="0.87758255"/>
+  <Key Name="l_front_wheel_geo" Time="3" Position.x="4" Position.y="1" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.84147096" Quarternion.w="0.54030228"/>
+  <Key Name="l_front_wheel_geo" Time="4" Position.x="4" Position.y="0" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.997495" Quarternion.w="0.070737205"/>
+  <Key Name="l_front_wheel_geo" Time="5" Position.x="5" Position.y="-1" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="0.997495" Quarternion.w="0.070737205"/>
+    <Key Name="turret_geo" Time="0" Position.x="1" Position.y="1" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="-0.24740396" Quarternion.w="0.96891242"/>
+    <Key Name="turret_geo" Time="1" Position.x="2" Position.y="2" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="-0.22984886" Quarternion.y="0.42073551" Quarternion.z="-0.42073551" Quarternion.w="0.77015114"/>
+    <Key Name="turret_geo" Time="2" Position.x="3" Position.y="3" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="-0.57094145" Quarternion.y="0.16751879" Quarternion.z="-0.16751879" Quarternion.w="0.78606659"/>
+    <Key Name="turret_geo" Time="3" Position.x="4" Position.y="4" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0" Quarternion.y="0" Quarternion.z="-0.47942555" Quarternion.w="0.87758255"/>
+    <Key Name="turret_geo" Time="4" Position.x="5" Position.y="3" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0.73846024" Quarternion.y="0.40342268" Quarternion.z="-0.25903472" Quarternion.w="0.47415984"/>
+    <Key Name="turret_geo" Time="5" Position.x="6" Position.y="2" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0.87538421" Quarternion.y="0.47822458" Quarternion.z="-0.033913225" Quarternion.w="0.062077738"/>
+    <Key Name="turret_geo" Time="6" Position.x="7" Position.y="1" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0.87538421" Quarternion.y="0.033913225" Quarternion.z="-0.47822458" Quarternion.w="0.062077738"/>
+    <Key Name="turret_geo" Time="7" Position.x="8" Position.y="-1" Position.z="0" Scale.x="1" Scale.y="1" Scale.z="1" Quarternion.x="0.87538421" Quarternion.y="0.033913225" Quarternion.z="-0.47822458" Quarternion.w="0.062077738"/>
+    
+</KeyFrames>

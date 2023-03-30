@@ -723,15 +723,15 @@ void Application_Initialize(ID3D11Device* device)
 
 
 	t_HeaderBackground = new Texture();
-	t_HeaderBackground->Load(device, L"BlueprintBackground.png", nullptr, true);
+	t_HeaderBackground->Load(device, L"BlueprintBackground.png", nullptr);
 
 	//s_HeaderBackground = t_HeaderBackground->SRV();
 	/*s_SaveIcon = Application_LoadTexture("Data/ic_save_white_24dp.png");
 	s_RestoreIcon = Application_LoadTexture("Data/ic_restore_white_24dp.png");*/
 	s_SaveIcon = new Texture(); 
-	s_SaveIcon->Load(device, L"ic_save_white_24dp.png", nullptr, true);
+	s_SaveIcon->Load(device, L"ic_save_white_24dp.png", nullptr);
 	s_RestoreIcon = new Texture();
-	s_RestoreIcon->Load(device, L"ic_restore_white_24dp.png", nullptr, true);
+	s_RestoreIcon->Load(device, L"ic_restore_white_24dp.png", nullptr);
 	//auto& io = ImGui::GetIO();
 }
 

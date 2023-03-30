@@ -37,7 +37,7 @@ void Circle(uint4 box, uint dispatch)
         float radiusSquared = Range * Range;
 
         if (distanceSquared <= radiusSquared)
-            Update[CurPixel.xy] += float4(0, 0, 0, RaiseSpeed);
+            Update[CurPixel.xy] -= float4(0, 0, 0, RaiseSpeed);
     }
    
 }

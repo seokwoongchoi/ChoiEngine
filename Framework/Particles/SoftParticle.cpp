@@ -20,9 +20,9 @@ SoftParticle::SoftParticle(ID3D11Device * device, uint ID)
 	CreateBuffers(device);
 
 	smokevol = new Texture();
-	smokevol->Load(device, L"Particles/smokevol1.dds",nullptr,true);
+	smokevol->Load(device, L"Particles/smokevol1.dds",nullptr);
 	gradient = new Texture();
-	gradient->Load(device, L"Particles/colorgradient.dds", nullptr,true);
+	gradient->Load(device, L"Particles/colorgradient.dds", nullptr);
 
 	D3DXMatrixIdentity(&simulateDesc.World);
 

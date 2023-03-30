@@ -49,7 +49,7 @@ Scattering::Scattering(ID3D11Device* device)
 	Check(device->CreateDepthStencilState(&descDepth, &depthStencilState));
 
 	texture = new Texture();
-	texture->Load(device,L"Environment/Starfield.png", nullptr, true);
+	texture->Load(device,L"Environment/Starfield.png", nullptr);
 	
 	D3DXMatrixScaling(&world,1, 1, 1);
 	//D3DXMatrixTranspose(&world, &world);

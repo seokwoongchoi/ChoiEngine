@@ -10,11 +10,11 @@ LightEditor::LightEditor(ID3D11Device * device,  Editor* editor)
     capsuleCount(0)
 {
 	pointTexture = new Texture();//
-	pointTexture->Load(device, L"LightIcons/PointLight.png",nullptr,true);
+	pointTexture->Load(device, L"LightIcons/PointLight.png",nullptr);
 	spotTexture = new Texture();//
-	spotTexture->Load(device, L"LightIcons/SpotLight.png", nullptr, true);
+	spotTexture->Load(device, L"LightIcons/SpotLight.png", nullptr);
 	capsuleTexture = new Texture();//
-	capsuleTexture->Load(device, L"LightIcons/CapsuleLight.png", nullptr, true);
+	capsuleTexture->Load(device, L"LightIcons/CapsuleLight.png", nullptr);
 
 	D3DXMatrixIdentity(&world);
 }

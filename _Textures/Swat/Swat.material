@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Materials xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <Material>
+        <Name>Soldier_body1</Name>
+        <DiffuseFile>Soldier_Body_diffuse.png</DiffuseFile>
+        <SpecularFile>Soldier_Body_specular.png</SpecularFile>
+        <NormalFile>Soldier_Body_normal.png</NormalFile>
+        <RoughnessFile>Soldier_Body_normal.png</RoughnessFile>
+        <MetallicFile>Soldier_Body_normal.png</MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Specular R="0.5" G="0.5" B="0.5" A="1"/>
+    </Material>
+    <Material>
+        <Name>Soldier_head6</Name>
+        <DiffuseFile>Soldier_head_diffuse.png</DiffuseFile>
+        <SpecularFile>Soldier_head_specular.png</SpecularFile>
+        <NormalFile>Soldier_head_normal.png</NormalFile>
+        <RoughnessFile>Soldier_head_normal.png</RoughnessFile>
+        <MetallicFile>Soldier_head_normal.png</MetallicFile>
+        <Ambient R="0.23576714" G="0.23576714" B="0.23576714" A="1"/>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Specular R="0.5" G="0.5" B="0.5" A="1"/>
+    </Material>
+</Materials>

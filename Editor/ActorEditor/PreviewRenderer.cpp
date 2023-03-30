@@ -26,7 +26,7 @@ PreviewRenderer::PreviewRenderer(ID3D11Device * device)
 {
 	D3DXMatrixIdentity(&boxWorld);
 	preintegratedFG = make_shared< Texture>();
-	preintegratedFG->Load(device, L"PBR/PreintegratedFG.bmp", nullptr, true);
+	preintegratedFG->Load(device, L"PBR/PreintegratedFG.bmp", nullptr);
 
 	const wstring& temp = L"../../_Textures/Environment/SunsetCube1024.dds";
 	//wstring temp = L"../../_Textures/Environment/sky_ocean.dds";

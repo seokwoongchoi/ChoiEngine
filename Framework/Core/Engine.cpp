@@ -165,10 +165,10 @@ Engine::Engine()
 	{
 		
 		preintegratedFG = make_shared< Texture>();
-		preintegratedFG->Load(device,L"PBR/PreintegratedFG.bmp", nullptr, true);
+		preintegratedFG->Load(device,L"PBR/PreintegratedFG.bmp", nullptr);
 	
 
-		const wstring& temp = L"../../_Textures/Environment/SunsetCube1024.dds";
+		const wstring& temp = L"../_Textures/Environment/SunsetCube1024.dds";
 		//wstring temp = L"../../_Textures/Environment/sky_ocean.dds";
 		
 		D3DX11CreateShaderResourceViewFromFile
@@ -792,7 +792,7 @@ void Engine::RenderEditor1()
 
 
 			ID3D11ShaderResourceView* arrSRV[8] = { GBuffer.DepthstencilSRV(), GBuffer.DiffuseSRV(), GBuffer.NormalSRV() ,GBuffer.SpecularSRV(),
-				CascadedMatrixSet.CascadedDepthStencilSRV, ssao->GetSSAOSRV(),*preintegratedFG ,skyIRSRV };
+				CascadedMatrixSet.CascadedDepthStencilSRV, ssao->GetSSAOSRV(),nullptr ,nullptr };
 			immediateContext->PSSetShaderResources(0, 8, arrSRV);
 
 

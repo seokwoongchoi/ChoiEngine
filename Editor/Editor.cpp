@@ -84,12 +84,12 @@ Editor::Editor()
 			buttonTextures[i] = new Texture();
 		}
 	
-		buttonTextures[0]->Load(engine->device, L"playButton.png",nullptr,true);
-	    buttonTextures[1]->Load(engine->device, L"pauseButton.png",nullptr, true);
-		buttonTextures[2]->Load(engine->device, L"stopButton.png", nullptr, true);
+		buttonTextures[0]->Load(engine->device, L"playButton.png",nullptr);
+	    buttonTextures[1]->Load(engine->device, L"pauseButton.png",nullptr);
+		buttonTextures[2]->Load(engine->device, L"stopButton.png", nullptr);
 		
-		buttonTextures[3]->Load(engine->device, L"cubeIcon.png", nullptr, true);
-		buttonTextures[4]->Load(engine->device, L"CapsuleIcon.png", nullptr, true);
+		buttonTextures[3]->Load(engine->device, L"cubeIcon.png", nullptr);
+		buttonTextures[4]->Load(engine->device, L"CapsuleIcon.png", nullptr);
 	}
 	tree = new QuadTree();
 	tree->CreateQuadTree(Vector2(0.0f,0.0f),Vector2(512.0f,512.0f));

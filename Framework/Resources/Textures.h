@@ -14,7 +14,7 @@ public:
 	}
 	~Texture()=default;
 
-	void Load(ID3D11Device* device, wstring file, D3DX11_IMAGE_LOAD_INFO* loadInfo = NULL,bool Include=false);
+	void Load(ID3D11Device* device, wstring file, D3DX11_IMAGE_LOAD_INFO* loadInfo = NULL);
 	inline operator  ID3D11ShaderResourceView*() { return view; }
 
 

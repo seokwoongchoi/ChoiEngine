@@ -3,10 +3,12 @@
     <Material>
         <Name>Material</Name>
         <DiffuseFile>Old_lantern_UV_Diffuse.png</DiffuseFile>
+        <SpecularFile></SpecularFile>
         <NormalFile>Old_lantern_UV_Normal.png</NormalFile>
         <RoughnessFile></RoughnessFile>
         <MetallicFile>Old_lantern_UV_SPecular.png</MetallicFile>
+        <Ambient R="0.2" G="0.2" B="0.2" A="1"/>
         <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
+        <Specular R="0.2" G="0.2" B="0.2" A="1"/>
     </Material>
 </Materials>

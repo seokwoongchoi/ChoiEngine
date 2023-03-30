@@ -6,7 +6,7 @@ BehaviorTreeEditor::BehaviorTreeEditor(ID3D11Device * device)
 	:bShowBehaviorTree(false)
 {
 	behaviorTreeTexture = new Texture();
-	behaviorTreeTexture->Load(device, L"BehaviorTree.jpg", nullptr, true);
+	behaviorTreeTexture->Load(device, L"BehaviorTree.jpg", nullptr);
 	Application_Initialize(device);
 }
 

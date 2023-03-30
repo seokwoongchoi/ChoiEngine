@@ -1,129 +1,190 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Materials xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
     <Material>
-        <Name>VetriLamp</Name>
+        <Name>DefaultMaterial</Name>
         <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
         <NormalFile></NormalFile>
         <RoughnessFile></RoughnessFile>
         <MetallicFile></MetallicFile>
-        <Diffuse R="0.60000002" G="1.6" B="0.60000002" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
-    </Material>
-    <Material>
-        <Name>Rubber</Name>
-        <DiffuseFile></DiffuseFile>
-        <NormalFile></NormalFile>
-        <RoughnessFile></RoughnessFile>
-        <MetallicFile></MetallicFile>
-        <Diffuse R="1.6" G="0.60000002" B="0.60000002" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
-    </Material>
-    <Material>
-        <Name>wire_000000000</Name>
-        <DiffuseFile></DiffuseFile>
-        <NormalFile></NormalFile>
-        <RoughnessFile></RoughnessFile>
-        <MetallicFile></MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
         <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
-    </Material>
-    <Material>
-        <Name>Base_Stone</Name>
-        <DiffuseFile>wall_6.jpg</DiffuseFile>
-        <NormalFile></NormalFile>
-        <RoughnessFile></RoughnessFile>
-        <MetallicFile></MetallicFile>
-        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
-    </Material>
-    <Material>
-        <Name>Tubo</Name>
-        <DiffuseFile>wall_6.jpg</DiffuseFile>
-        <NormalFile></NormalFile>
-        <RoughnessFile></RoughnessFile>
-        <MetallicFile></MetallicFile>
-        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
-    </Material>
-    <Material>
-        <Name>Solar_System</Name>
-        <DiffuseFile>Solar-SystemDiffuseMap.jpg</DiffuseFile>
-        <NormalFile></NormalFile>
-        <RoughnessFile></RoughnessFile>
-        <MetallicFile></MetallicFile>
-        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
-    </Material>
-    <Material>
-        <Name>Wood_A</Name>
-        <DiffuseFile>Liscia_Dihar_Vert_1024.jpg</DiffuseFile>
-        <NormalFile>Wood_Normal.png</NormalFile>
-        <RoughnessFile>Wood_Roughness.png</RoughnessFile>
-        <MetallicFile>Wood_Metallic.png</MetallicFile>
-        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
-    </Material>
-    <Material>
-        <Name>Rubber</Name>
-        <DiffuseFile></DiffuseFile>
-        <NormalFile></NormalFile>
-        <RoughnessFile></RoughnessFile>
-        <MetallicFile></MetallicFile>
-        <Diffuse R="1.6" G="0.60000002" B="0.60000002" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
-    </Material>
-    <Material>
-        <Name>Roof1</Name>
-        <DiffuseFile>Roof1DiffuseMap.jpg</DiffuseFile>
-        <NormalFile>Roof1NormalsMap.jpg</NormalFile>
-        <RoughnessFile>Roof1SpecularMap-Light.jpg</RoughnessFile>
-        <MetallicFile>Roof1SpecularMap.jpg</MetallicFile>
-        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
-    </Material>
-    <Material>
-        <Name>Stoffa</Name>
-        <DiffuseFile>Linen--coarse-a-128-24.jpg</DiffuseFile>
-        <NormalFile>Linen--coarse-a-128-24_Bump.jpg</NormalFile>
-        <RoughnessFile>CamoFabric_Roughness.png</RoughnessFile>
-        <MetallicFile>CamoFabric_Metallic.png</MetallicFile>
-        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
     </Material>
     <Material>
         <Name>Material__592</Name>
         <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
         <NormalFile></NormalFile>
         <RoughnessFile></RoughnessFile>
         <MetallicFile></MetallicFile>
-        <Diffuse R="0.60000002" G="0.60000002" B="1.6" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
+        <Ambient R="0" G="0" B="0" A="1"/>
+        <Diffuse R="0.60000002" G="0.60000002" B="1.60000002" A="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
+    </Material>
+    <Material>
+        <Name>VetriLamp</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
+        <Diffuse R="0.60000002" G="1.60000002" B="0.60000002" A="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
+    </Material>
+    <Material>
+        <Name>Rubber</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
+        <Diffuse R="1.60000002" G="0.60000002" B="0.60000002" A="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
+    </Material>
+    <Material>
+        <Name>wire_000000000</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="1" G="0" B="0" A="1"/>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
+    </Material>
+    <Material>
+        <Name>Base_Stone</Name>
+        <DiffuseFile>wall_6.jpg</DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
+    </Material>
+    <Material>
+        <Name>Render_Material_255_255_255</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
+    </Material>
+    <Material>
+        <Name>Tubo</Name>
+        <DiffuseFile>wall_6.jpg</DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
+    </Material>
+    <Material>
+        <Name>Solar_System</Name>
+        <DiffuseFile>Solar-SystemDiffuseMap.jpg</DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
+    </Material>
+    <Material>
+        <Name>Wood_A</Name>
+        <DiffuseFile>Liscia_Dihar_Vert_1024.jpg</DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile>Wood_Normal.png</NormalFile>
+        <RoughnessFile>Wood_Roughness.png</RoughnessFile>
+        <MetallicFile>Wood_Metallic.png</MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
+    </Material>
+    <Material>
+        <Name>Roof1</Name>
+        <DiffuseFile>Roof1DiffuseMap.jpg</DiffuseFile>
+        <SpecularFile>Roof1AlphaMap.jpg</SpecularFile>
+        <NormalFile>Roof1NormalsMap.jpg</NormalFile>
+        <RoughnessFile>Roof1SpecularMap-Light.jpg</RoughnessFile>
+        <MetallicFile>Roof1SpecularMap.jpg</MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
+    </Material>
+    <Material>
+        <Name>Stoffa</Name>
+        <DiffuseFile>Linen--coarse-a-128-24.jpg</DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile>Linen--coarse-a-128-24_Bump.jpg</NormalFile>
+        <RoughnessFile>CamoFabric_Roughness.png</RoughnessFile>
+        <MetallicFile>CamoFabric_Metallic.png</MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
     </Material>
     <Material>
         <Name>Glass</Name>
         <DiffuseFile>TraspaGlass.png</DiffuseFile>
+        <SpecularFile></SpecularFile>
         <NormalFile>GlassVisor_Normal.png</NormalFile>
         <RoughnessFile>GlassVisor_Roughness.png</RoughnessFile>
         <MetallicFile>GlassVisor_Metallic.png</MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
         <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
+    </Material>
+    <Material>
+        <Name>Site_Foundation001</Name>
+        <DiffuseFile>Site-Foundation001DiffuseMap.jpg</DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile>Site-Foundation001NormalsMap.jpg</NormalFile>
+        <RoughnessFile>Bricks28_rgh.jpg</RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
     </Material>
     <Material>
         <Name>Structure001</Name>
         <DiffuseFile>Structure001-DiffuseMap.jpg</DiffuseFile>
+        <SpecularFile></SpecularFile>
         <NormalFile>Structure001-NormalsMap.jpg</NormalFile>
         <RoughnessFile>Roughness.png</RoughnessFile>
         <MetallicFile></MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
+        <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1.0"/>
+        <Specular R="0" G="0" B="0" A="1"/>
+    </Material>
+    <Material>
+        <Name>LR_Water_Tank</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
         <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
     </Material>
     <Material>
         <Name>Whitello</Name>
         <DiffuseFile>Wood32_col.jpg</DiffuseFile>
+        <SpecularFile></SpecularFile>
         <NormalFile>Wood32_nrm.jpg</NormalFile>
         <RoughnessFile>Wood32_rgh.jpg</RoughnessFile>
         <MetallicFile></MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
         <Diffuse R="0.60000002" G="0.60000002" B="0.60000002" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
     </Material>
 </Materials>

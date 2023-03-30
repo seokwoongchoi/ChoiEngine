@@ -598,7 +598,7 @@ void Island11::CreateTerrain()
 	SafeDelete(heightMapTexture);
 	heightMapTexture = new Texture();
 	
-	heightMapTexture->Load(device, L"Terrain/Map.dds", nullptr, true);
+	heightMapTexture->Load(device, L"Terrain/Map.dds", nullptr);
 
 
 	ID3D11Texture2D* srcTexture;
@@ -1217,7 +1217,7 @@ void Island11::LoadTextures()
 	// Load images
 	D3DX11_IMAGE_LOAD_INFO imageLoadInfo;
 	D3DX11_IMAGE_INFO imageInfo;
-	wstring path = L"../../_Textures/TerrainTextures/rock_bump6.dds";
+	wstring path = L"../_Textures/TerrainTextures/rock_bump6.dds";
 
 	//DXUTFindDXSDKMediaFileCch(path.c_str(), MAX_PATH, L"TerrainTextures/rock_bump6.dds");
 	D3DX11GetImageInfoFromFile(path.c_str(), NULL, &imageInfo, NULL);
@@ -1235,7 +1235,7 @@ void Island11::LoadTextures()
 	textureSRV_desc.Texture2D.MipLevels = imageLoadInfo.MipLevels;
 	device->CreateShaderResourceView(rock_bump_texture, &textureSRV_desc, &rock_bump_textureSRV);
 
-	path = L"../../_Textures/TerrainTextures/terrain_rock4.dds";
+	path = L"../_Textures/TerrainTextures/terrain_rock4.dds";
 	//DXUTFindDXSDKMediaFileCch(path.c_str(), MAX_PATH, L"TerrainTextures/terrain_rock4.dds");
 	D3DX11GetImageInfoFromFile(path.c_str(), NULL, &imageInfo, NULL);
 	memset(&imageLoadInfo, 0, sizeof(imageLoadInfo));
@@ -1252,7 +1252,7 @@ void Island11::LoadTextures()
 	textureSRV_desc.Texture2D.MipLevels = imageLoadInfo.MipLevels;
 	device->CreateShaderResourceView(rock_diffuse_texture, &textureSRV_desc, &rock_diffuse_textureSRV);
 
-	path = L"../../_Textures/TerrainTextures/sand_diffuse.dds";
+	path = L"../_Textures/TerrainTextures/sand_diffuse.dds";
 	//DXUTFindDXSDKMediaFileCch(path.c_str(), MAX_PATH, L"TerrainTextures/sand_diffuse.dds");
 	D3DX11GetImageInfoFromFile(path.c_str(), NULL, &imageInfo, NULL);
 	memset(&imageLoadInfo, 0, sizeof(imageLoadInfo));
@@ -1269,7 +1269,7 @@ void Island11::LoadTextures()
 	textureSRV_desc.Texture2D.MipLevels = imageLoadInfo.MipLevels;
 	device->CreateShaderResourceView(sand_diffuse_texture, &textureSRV_desc, &sand_diffuse_textureSRV);
 
-	path = L"../../_Textures/TerrainTextures/rock_bump4.dds";
+	path = L"../_Textures/TerrainTextures/rock_bump4.dds";
 	//DXUTFindDXSDKMediaFileCch(path.c_str(), MAX_PATH, L"TerrainTextures/rock_bump4.dds");
 	D3DX11GetImageInfoFromFile(path.c_str(), NULL, &imageInfo, NULL);
 	memset(&imageLoadInfo, 0, sizeof(imageLoadInfo));
@@ -1286,7 +1286,7 @@ void Island11::LoadTextures()
 	textureSRV_desc.Texture2D.MipLevels = imageLoadInfo.MipLevels;
 	device->CreateShaderResourceView(sand_bump_texture, &textureSRV_desc, &sand_bump_textureSRV);
 
-	path = L"../../_Textures/TerrainTextures/terrain_grass.dds";
+	path = L"../_Textures/TerrainTextures/terrain_grass.dds";
 	//DXUTFindDXSDKMediaFileCch(path.c_str(), MAX_PATH, L"TerrainTextures/terrain_grass.dds");
 	D3DX11GetImageInfoFromFile(path.c_str(), NULL, &imageInfo, NULL);
 	memset(&imageLoadInfo, 0, sizeof(imageLoadInfo));
@@ -1304,7 +1304,7 @@ void Island11::LoadTextures()
 	device->CreateShaderResourceView(grass_diffuse_texture, &textureSRV_desc, &grass_diffuse_textureSRV);
 
 
-	path = L"../../_Textures/TerrainTextures/terrain_slope.dds";
+	path = L"../_Textures/TerrainTextures/terrain_slope.dds";
 	//DXUTFindDXSDKMediaFileCch(path.c_str(), MAX_PATH, L"TerrainTextures/terrain_slope.dds");
 	D3DX11GetImageInfoFromFile(path.c_str(), NULL, &imageInfo, NULL);
 	memset(&imageLoadInfo, 0, sizeof(imageLoadInfo));
@@ -1321,7 +1321,7 @@ void Island11::LoadTextures()
 	textureSRV_desc.Texture2D.MipLevels = imageLoadInfo.MipLevels;
 	device->CreateShaderResourceView(slope_diffuse_texture, &textureSRV_desc, &slope_diffuse_textureSRV);
 
-	path = L"../../_Textures/TerrainTextures/lichen1_normal.dds";
+	path = L"../_Textures/TerrainTextures/lichen1_normal.dds";
 	//DXUTFindDXSDKMediaFileCch(path.c_str(), MAX_PATH, L"TerrainTextures/lichen1_normal.dds");
 	D3DX11GetImageInfoFromFile(path.c_str(), NULL, &imageInfo, NULL);
 	memset(&imageLoadInfo, 0, sizeof(imageLoadInfo));
@@ -1339,7 +1339,7 @@ void Island11::LoadTextures()
 	device->CreateShaderResourceView(sand_microbump_texture, &textureSRV_desc, &sand_microbump_textureSRV);
 
 	
-	path = L"../../_Textures/TerrainTextures/rock_bump4.dds";
+	path = L"../_Textures/TerrainTextures/rock_bump4.dds";
 	//DXUTFindDXSDKMediaFileCch(path.c_str(), MAX_PATH, L"TerrainTextures/rock_bump4.dds");
 	D3DX11GetImageInfoFromFile(path.c_str(), NULL, &imageInfo, NULL);
 	memset(&imageLoadInfo, 0, sizeof(imageLoadInfo));
@@ -1356,7 +1356,7 @@ void Island11::LoadTextures()
 	textureSRV_desc.Texture2D.MipLevels = imageLoadInfo.MipLevels;
 	device->CreateShaderResourceView(rock_microbump_texture, &textureSRV_desc, &rock_microbump_textureSRV);
 
-	path = L"../../_Textures/TerrainTextures/water_bump.dds";
+	path = L"../_Textures/TerrainTextures/water_bump.dds";
 	//DXUTFindDXSDKMediaFileCch(path.c_str(), MAX_PATH, L"TerrainTextures/water_bump.dds");
 	D3DX11GetImageInfoFromFile(path.c_str(), NULL, &imageInfo, NULL);
 	memset(&imageLoadInfo, 0, sizeof(imageLoadInfo));
@@ -1376,7 +1376,7 @@ void Island11::LoadTextures()
 	textureSRV_desc.Texture2D.MipLevels = imageLoadInfo.MipLevels;
 	device->CreateShaderResourceView(water_bump_texture, &textureSRV_desc, &water_bump_textureSRV);
 
-	//	path = L"../../_Textures/TerrainTextures/sky.dds";
+	//	path = L"../_Textures/TerrainTextures/sky.dds";
 	//	//DXUTFindDXSDKMediaFileCch(path.c_str(), MAX_PATH, L"TerrainTextures/sky.dds");
 	//	D3DX11GetImageInfoFromFile(path.c_str(), NULL, &imageInfo, NULL);
 	//	memset(&imageLoadInfo, 0, sizeof(imageLoadInfo));

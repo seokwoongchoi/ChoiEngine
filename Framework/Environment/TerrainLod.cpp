@@ -16,7 +16,7 @@ TerrainLod::TerrainLod(ID3D11Device* device, ID3D11ShaderResourceView* heightSRV
 	if (heightSRV == nullptr)
 	{
 		heightMap = new Texture();
-		heightMap->Load(device, L"../_Textures/Terrain/TerrainHeightMap.png", nullptr, true);
+		heightMap->Load(device, L"../_Textures/Terrain/TerrainHeightMap.png", nullptr);
 		this->heightSRV = *heightMap;
 	}
 	

@@ -34,11 +34,11 @@ Cloud::Cloud(ID3D11Device* device)
 
 
 	noiseTexture = new Texture();
-	noiseTexture->Load(device, L"noise.png", nullptr, true);
+	noiseTexture->Load(device, L"noise.png", nullptr);
 	cloudTexture1 = new Texture();
-	cloudTexture1->Load(device,L"Environment/cloud001.dds", nullptr, true);
+	cloudTexture1->Load(device,L"Environment/cloud001.dds", nullptr);
 	cloudTexture2 = new Texture();
-	cloudTexture2->Load(device,L"Environment/cloud002.dds", nullptr, true);
+	cloudTexture2->Load(device,L"Environment/cloud002.dds", nullptr);
 
 
 	Create();

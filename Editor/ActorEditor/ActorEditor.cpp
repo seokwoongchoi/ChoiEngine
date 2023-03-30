@@ -99,9 +99,9 @@ ActorEditor::ActorEditor(ID3D11Device* device, class Engine* engine, class Edito
 		buttonTextures[i] = new Texture();
 
 	}
-	buttonTextures[0] ->Load(device,L"playButton.png", nullptr, true);
-	buttonTextures[1]->Load(device, L"pauseButton.png", nullptr, true);
-	buttonTextures[2]->Load(device, L"stopButton.png", nullptr, true);
+	buttonTextures[0] ->Load(device,L"playButton.png", nullptr);
+	buttonTextures[1]->Load(device, L"pauseButton.png", nullptr);
+	buttonTextures[2]->Load(device, L"stopButton.png", nullptr);
 
 
 	windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove| ImGuiWindowFlags_NoScrollbar;

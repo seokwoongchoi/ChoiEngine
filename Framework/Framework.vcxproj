@@ -126,7 +126,7 @@ copy /Y "$(SolutionDir)Debug\Framework.pdb" "$(SolutionDir)Editor\</Command>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
-      <AdditionalIncludeDirectories>./;../../_Libraries_Choi/;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../_Libraries_Choi/;</AdditionalIncludeDirectories>
       <SDLCheck>false</SDLCheck>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <OmitFramePointers>false</OmitFramePointers>
@@ -138,7 +138,7 @@ copy /Y "$(SolutionDir)Debug\Framework.pdb" "$(SolutionDir)Editor\</Command>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalLibraryDirectories>../../_Libraries_Choi/;</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../_Libraries_Choi/;</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
       <Command>copy /Y "$(SolutionDir)Debug\Framework.lib" "$(SolutionDir)Game\

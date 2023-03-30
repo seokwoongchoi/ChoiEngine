@@ -191,14 +191,14 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
-      <AdditionalIncludeDirectories>./;$(SolutionDir)..\_Libraries_Choi;$(SolutionDir)Framework\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;$(SolutionDir)_Libraries_Choi;$(SolutionDir)Framework\</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <OmitFramePointers>false</OmitFramePointers>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\_Libraries_Choi</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)_Libraries_Choi</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

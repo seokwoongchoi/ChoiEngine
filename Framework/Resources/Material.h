@@ -31,23 +31,23 @@ public:
 	void DiffuseMap(wstring file,bool isInclude=false) 
 	{ 
 		diffuseFile = Path::GetFileName(file);
-		textures[0].Load(device,file, nullptr, isInclude);
+		textures[0].Load(device,file, nullptr);
 	}
 	void NormalMap(wstring file, bool isInclude = false)
 	{
 		normalFile = Path::GetFileName(file);
-		textures[1].Load(device,file, nullptr, isInclude); 
+		textures[1].Load(device,file, nullptr); 
 	}
 
 	void RoughnessMap(wstring file, bool isInclude = false)
 	{
 		roughnessFile = Path::GetFileName(file);
-		textures[2].Load(device,file, nullptr, isInclude); 
+		textures[2].Load(device,file, nullptr); 
 	}
 	void MetallicMap(wstring file, bool isInclude = false) 
 	{
 		metallicFile = Path::GetFileName(file);
-		textures[3].Load(device,file,nullptr, isInclude); 
+		textures[3].Load(device,file,nullptr); 
 	}
 
 	/*void HeightMap(wstring& file, bool isInclude = false)

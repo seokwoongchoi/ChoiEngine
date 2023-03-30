@@ -3,73 +3,89 @@
     <Material>
         <Name>Glass</Name>
         <DiffuseFile>Glass Diffuse.png</DiffuseFile>
+        <SpecularFile></SpecularFile>
         <NormalFile></NormalFile>
         <RoughnessFile>Glass Roughness.png</RoughnessFile>
         <MetallicFile>Glass Metallic.png</MetallicFile>
+        <Ambient R="0.58823532" G="0.58823532" B="0.58823532" A="1"/>
         <Diffuse R="0.58823532" G="0.58823532" B="0.58823532" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
+        <Specular R="0.29999998" G="0.29999998" B="0.29999998" A="1.9999999"/>
     </Material>
     <Material>
         <Name>Blockers</Name>
         <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
         <NormalFile></NormalFile>
         <RoughnessFile></RoughnessFile>
         <MetallicFile></MetallicFile>
+        <Ambient R="0.58823532" G="0.58823532" B="0.58823532" A="1"/>
         <Diffuse R="0.58823532" G="0.58823532" B="0.58823532" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
+        <Specular R="0.89999998" G="0.89999998" B="0.89999998" A="3.732132"/>
     </Material>
     <Material>
         <Name>DefaultMaterial</Name>
         <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
         <NormalFile></NormalFile>
         <RoughnessFile></RoughnessFile>
         <MetallicFile></MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
         <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
     </Material>
     <Material>
         <Name>Ligths</Name>
         <DiffuseFile>Lights Diffuse.png</DiffuseFile>
+        <SpecularFile></SpecularFile>
         <NormalFile>Lights Normals.png</NormalFile>
         <RoughnessFile>Lights Roughness.png</RoughnessFile>
         <MetallicFile></MetallicFile>
+        <Ambient R="0.58823532" G="0.58823532" B="0.58823532" A="1"/>
         <Diffuse R="0.58823532" G="0.58823532" B="0.58823532" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
+        <Specular R="0.89999998" G="0.89999998" B="0.89999998" A="1.9999999"/>
     </Material>
     <Material>
         <Name>Car Body</Name>
         <DiffuseFile>Car Body Diffuse.png</DiffuseFile>
+        <SpecularFile></SpecularFile>
         <NormalFile>Car Body Normals.png</NormalFile>
         <RoughnessFile>Car body Roughness.png</RoughnessFile>
         <MetallicFile>Car Body Metallic.png</MetallicFile>
-        <Diffuse R="0.072678208" G="0.60080647" B="0.57525194" A="0.58200002"/>
-        <PBR Roughness="0.58200002" Metallic="1.101"/>
+        <Ambient R="0.588" G="0.588" B="0.588" A="1"/>
+        <Diffuse R="0.588" G="0.588" B="0.588" A="1"/>
+        <Specular R="0" G="0" B="0" A="2"/>
     </Material>
     <Material>
         <Name>Tire</Name>
         <DiffuseFile>Tire Diffuse.png</DiffuseFile>
+        <SpecularFile></SpecularFile>
         <NormalFile>Tire Normals.png</NormalFile>
         <RoughnessFile>Tire Roughness.png</RoughnessFile>
         <MetallicFile>Tire Metallic.png</MetallicFile>
-        <Diffuse R="1" G="0.99998999" B="0.99998999" A="1"/>
-        <PBR Roughness="1" Metallic="2"/>
+        <Ambient R="0.58823532" G="0.58823532" B="0.58823532" A="1"/>
+        <Diffuse R="0.58823532" G="0.58823532" B="0.58823532" A="1"/>
+        <Specular R="0.19999998" G="0.19999998" B="0.19999998" A="1.9999999"/>
     </Material>
     <Material>
         <Name>Car Bottom</Name>
         <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
         <NormalFile></NormalFile>
         <RoughnessFile></RoughnessFile>
         <MetallicFile></MetallicFile>
+        <Ambient R="0.588" G="0.588" B="0.588" A="1"/>
         <Diffuse R="0.588" G="0.588" B="0.588" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
+        <Specular R="0.89999998" G="0.89999998" B="0.89999998" A="2"/>
     </Material>
     <Material>
         <Name>13 - Default</Name>
         <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
         <NormalFile></NormalFile>
         <RoughnessFile></RoughnessFile>
         <MetallicFile></MetallicFile>
+        <Ambient R="0.58823532" G="0.58823532" B="0.58823532" A="1"/>
         <Diffuse R="0.58823532" G="0.58823532" B="0.58823532" A="1"/>
-        <PBR Roughness="1" Metallic="1"/>
+        <Specular R="0.89999998" G="0.89999998" B="0.89999998" A="1.9999999"/>
     </Material>
 </Materials>

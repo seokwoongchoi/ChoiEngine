@@ -92,7 +92,7 @@ SSLR::SSLR(ID3D11Device* device, uint width,uint height)
 	Check(device->CreateBlendState(&descBlend, &AdditiveBlendState));
 
 	scatterTexture = new Texture();
-	scatterTexture->Load(device, L"Particles/scattering.jpg", nullptr, true);
+	scatterTexture->Load(device, L"Particles/scattering.jpg", nullptr);
 }
 
 SSLR::~SSLR()

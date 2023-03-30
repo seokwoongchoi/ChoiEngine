@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Materials xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <Material>
+        <Name>MI_EyesBlind</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Specular R="0.28671327" G="0.28671327" B="0.28671327" A="1"/>
+    </Material>
+    <Material>
+        <Name>MI_Eyes</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Specular R="0.28671327" G="0.28671327" B="0.28671327" A="1"/>
+    </Material>
+    <Material>
+        <Name>MI_Teeth</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Specular R="0.5" G="0.5" B="0.5" A="1"/>
+    </Material>
+    <Material>
+        <Name>MI_EyesGradian</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
+        <Diffuse R="0" G="0" B="0" A="1"/>
+        <Specular R="0.64335662" G="0.64335662" B="0.64335662" A="1"/>
+    </Material>
+    <Material>
+        <Name>MI_EyeBrowns</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
+    </Material>
+    <Material>
+        <Name>MI_EyeTear</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0.40000001" G="0.40000001" B="0.40000001" A="1"/>
+        <Diffuse R="0.40000001" G="0.40000001" B="0.40000001" A="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
+    </Material>
+    <Material>
+        <Name>MI_HeadSkin</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
+    </Material>
+    <Material>
+        <Name>MI_Eyeslash</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0.73426574" G="0.73426574" B="0.73426574" A="1"/>
+        <Diffuse R="0.73426574" G="0.73426574" B="0.73426574" A="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
+    </Material>
+    <Material>
+        <Name>MI_BodySkin</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
+    </Material>
+    <Material>
+        <Name>MI_Pant</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Specular R="0.048951048" G="0.048951048" B="0.048951048" A="1"/>
+    </Material>
+    <Material>
+        <Name>MI_ArmorTop</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Specular R="0.13986014" G="0.13986014" B="0.13986014" A="1"/>
+    </Material>
+    <Material>
+        <Name>MI_Shirt</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Specular R="0.013986014" G="0.013986014" B="0.013986014" A="1"/>
+    </Material>
+    <Material>
+        <Name>MI_Hair0</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0.017280001" G="0.010000001" B="0.0060800002" A="1"/>
+        <Diffuse R="0.017280001" G="0.010000001" B="0.0060800002" A="1"/>
+        <Specular R="0" G="0" B="0" A="1"/>
+    </Material>
+    <Material>
+        <Name>MI_Shoes</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Specular R="0.013986014" G="0.013986014" B="0.013986014" A="1"/>
+    </Material>
+    <Material>
+        <Name>MI_JHelmet</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Specular R="0.10489511" G="0.10489511" B="0.10489511" A="1"/>
+    </Material>
+    <Material>
+        <Name>MI_Katana</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Specular R="0.21678321" G="0.21678321" B="0.21678321" A="1"/>
+    </Material>
+    <Material>
+        <Name>MI_FabricMask</Name>
+        <DiffuseFile></DiffuseFile>
+        <SpecularFile></SpecularFile>
+        <NormalFile></NormalFile>
+        <RoughnessFile></RoughnessFile>
+        <MetallicFile></MetallicFile>
+        <Ambient R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Specular R="0.041958041" G="0.041958041" B="0.041958041" A="1"/>
+    </Material>
+</Materials>
